@@ -82,10 +82,12 @@ class DepartmentTaxInvoiceGenerationControllerTest {
                 .panNumber("ABCDE1545T").gstNumber("27ABCDE1545TK1Z7").build();
         invoice.setProjectName("Test Project");
         invoice.setLineItems(List.of(TaxInvoiceLineItemView.builder().description("Alex - Developer")
-                .lineNumber(1).quantity(1).totalAmount(new BigDecimal("1000")).build()));
+                .lineNumber(1).quantity(1).totalAmount(new BigDecimal("1000"))
+                .employeeId(1L).employeeCode("E1").employeeName("Alex").designationName("Developer").levelCode("L1")
+                .billedFrom(LocalDate.of(2026, 9, 1)).billedTo(LocalDate.of(2026, 9, 30)).build()));
         when(service.buildEmployeeInvoice(any())).thenReturn(invoice);
         when(service.loadProjectEmployees(any())).thenReturn(List.of(new TaxInvoiceEmployeePreviewView(
-                1L, "E1", "Alex", "", "Developer", "L1", "", "", "", "Project", null, null, 30)));
+                1L, "E1", "Alex", "", "Developer", "L1", "", "", "", "Project", null, null, 30, null)));
     }
 
     private MockHttpServletRequestBuilder selection(String endpoint) {
@@ -118,6 +120,31 @@ class DepartmentTaxInvoiceGenerationControllerTest {
                 .param("clientGstNumber", "").param("placeOfSupply", "Pune")
                 .param("requestId", "REQ-NEW").param("workOrderDate", "2026-08-15")
                 .param("billedTo", "Entered recipient").param("billingAddress", "First line\nSecond line");
+    }
+
+    @Test
+    void loadMarksAlreadyInvoicedEmployeesAndHidesPreviewWhenNobodyIsBillable() throws Exception {
+        when(service.loadProjectEmployees(any())).thenReturn(List.of(new TaxInvoiceEmployeePreviewView(
+                1L, "E1", "Alex", "", "Developer", "L1", "", "", "", "Project", null, null, 30,
+                "TI-2026-27-00001, 01-09-2026 to 30-09-2026")));
+        String html = mvc.perform(selection("/load")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(html).contains("Already invoiced: TI-2026-27-00001, 01-09-2026 to 30-09-2026",
+                "No employee can be billed for the selected period").doesNotContain("id=\"previewEmployeeInvoiceButton\"");
+    }
+
+    @Test
+    void generateRejectsEmployeeInvoicedMeanwhileWithoutSaving() throws Exception {
+        String token = preview();
+        when(savedInvoices.findInvoicedEmployees(any(), any(), any())).thenReturn(List.of(
+                new EmployeeTaxInvoiceRepository.InvoicedEmployee(1L, "TI-2026-27-00007",
+                        LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30))));
+        String html = mvc.perform(generate(token)).andExpect(status().isOk())
+                .andExpect(view().name("invoice/employee-tax-invoice-preview"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(html).contains("Alex is already invoiced in TI-2026-27-00007 for 01-09-2026 to 30-09-2026");
+        verify(savedInvoices, never()).save(any(), any(), any(), any());
+        verify(savedInvoices).lockEmployeesForInvoicing(List.of(1L));
     }
 
     @Test

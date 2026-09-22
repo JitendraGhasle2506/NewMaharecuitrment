@@ -32,6 +32,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceBillingDetails;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceGenerationFilter;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceView;
+import com.maharecruitment.gov.in.invoice.exception.TaxInvoiceException;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceGenerationService;
 import com.maharecruitment.gov.in.invoice.service.EmployeeTaxInvoiceService;
 import com.maharecruitment.gov.in.invoice.service.TaxInvoiceQrCodeGenerator;
@@ -159,6 +160,9 @@ public class DepartmentTaxInvoiceGenerationController {
             session.setAttribute(DRAFT_SESSION_KEY, new Draft(draft.token(), draft.selection(), draft.invoice(), id));
             redirectAttributes.addFlashAttribute("successMessage", "Tax invoice generated and saved successfully.");
             return savedInvoiceRedirect(id);
+        } catch (TaxInvoiceException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            return renderEmployeePreview(draft, model);
         } catch (RuntimeException ex) {
             log.error("Failed to save employee tax invoice for projectId={}", draft.selection().projectId(), ex);
             model.addAttribute("errorMessage", "Unable to save the tax invoice. Your preview and billing details have been retained. Please try again.");

@@ -1,6 +1,8 @@
 package com.maharecruitment.gov.in.invoice.repository;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.invoice.dto.EmployeeTaxInvoiceListItem;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceGenerationFilter;
+import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceLineItemView;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceView;
 
 @Repository
@@ -57,8 +60,61 @@ public class EmployeeTaxInvoiceRepository {
                 on conflict (generation_token) do nothing
                 returning id
                 """, params, (rs, row) -> rs.getLong("id"));
-        return inserted.isEmpty() ? findIdByGenerationToken(token).orElseThrow() : inserted.getFirst();
+        if (inserted.isEmpty()) {
+            return findIdByGenerationToken(token).orElseThrow();
+        }
+        long invoiceId = inserted.getFirst();
+        saveLines(invoiceId, invoice.getLineItems());
+        return invoiceId;
     }
+
+    private void saveLines(long invoiceId, List<TaxInvoiceLineItemView> lineItems) {
+        MapSqlParameterSource[] rows = lineItems.stream().map(line -> new MapSqlParameterSource()
+                .addValue("invoiceId", invoiceId)
+                .addValue("lineNumber", line.getLineNumber())
+                .addValue("employeeId", line.getEmployeeId())
+                .addValue("employeeCode", line.getEmployeeCode())
+                .addValue("employeeName", line.getEmployeeName())
+                .addValue("designationName", line.getDesignationName())
+                .addValue("levelCode", line.getLevelCode())
+                .addValue("billedFrom", line.getBilledFrom())
+                .addValue("billedTo", line.getBilledTo())
+                .addValue("ratePerMonth", line.getRatePerMonth())
+                .addValue("amount", line.getTotalAmount()))
+                .toArray(MapSqlParameterSource[]::new);
+        jdbc.batchUpdate("""
+                insert into employee_tax_invoice_line (employee_tax_invoice_id, line_number, employee_id,
+                    employee_code, employee_name, designation_name, level_code, billed_from, billed_to,
+                    rate_per_month, amount)
+                values (:invoiceId, :lineNumber, :employeeId, :employeeCode, :employeeName, :designationName,
+                    :levelCode, :billedFrom, :billedTo, :ratePerMonth, :amount)
+                """, rows);
+    }
+
+    /** Invoice lines of these employees whose billed days overlap the given range. */
+    public List<InvoicedEmployee> findInvoicedEmployees(Collection<Long> employeeIds, LocalDate from, LocalDate to) {
+        if (employeeIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.query("""
+                select line.employee_id, invoice.ti_number, line.billed_from, line.billed_to
+                from employee_tax_invoice_line line
+                join employee_tax_invoice invoice on invoice.id = line.employee_tax_invoice_id
+                where line.employee_id in (:employeeIds) and line.billed_from <= :to and line.billed_to >= :from
+                order by line.billed_from, invoice.id
+                """, new MapSqlParameterSource("employeeIds", employeeIds).addValue("from", from).addValue("to", to),
+                (rs, row) -> new InvoicedEmployee(rs.getLong("employee_id"), rs.getString("ti_number"),
+                        rs.getDate("billed_from").toLocalDate(), rs.getDate("billed_to").toLocalDate()));
+    }
+
+    /** Serialises invoice generation per employee until the surrounding transaction ends. */
+    public void lockEmployeesForInvoicing(Collection<Long> employeeIds) {
+        employeeIds.stream().distinct().sorted().forEach(employeeId -> jdbc.query(
+                "select pg_advisory_xact_lock(hashtextextended('employee_tax_invoice_line:' || :employeeId, 0))",
+                Map.of("employeeId", employeeId), rs -> null));
+    }
+
+    public record InvoicedEmployee(long employeeId, String tiNumber, LocalDate billedFrom, LocalDate billedTo) { }
 
     public Optional<String> findSnapshotById(long id) {
         return jdbc.query("select invoice_snapshot from employee_tax_invoice where id = :id",

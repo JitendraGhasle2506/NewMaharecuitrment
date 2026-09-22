@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.invoice.service.impl;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -29,9 +30,11 @@ import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceView;
 import com.maharecruitment.gov.in.invoice.entity.DepartmentTaxInvoiceEntity;
 import com.maharecruitment.gov.in.invoice.exception.TaxInvoiceException;
 import com.maharecruitment.gov.in.invoice.repository.DepartmentTaxInvoiceRepository;
+import com.maharecruitment.gov.in.invoice.repository.EmployeeTaxInvoiceRepository.InvoicedEmployee;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceGenerationService;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceService;
 import com.maharecruitment.gov.in.invoice.service.EmployeeTaxInvoiceBuilder;
+import com.maharecruitment.gov.in.invoice.service.EmployeeTaxInvoiceService;
 import com.maharecruitment.gov.in.invoice.service.InvoiceEmployeeMappings;
 import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
@@ -48,6 +51,7 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeProjectMappingR
 public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxInvoiceGenerationService {
 
     private static final String DEFAULT_ACTOR = "SYSTEM";
+    private static final DateTimeFormatter PERIOD_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     private final DepartmentMstRepository departmentRepository;
     private final SubDepartmentRepository subDepartmentRepository;
@@ -58,6 +62,7 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
     private final DepartmentTaxInvoiceRepository invoiceRepository;
     private final DepartmentTaxInvoiceService taxInvoiceService;
     private final EmployeeTaxInvoiceBuilder employeeTaxInvoiceBuilder;
+    private final EmployeeTaxInvoiceService employeeTaxInvoiceService;
 
     public DepartmentTaxInvoiceGenerationServiceImpl(
             DepartmentMstRepository departmentRepository,
@@ -68,7 +73,8 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
             DepartmentProjectApplicationActivityRepository activityRepository,
             DepartmentTaxInvoiceRepository invoiceRepository,
             DepartmentTaxInvoiceService taxInvoiceService,
-            EmployeeTaxInvoiceBuilder employeeTaxInvoiceBuilder) {
+            EmployeeTaxInvoiceBuilder employeeTaxInvoiceBuilder,
+            EmployeeTaxInvoiceService employeeTaxInvoiceService) {
         this.departmentRepository = departmentRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.projectRepository = projectRepository;
@@ -78,6 +84,7 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
         this.invoiceRepository = invoiceRepository;
         this.taxInvoiceService = taxInvoiceService;
         this.employeeTaxInvoiceBuilder = employeeTaxInvoiceBuilder;
+        this.employeeTaxInvoiceService = employeeTaxInvoiceService;
     }
 
     @Override
@@ -199,11 +206,22 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
         }
         ProjectMst project = projectRepository.findById(resolvedFilter.projectId())
                 .orElseThrow(() -> new TaxInvoiceException("Selected project was not found."));
-        List<EmployeeProjectMappingEntity> mappings = employeeProjectMappingRepository
-                .findCurrentProjectEmployeesForTaxInvoice(
+        List<EmployeeProjectMappingEntity> mappings = InvoiceEmployeeMappings.uniqueEmployees(
+                employeeProjectMappingRepository.findCurrentProjectEmployeesForTaxInvoice(
                         resolvedFilter.departmentId(),
                         employeeSubDepartmentScope(resolvedFilter),
-                        resolvedFilter.projectId());
+                        resolvedFilter.projectId()));
+        // Employees already billed for any day of this period are left off, so the same days are never billed twice.
+        Map<Long, InvoicedEmployee> invoiced = findInvoiced(mappings, resolvedFilter);
+        List<EmployeeProjectMappingEntity> billable = mappings.stream()
+                .filter(mapping -> !invoiced.containsKey(mapping.getEmployee().getEmployeeId()))
+                .toList();
+        if (!mappings.isEmpty() && billable.isEmpty()) {
+            throw new TaxInvoiceException("All employees of the selected project are already invoiced for "
+                    + PERIOD_FORMAT.format(resolvedFilter.startDate()) + " to "
+                    + PERIOD_FORMAT.format(resolvedFilter.endDate()) + ".");
+        }
+        mappings = billable;
         return employeeTaxInvoiceBuilder.build(
                 project,
                 resolvedFilter.departmentId(),
@@ -214,12 +232,25 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
     }
 
     private List<TaxInvoiceEmployeePreviewView> loadEmployeePreview(ResolvedFilter filter) {
-        return InvoiceEmployeeMappings.uniqueEmployees(employeeProjectMappingRepository.findCurrentProjectEmployeesForTaxInvoice(
-                filter.departmentId(),
-                employeeSubDepartmentScope(filter),
-                filter.projectId())).stream()
-                .map(mapping -> toEmployeePreview(mapping, filter.startDate(), filter.endDate()))
+        List<EmployeeProjectMappingEntity> mappings = InvoiceEmployeeMappings.uniqueEmployees(
+                employeeProjectMappingRepository.findCurrentProjectEmployeesForTaxInvoice(
+                        filter.departmentId(),
+                        employeeSubDepartmentScope(filter),
+                        filter.projectId()));
+        Map<Long, InvoicedEmployee> invoiced = findInvoiced(mappings, filter);
+        return mappings.stream()
+                .map(mapping -> toEmployeePreview(mapping, filter.startDate(), filter.endDate(),
+                        invoiced.get(mapping.getEmployee().getEmployeeId())))
                 .toList();
+    }
+
+    private Map<Long, InvoicedEmployee> findInvoiced(List<EmployeeProjectMappingEntity> mappings, ResolvedFilter filter) {
+        if (filter.startDate() == null || filter.endDate() == null) {
+            return Map.of();
+        }
+        return employeeTaxInvoiceService.findInvoicedEmployees(
+                mappings.stream().map(mapping -> mapping.getEmployee().getEmployeeId()).toList(),
+                filter.startDate(), filter.endDate());
     }
 
     /**
@@ -404,7 +435,8 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
     private TaxInvoiceEmployeePreviewView toEmployeePreview(
             EmployeeProjectMappingEntity mapping,
             LocalDate periodStart,
-            LocalDate periodEnd) {
+            LocalDate periodEnd,
+            InvoicedEmployee invoiced) {
         EmployeeEntity employee = mapping.getEmployee();
         ProjectMst project = mapping.getProject();
         return new TaxInvoiceEmployeePreviewView(
@@ -420,7 +452,9 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
                 project == null ? "-" : defaultIfBlank(project.getProjectName(), "-"),
                 employee.getOnboardingDate(),
                 employee.getResignationDate(),
-                countDaysOnProject(employee, periodStart, periodEnd));
+                countDaysOnProject(employee, periodStart, periodEnd),
+                invoiced == null ? null : invoiced.tiNumber() + ", " + PERIOD_FORMAT.format(invoiced.billedFrom())
+                        + " to " + PERIOD_FORMAT.format(invoiced.billedTo()));
     }
 
     /** Same window EmployeeTaxInvoiceBuilder bills: the period clipped to onboarding and resignation dates. */

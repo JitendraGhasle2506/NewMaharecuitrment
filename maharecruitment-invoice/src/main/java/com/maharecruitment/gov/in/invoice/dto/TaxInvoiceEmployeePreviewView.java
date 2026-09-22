@@ -23,4 +23,10 @@ public class TaxInvoiceEmployeePreviewView {
     private final LocalDate resignationDate;
     /** Days the employee was on the project within the selected invoice period (inclusive). */
     private final long numberOfDays;
+    /** Invoice already billing this employee for part of the period (e.g. "TI-2026-27-00001, 01-09-2026 to 30-09-2026"); null when billable. */
+    private final String alreadyInvoicedIn;
+
+    public boolean isBillable() {
+        return alreadyInvoicedIn == null && numberOfDays > 0;
+    }
 }

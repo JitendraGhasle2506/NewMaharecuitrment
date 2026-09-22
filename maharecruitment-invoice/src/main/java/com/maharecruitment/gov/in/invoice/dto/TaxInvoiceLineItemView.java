@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.invoice.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,4 +27,13 @@ public class TaxInvoiceLineItemView {
     private BigDecimal totalAmount;
     private String ratePerMonthDisplay;
     private String totalAmountDisplay;
+
+    // Employee-wise invoices only: who was billed and for which days (saved to employee_tax_invoice_line).
+    private Long employeeId;
+    private String employeeCode;
+    private String employeeName;
+    private String designationName;
+    private String levelCode;
+    private LocalDate billedFrom;
+    private LocalDate billedTo;
 }

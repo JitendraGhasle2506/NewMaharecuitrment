@@ -36,6 +36,7 @@ import com.maharecruitment.gov.in.invoice.repository.EmployeeTaxInvoiceRepositor
 import com.maharecruitment.gov.in.invoice.service.EmployeeTaxInvoiceService;
 import com.maharecruitment.gov.in.invoice.service.TaxInvoiceNumberGenerator;
 import db.postmigration.V128__employee_tax_invoice_storage;
+import db.postmigration.V129__employee_tax_invoice_line;
 
 /** Run against an isolated PostgreSQL instance with -Dinvoice.test.databaseUrl=jdbc:postgresql://... . */
 @EnabledIfSystemProperty(named = "invoice.test.databaseUrl", matches = ".+")
@@ -69,6 +70,9 @@ class EmployeeTaxInvoicePersistenceTest {
             V128__employee_tax_invoice_storage migration = new V128__employee_tax_invoice_storage();
             migration.migrate(context);
             migration.migrate(context);
+            V129__employee_tax_invoice_line lineMigration = new V129__employee_tax_invoice_line();
+            lineMigration.migrate(context);
+            lineMigration.migrate(context);
         }
         numbers = mock(TaxInvoiceNumberGenerator.class);
         when(numbers.generate(any())).thenAnswer(call -> "TI-2026-27-" + sequence.incrementAndGet());
@@ -84,7 +88,10 @@ class EmployeeTaxInvoicePersistenceTest {
                 .billingAddress("Billing address").requestId("REQ-1").placeOfSupply("Maharashtra")
                 .totalAmount(new BigDecimal("1180.00")).totalAmountDisplay("1,180.00")
                 .lineItems(List.of(TaxInvoiceLineItemView.builder().lineNumber(1)
-                        .description("Employee One - Developer").totalAmount(new BigDecimal("1000.00")).build()))
+                        .description("Employee One - Developer").totalAmount(new BigDecimal("1000.00"))
+                        .ratePerMonth(new BigDecimal("1000.00")).employeeCode("EMP-1").employeeName("Employee One")
+                        .designationName("Developer").levelCode("L1")
+                        .billedFrom(LocalDate.of(2026, 9, 1)).billedTo(LocalDate.of(2026, 9, 30)).build()))
                 .build();
         details = TaxInvoiceBillingDetails.from(preview);
         filter = new TaxInvoiceGenerationFilter();
@@ -101,8 +108,47 @@ class EmployeeTaxInvoicePersistenceTest {
         }
     }
 
+    /** Each token bills its own employee so tests that save many invoices do not overlap. */
     private long generate(String token) {
+        return generate(token, Math.floorMod(token.hashCode(), 1_000_000L) + 1);
+    }
+
+    private long generate(String token, long employeeId) {
+        preview.getLineItems().getFirst().setEmployeeId(employeeId);
         return service.generate(token, filter, preview, details, "hr@example.com");
+    }
+
+    private void bill(LocalDate from, LocalDate to) {
+        preview.getLineItems().getFirst().setBilledFrom(from);
+        preview.getLineItems().getFirst().setBilledTo(to);
+    }
+
+    @Test
+    void savesOneLinePerBilledEmployeeInItsOwnTable() {
+        long id = generate(UUID.randomUUID().toString(), 500L);
+        var line = jdbc.queryForMap("select * from employee_tax_invoice_line where employee_tax_invoice_id = ?", id);
+        assertThat(line).containsEntry("employee_id", 500L).containsEntry("employee_code", "EMP-1")
+                .containsEntry("employee_name", "Employee One").containsEntry("designation_name", "Developer")
+                .containsEntry("level_code", "L1")
+                .containsEntry("billed_from", java.sql.Date.valueOf(LocalDate.of(2026, 9, 1)))
+                .containsEntry("billed_to", java.sql.Date.valueOf(LocalDate.of(2026, 9, 30)));
+        assertThat((BigDecimal) line.get("amount")).isEqualByComparingTo("1000.00");
+    }
+
+    @Test
+    void employeeCannotBeInvoicedTwiceForOverlappingDaysButCanForNextPeriod() {
+        generate(UUID.randomUUID().toString(), 500L);
+        bill(LocalDate.of(2026, 9, 15), LocalDate.of(2026, 10, 15));
+        assertThatThrownBy(() -> generate(UUID.randomUUID().toString(), 500L))
+                .isInstanceOf(TaxInvoiceException.class)
+                .hasMessageContaining("Employee One is already invoiced in TI-2026-27-1 for 01-09-2026 to 30-09-2026");
+        assertThat(service.findInvoicedEmployees(List.of(500L, 501L), LocalDate.of(2026, 9, 30),
+                LocalDate.of(2026, 9, 30))).containsOnlyKeys(500L);
+
+        bill(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+        generate(UUID.randomUUID().toString(), 500L);
+        assertThat(jdbc.queryForObject("select count(*) from employee_tax_invoice_line where employee_id = 500",
+                Long.class)).isEqualTo(2L);
     }
 
     @Test
@@ -117,9 +163,9 @@ class EmployeeTaxInvoicePersistenceTest {
         assertThat(saved.getLineItems().getFirst().getDescription()).isEqualTo("Employee One - Developer");
         assertThat(saved.getGeneratedByLoginId()).isEqualTo("hr@example.com");
         assertThat(saved.getTiNumber()).isNotEqualTo("DRAFT");
-        assertThat(service.list("", 0).getContent()).extracting(EmployeeTaxInvoiceListItem::id).containsExactly(id);
-        assertThat(service.list("100%_", 0).getTotalElements()).isEqualTo(1);
-        assertThat(service.list("missing", 0).getContent()).isEmpty();
+        assertThat(service.list("", null, null, null, 0).getContent()).extracting(EmployeeTaxInvoiceListItem::id).containsExactly(id);
+        assertThat(service.list("100%_", null, null, null, 0).getTotalElements()).isEqualTo(1);
+        assertThat(service.list("missing", null, null, null, 0).getContent()).isEmpty();
         assertThatThrownBy(() -> service.getInvoice(-1L)).isInstanceOf(TaxInvoiceNotFoundException.class);
     }
 
@@ -130,25 +176,59 @@ class EmployeeTaxInvoicePersistenceTest {
         details.setBilledTo("Changed recipient");
         assertThat(generate(token)).isEqualTo(id);
         assertThat(service.getInvoice(id).getBilledTo()).isEqualTo("Department");
-        assertThat(service.list("", 0).getTotalElements()).isEqualTo(1);
+        assertThat(service.list("", null, null, null, 0).getTotalElements()).isEqualTo(1);
         verify(numbers, times(1)).generate(any());
     }
 
     @Test
     void concurrentSubmissionsSaveExactlyOneInvoice() throws Exception {
+        // The per-employee lock makes the second request wait, then return the invoice the first one saved.
         CyclicBarrier bothReady = new CyclicBarrier(2);
-        when(numbers.generate(any())).thenAnswer(call -> {
-            String number = "TI-2026-27-" + sequence.incrementAndGet();
-            bothReady.await(10, TimeUnit.SECONDS);
-            return number;
-        });
         String token = UUID.randomUUID().toString();
+        preview.getLineItems().getFirst().setEmployeeId(700L);
         try (var executor = Executors.newFixedThreadPool(2)) {
-            var first = executor.submit(() -> generate(token));
-            var second = executor.submit(() -> generate(token));
+            var first = executor.submit(() -> {
+                bothReady.await(10, TimeUnit.SECONDS);
+                return service.generate(token, filter, preview, details, "hr@example.com");
+            });
+            var second = executor.submit(() -> {
+                bothReady.await(10, TimeUnit.SECONDS);
+                return service.generate(token, filter, preview, details, "hr@example.com");
+            });
             assertThat(first.get(15, TimeUnit.SECONDS)).isEqualTo(second.get(15, TimeUnit.SECONDS));
         }
         assertThat(jdbc.queryForObject("select count(*) from employee_tax_invoice", Long.class)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select count(*) from employee_tax_invoice_line", Long.class)).isEqualTo(1L);
+    }
+
+    @Test
+    void concurrentDifferentPreviewsCannotBothBillTheSameEmployee() throws Exception {
+        CyclicBarrier bothReady = new CyclicBarrier(2);
+        preview.getLineItems().getFirst().setEmployeeId(800L);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            List<java.util.concurrent.Future<Long>> results = List.of(
+                    executor.submit(() -> {
+                        bothReady.await(10, TimeUnit.SECONDS);
+                        return service.generate(UUID.randomUUID().toString(), filter, preview, details, "a@example.com");
+                    }),
+                    executor.submit(() -> {
+                        bothReady.await(10, TimeUnit.SECONDS);
+                        return service.generate(UUID.randomUUID().toString(), filter, preview, details, "b@example.com");
+                    }));
+            long failures = results.stream().filter(result -> {
+                try {
+                    result.get(15, TimeUnit.SECONDS);
+                    return false;
+                } catch (java.util.concurrent.ExecutionException ex) {
+                    return ex.getCause() instanceof TaxInvoiceException;
+                } catch (Exception ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }).count();
+            assertThat(failures).isEqualTo(1);
+        }
+        assertThat(jdbc.queryForObject("select count(*) from employee_tax_invoice_line where employee_id = 800",
+                Long.class)).isEqualTo(1L);
     }
 
     @Test
@@ -156,7 +236,7 @@ class EmployeeTaxInvoicePersistenceTest {
         String token = UUID.randomUUID().toString();
         details.setBilledTo("x".repeat(256));
         assertThatThrownBy(() -> generate(token)).isInstanceOf(org.springframework.dao.DataAccessException.class);
-        assertThat(service.list("", 0).getTotalElements()).isZero();
+        assertThat(service.list("", null, null, null, 0).getTotalElements()).isZero();
         assertThat(preview.getBilledTo()).isEqualTo("Department");
         details.setBilledTo("Corrected recipient");
         assertThat(service.getInvoice(generate(token)).getBilledTo()).isEqualTo("Corrected recipient");
@@ -167,18 +247,18 @@ class EmployeeTaxInvoicePersistenceTest {
         for (int i = 0; i < 21; i++) {
             generate(UUID.randomUUID().toString());
         }
-        assertThat(service.list("", 0).getNumberOfElements()).isEqualTo(20);
-        assertThat(service.list("", 1).getNumberOfElements()).isEqualTo(1);
-        assertThat(service.list("100%_", 0).getTotalElements()).isEqualTo(21);
-        assertThat(service.list("100%Z", 0).getTotalElements()).isZero();
-        assertThat(service.list("", -1).getNumber()).isZero();
+        assertThat(service.list("", null, null, null, 0).getNumberOfElements()).isEqualTo(20);
+        assertThat(service.list("", null, null, null, 1).getNumberOfElements()).isEqualTo(1);
+        assertThat(service.list("100%_", null, null, null, 0).getTotalElements()).isEqualTo(21);
+        assertThat(service.list("100%Z", null, null, null, 0).getTotalElements()).isZero();
+        assertThat(service.list("", null, null, null, -1).getNumber()).isZero();
     }
 
     @Test
     void rejectsUnbillablePreviewWithoutWritingAnInvoice() {
         preview.setLineItems(List.of());
         assertThatThrownBy(() -> generate(UUID.randomUUID().toString())).isInstanceOf(TaxInvoiceException.class);
-        assertThat(service.list("", 0).getTotalElements()).isZero();
+        assertThat(service.list("", null, null, null, 0).getTotalElements()).isZero();
         verifyNoInteractions(numbers);
     }
 }

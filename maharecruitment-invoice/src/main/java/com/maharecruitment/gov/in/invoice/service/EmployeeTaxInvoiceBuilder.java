@@ -265,6 +265,13 @@ public class EmployeeTaxInvoiceBuilder {
                 .totalAmount(taxableAmount)
                 .ratePerMonthDisplay(displayFormatter.formatAmount(loadedMonthlyRate))
                 .totalAmountDisplay(displayFormatter.formatAmount(taxableAmount))
+                .employeeId(employee.getEmployeeId())
+                .employeeCode(trimToNull(employee.getEmployeeCode()))
+                .employeeName(employeeName)
+                .designationName(trimToNull(designation.getDesignationName()))
+                .levelCode(levelCode)
+                .billedFrom(from)
+                .billedTo(to)
                 .build();
 
         return new EmployeeLine(lineItem, agencyCommissionAmount, mahaItCommissionAmount, taxableAmount);

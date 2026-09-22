@@ -104,6 +104,7 @@ import db.postmigration.V123__manpower_designation_type;
 import db.postmigration.V126__deactivate_internal_projects;
 import db.postmigration.V127__delete_internal_projects;
 import db.postmigration.V128__employee_tax_invoice_storage;
+import db.postmigration.V129__employee_tax_invoice_line;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -234,6 +235,7 @@ public class PostSchemaFlywayRunner {
                 new V126__deactivate_internal_projects(),
                 new V127__delete_internal_projects(),
                 new V128__employee_tax_invoice_storage(),
+                new V129__employee_tax_invoice_line(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

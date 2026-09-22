@@ -1,11 +1,13 @@
 package com.maharecruitment.gov.in.invoice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +18,9 @@ import com.maharecruitment.gov.in.common.mahaitprofile.repository.MahaItProfileR
 import com.maharecruitment.gov.in.department.entity.DepartmentTaxRateMasterEntity;
 import com.maharecruitment.gov.in.department.repository.*;
 import com.maharecruitment.gov.in.invoice.dto.*;
+import com.maharecruitment.gov.in.invoice.exception.TaxInvoiceException;
 import com.maharecruitment.gov.in.invoice.repository.DepartmentTaxInvoiceRepository;
+import com.maharecruitment.gov.in.invoice.repository.EmployeeTaxInvoiceRepository.InvoicedEmployee;
 import com.maharecruitment.gov.in.invoice.service.impl.DepartmentTaxInvoiceGenerationServiceImpl;
 import com.maharecruitment.gov.in.master.entity.*;
 import com.maharecruitment.gov.in.master.repository.*;
@@ -33,6 +37,7 @@ class EmployeeTaxInvoiceRegressionTest {
     private final DepartmentMstRepository departments = mock(DepartmentMstRepository.class);
     private final ProjectMstRepository projects = mock(ProjectMstRepository.class);
     private final EmployeeProjectMappingRepository mappings = mock(EmployeeProjectMappingRepository.class);
+    private final EmployeeTaxInvoiceService invoicedLookup = mock(EmployeeTaxInvoiceService.class);
     private EmployeeTaxInvoiceBuilder builder;
     private DepartmentTaxInvoiceGenerationServiceImpl service;
     private ProjectMst project;
@@ -49,7 +54,8 @@ class EmployeeTaxInvoiceRegressionTest {
                 new TaxInvoiceViewMapper(words, formatter, new TaxInvoiceQrCodeGenerator()));
         service = new DepartmentTaxInvoiceGenerationServiceImpl(departments, mock(SubDepartmentRepository.class),
                 projects, mappings, applications, mock(DepartmentProjectApplicationActivityRepository.class),
-                mock(DepartmentTaxInvoiceRepository.class), mock(DepartmentTaxInvoiceService.class), builder);
+                mock(DepartmentTaxInvoiceRepository.class), mock(DepartmentTaxInvoiceService.class), builder,
+                invoicedLookup);
         project = new ProjectMst();
         project.setProjectId(2L);
         project.setProjectName("Project");
@@ -169,4 +175,34 @@ class EmployeeTaxInvoiceRegressionTest {
         assertThat(invoice.getBillingAddress()).isEmpty();
     }
 
+    @Test
+    void employeesAlreadyInvoicedForThePeriodAreMarkedAndLeftOffTheInvoice() {
+        when(mappings.findCurrentProjectEmployeesForTaxInvoice(1L, null, 2L))
+                .thenReturn(List.of(mapping(10, null, null), mapping(11, null, null)));
+        when(invoicedLookup.findInvoicedEmployees(List.of(10L, 11L), start, end)).thenReturn(Map.of(10L,
+                new InvoicedEmployee(10L, "TI-2026-27-00001", start, start.plusDays(14))));
+        List<TaxInvoiceEmployeePreviewView> loaded = service.loadProjectEmployees(filter());
+        assertThat(loaded.get(0).getAlreadyInvoicedIn()).isEqualTo("TI-2026-27-00001, 01-09-2026 to 15-09-2026");
+        assertThat(loaded.get(0).isBillable()).isFalse();
+        assertThat(loaded.get(1).isBillable()).isTrue();
+
+        TaxInvoiceView invoice = service.buildEmployeeInvoice(filter());
+        assertThat(invoice.getLineItems()).singleElement().satisfies(line -> {
+            assertThat(line.getEmployeeId()).isEqualTo(11L);
+            assertThat(line.getEmployeeName()).isEqualTo("Same Name");
+            assertThat(line.getDesignationName()).isEqualTo("Developer");
+            assertThat(line.getLevelCode()).isEqualTo("L1");
+            assertThat(line.getBilledFrom()).isEqualTo(start);
+            assertThat(line.getBilledTo()).isEqualTo(end);
+        });
+    }
+
+    @Test
+    void previewFailsWhenEveryEmployeeIsAlreadyInvoiced() {
+        when(mappings.findCurrentProjectEmployeesForTaxInvoice(1L, null, 2L)).thenReturn(List.of(mapping(10, null, null)));
+        when(invoicedLookup.findInvoicedEmployees(List.of(10L), start, end)).thenReturn(Map.of(10L,
+                new InvoicedEmployee(10L, "TI-2026-27-00001", start, end)));
+        assertThatThrownBy(() -> service.buildEmployeeInvoice(filter())).isInstanceOf(TaxInvoiceException.class)
+                .hasMessage("All employees of the selected project are already invoiced for 01-09-2026 to 30-09-2026.");
+    }
 }
