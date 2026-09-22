@@ -56,4 +56,23 @@ class ReportingManagerTemplateTest {
                         "id=\"managerTypeSelect\"", "id=\"managerTypeInput\" name=\"managerType\"")
                 .doesNotContain("type=\"radio\"");
     }
+
+    @Test
+    void changeAuthorityScreenSupportsEmployeesAndReportingManagers() throws Exception {
+        String template = Files.readString(TEMPLATE_PATH);
+
+        assertThat(template)
+                .contains("id=\"changeAuthorityBtn\"",
+                        "id=\"authorityChangeCard\"",
+                        "th:action=\"@{/hr/changeReportingAuthority}\"",
+                        "name=\"employeeId\"",
+                        "name=\"authorityUserId\"",
+                        "id=\"changeManagerTypeSelect\"",
+                        "name=\"managerType\"",
+                        "id=\"changeManagerSelect\"",
+                        "name=\"managerEmployeeId\"",
+                        "[Reporting manager] ",
+                        "their existing team assignments will not change",
+                        "Change reporting authority or manager type");
+    }
 }

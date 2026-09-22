@@ -36,6 +36,7 @@ import com.maharecruitment.gov.in.master.entity.WingMaster;
 import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
@@ -720,6 +721,99 @@ class ReportingManagerServiceImplTest {
         mapping.setManagerEmployeeId(null);
 
         assertEquals(7L, service.resolveDirectReportingUserId(mapping));
+    }
+
+    @Test
+    void changeReportingAuthorityUpdatesExistingMappingAsDirectReport() {
+        EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
+        EmployeeReportingMappingEntity existing = reportingMapping(900L, 101L, 7L, "PM", 60L);
+        when(userRepository.findById(8L)).thenReturn(Optional.of(user(8L, "New HOD")));
+        when(employeeRepository.findAllById(Set.of(101L))).thenReturn(List.of(employee));
+        when(employeeRepository.findByUser_Id(8L)).thenReturn(Optional.empty());
+        when(mappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(101L))
+                .thenReturn(Optional.of(existing));
+
+        service.changeReportingAuthority(101L, 8L, null, null);
+
+        verify(mappingRepository).save(existing);
+        assertEquals(8L, existing.getHodUserId());
+        assertEquals("OTHER", existing.getManagerType());
+        assertNull(existing.getManagerEmployeeId());
+        assertNull(existing.getProjectId());
+    }
+
+    @Test
+    void changeReportingAuthorityRejectsSelfReporting() {
+        User employeeUser = user(8L, "Employee Manager");
+        EmployeeEntity employee = employee(101L, "Employee Manager", "EMP101", "INTERNAL", "ACTIVE");
+        employee.setUser(employeeUser);
+        when(userRepository.findById(8L)).thenReturn(Optional.of(employeeUser));
+        when(employeeRepository.findAllById(Set.of(101L))).thenReturn(List.of(employee));
+        when(employeeRepository.findByUser_Id(8L)).thenReturn(Optional.of(employee));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.changeReportingAuthority(101L, 8L, null, null));
+
+        assertEquals("The selected reporting authority cannot be mapped as their own report.",
+                exception.getMessage());
+        verify(mappingRepository, never()).save(any());
+    }
+
+    @Test
+    void changeReportingAuthorityCanAlsoChangeManagerTypeAndManager() {
+        EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
+        EmployeeEntity manager = employee(50L, "Project Manager", "EMP050", "INTERNAL", "ACTIVE");
+        EmployeeReportingMappingEntity existing = reportingMapping(900L, 101L, 7L, "STM", 40L);
+        when(userRepository.findById(8L)).thenReturn(Optional.of(user(8L, "New HOD")));
+        when(employeeRepository.findById(50L)).thenReturn(Optional.of(manager));
+        when(employeeRepository.findAllById(Set.of(101L))).thenReturn(List.of(employee));
+        when(mappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(101L))
+                .thenReturn(Optional.of(existing));
+
+        service.changeReportingAuthority(101L, 8L, "PM", 50L);
+
+        verify(mappingRepository).save(existing);
+        assertEquals(8L, existing.getHodUserId());
+        assertEquals("PM", existing.getManagerType());
+        assertEquals(50L, existing.getManagerEmployeeId());
+    }
+
+    @Test
+    void reportingAssignmentsIncludeCellEmployeesAndIdentifyManagers() {
+        EmployeeEntity manager = employee(50L, "Project Manager", "EMP050", "INTERNAL", "ACTIVE");
+        EmployeeEntity employee = employee(101L, "Managed Employee", "EMP101", "INTERNAL", "ACTIVE");
+        EmployeeEntity cellEmployee = employee(102L, "Cell Employee", "EMP102", "INTERNAL", "ACTIVE");
+        EmployeeReportingMappingEntity managerMapping = reportingMapping(900L, 50L, 7L, "PM", null);
+        EmployeeReportingMappingEntity employeeMapping = reportingMapping(901L, 101L, 7L, "PM", 50L);
+        CellMaster cell = CellMaster.builder().cellId(11L).cellName("Applications").build();
+        EmployeeCellMappingEntity employeeCell = new EmployeeCellMappingEntity();
+        employeeCell.setEmployee(cellEmployee);
+        employeeCell.setCell(cell);
+        CellReportingAuthorityMappingEntity cellAuthority = new CellReportingAuthorityMappingEntity();
+        cellAuthority.setCell(cell);
+        cellAuthority.setAuthorityUserId(8L);
+        when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+                "INTERNAL", "ACTIVE")).thenReturn(List.of(manager, employee, cellEmployee));
+        when(mappingRepository.findByEmployeeIdIn(Set.of(50L, 101L, 102L)))
+                .thenReturn(List.of(managerMapping, employeeMapping));
+        when(employeeCellMappingRepository.findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAsc(
+                Set.of(50L, 101L, 102L))).thenReturn(List.of(employeeCell));
+        when(cellAuthorityMappingRepository.findByCellCellIdIn(Set.of(11L)))
+                .thenReturn(List.of(cellAuthority));
+        when(userRepository.findAllById(Set.of(7L, 8L)))
+                .thenReturn(List.of(user(7L, "HOD Anita"), user(8L, "HOD Ravi")));
+
+        List<Map<String, Object>> assignments = service.getEmployeeReportingAssignments();
+
+        assertEquals(3, assignments.size());
+        assertEquals(true, assignments.get(0).get("reportingManager"));
+        assertEquals("EMPLOYEE", assignments.get(0).get("mappingSource"));
+        assertEquals("Project Manager (EMP050)", assignments.get(1).get("managerName"));
+        assertEquals("HOD Anita", assignments.get(1).get("authorityName"));
+        assertEquals("CELL", assignments.get(2).get("mappingSource"));
+        assertEquals("Applications", assignments.get(2).get("cellName"));
+        assertEquals("HOD Ravi", assignments.get(2).get("authorityName"));
     }
 
     @Test

@@ -9,7 +9,7 @@
     <link rel="stylesheet" th:href="@{/assets/vendor/datatables/dataTables.bootstrap5.min.css}">
     <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
     <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
-    <link rel="stylesheet" th:href="@{/css/reporting-manager-mapping.css(v='20260922')}">
+    <link rel="stylesheet" th:href="@{/css/reporting-manager-mapping.css(v='20260922-1')}">
 </head>
 
 <body>
@@ -43,6 +43,9 @@
                                 <div class="reporting-manager-actions">
                                     <button type="button" class="btn btn-light" id="mapCellBtn">
                                         <i class="fa-solid fa-sitemap" aria-hidden="true"></i> Map cell
+                                    </button>
+                                    <button type="button" class="btn btn-light" id="changeAuthorityBtn">
+                                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Change authority / type
                                     </button>
                                     <button type="button" class="btn btn-warning" id="addMappingBtn">
                                         <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Add employee override
@@ -166,6 +169,100 @@
                                         <button type="button" class="btn btn-secondary" id="cancelCellBtn">Cancel</button>
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fa fa-save me-1"></i> Save Cell Mapping
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card add-emp-card reporting-manager-card mapping-editor-card mb-4" id="authorityChangeCard">
+                            <div class="mapping-editor-header authority-change-header">
+                                <div class="mapping-editor-title">
+                                    <span aria-hidden="true"><i class="fa-solid fa-arrows-rotate"></i></span>
+                                    <div>
+                                        <div class="reporting-manager-eyebrow">Direct reassignment</div>
+                                        <h2>Change reporting authority or manager type</h2>
+                                        <p>Update the reporting route of any active employee, including an employee who is a reporting manager.</p>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-light" id="backFromAuthorityBtn">
+                                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to list
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <form autocomplete="off" th:action="@{/hr/changeReportingAuthority}" method="post" id="changeAuthorityForm">
+                                    <input autocomplete="off" type="hidden" th:if="${_csrf != null}"
+                                           th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <div class="alert alert-danger reporting-form-message hidden" id="authorityChangeMessage" role="alert" tabindex="-1"></div>
+                                    <div class="mapping-rule-callout mb-4">
+                                        <span class="mapping-rule-icon" aria-hidden="true"><i class="fa-solid fa-circle-info"></i></span>
+                                        <div>
+                                            <strong>Employee reporting change</strong>
+                                            <p>Choose direct reporting or a manager type and manager. If the employee is a manager, their existing team assignments will not change.</p>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-lg-6">
+                                            <label class="form-label" for="authorityEmployeeSelect">
+                                                Employee or reporting manager <span class="text-danger">*</span>
+                                            </label>
+                                            <select autocomplete="off" class="form-select searchable-select" id="authorityEmployeeSelect"
+                                                    name="employeeId" data-placeholder="Search employee by name or code" required>
+                                                <option value="">-- Select Employee --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label" for="newAuthoritySelect">
+                                                New reporting authority <span class="text-danger">*</span>
+                                            </label>
+                                            <select autocomplete="off" class="form-select searchable-select" id="newAuthoritySelect"
+                                                    name="authorityUserId" data-placeholder="Search reporting authority" required disabled>
+                                                <option value="">-- Select New Reporting Authority --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 mt-1">
+                                        <div class="col-lg-6">
+                                            <label class="form-label" for="changeManagerTypeSelect">
+                                                Manager type
+                                            </label>
+                                            <select autocomplete="off" class="form-select" id="changeManagerTypeSelect"
+                                                    name="managerType" disabled>
+                                                <option value="">Report directly to the authority</option>
+                                                <option value="HOD" id="changeHodManagerTypeOption">Head of Department (HOD)</option>
+                                                <option value="STM">Senior Technical Manager (STM)</option>
+                                                <option value="PM">Project Manager (PM)</option>
+                                                <option value="OTHER">Other Employee</option>
+                                            </select>
+                                            <div class="form-text" id="changeManagerTypeHelp">Select an authority first.</div>
+                                        </div>
+                                        <div class="col-lg-6 hidden" id="changeManagerSection">
+                                            <label class="form-label" for="changeManagerSelect">
+                                                Reporting manager <span class="text-danger">*</span>
+                                            </label>
+                                            <select autocomplete="off" class="form-select searchable-select" id="changeManagerSelect"
+                                                    name="managerEmployeeId" data-placeholder="Search reporting manager" disabled>
+                                                <option value="">-- Select Reporting Manager --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="current-assignment hidden" id="currentAssignmentPanel" aria-live="polite">
+                                        <div>
+                                            <span class="current-assignment-label">Selected person</span>
+                                            <strong id="selectedEmployeeName">-</strong>
+                                            <span class="badge bg-info text-dark hidden" id="selectedManagerBadge">Reporting manager</span>
+                                        </div>
+                                        <div>
+                                            <span class="current-assignment-label">Current effective authority</span>
+                                            <strong id="currentAuthorityName">Not assigned</strong>
+                                            <small id="currentAssignmentSource"></small>
+                                            <small id="currentManagerType"></small>
+                                        </div>
+                                    </div>
+                                    <div class="form-actions border-top pt-3 mt-4">
+                                        <button type="button" class="btn btn-secondary" id="cancelAuthorityBtn">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-save me-1"></i> Save Reporting Change
                                         </button>
                                     </div>
                                 </form>
@@ -315,7 +412,9 @@
             var employeeOverrideTotal = 0;
             var activeEmployeeRequest = null;
             var activeManagerTargetsRequest = null;
-            var searchableSelectSelector = '#cellSelect, #cellAuthoritySelect, #authoritySelect, #managerSelect';
+            var activeChangeManagersRequest = null;
+            var reportingAssignments = [];
+            var searchableSelectSelector = '#cellSelect, #cellAuthoritySelect, #authoritySelect, #managerSelect, #authorityEmployeeSelect, #newAuthoritySelect, #changeManagerSelect';
 
             function escapeHtml(value) {
                 return $('<div>').text(value == null ? '' : value).html();
@@ -454,7 +553,7 @@
             function showForm() {
                 clearFormMessages();
                 $('#gridCard').hide();
-                $('#cellFormCard').hide();
+                $('#cellFormCard, #authorityChangeCard').hide();
                 $('#formCard').show();
                 syncSearchableSelect('#authoritySelect, #managerSelect');
                 scrollToCard('#formCard');
@@ -462,19 +561,48 @@
 
             function showCellForm() {
                 clearFormMessages();
-                $('#gridCard, #formCard').hide();
+                $('#gridCard, #formCard, #authorityChangeCard').hide();
                 $('#cellFormCard').show();
                 syncSearchableSelect('#cellSelect, #cellAuthoritySelect');
                 scrollToCard('#cellFormCard');
             }
 
+            function showAuthorityChangeForm() {
+                clearFormMessages();
+                $('#gridCard, #formCard, #cellFormCard').hide();
+                $('#authorityChangeCard').show();
+                $('#changeAuthorityForm')[0].reset();
+                $('#currentAssignmentPanel, #selectedManagerBadge').addClass('hidden');
+                replaceSelectOptions('#authorityEmployeeSelect', '-- Loading employees... --', []);
+                replaceSelectOptions('#newAuthoritySelect', '-- Select New Reporting Authority --', []);
+                $('#newAuthoritySelect').prop('disabled', true);
+                $('#changeManagerTypeSelect').val('').prop('disabled', true);
+                $('#changeManagerSection').addClass('hidden');
+                replaceSelectOptions('#changeManagerSelect', '-- Select Reporting Manager --', []);
+                $('#changeManagerSelect').prop({ disabled: true, required: false });
+                $('#changeManagerTypeHelp').text('Select an authority first.');
+                $.when(reportingAssignmentsRequest, reportingAuthoritiesRequest).done(function() {
+                    populateAuthorityChangeEmployees();
+                }).fail(function() {
+                    replaceSelectOptions('#authorityEmployeeSelect', '-- Unable to load employees --', []);
+                    showFormMessage('#authorityChangeMessage', 'Unable to load reporting assignments. Please try again.');
+                });
+                syncSearchableSelect('#authorityEmployeeSelect, #newAuthoritySelect, #changeManagerSelect');
+                scrollToCard('#authorityChangeCard');
+            }
+
             function showGrid() {
                 clearFormMessages();
-                $('#formCard, #cellFormCard').hide();
+                $('#formCard, #cellFormCard, #authorityChangeCard').hide();
                 $('#gridCard').show();
                 editingEmployeeId = null;
                 $('#mappingForm')[0].reset();
                 $('#cellMappingForm')[0].reset();
+                $('#changeAuthorityForm')[0].reset();
+                $('#currentAssignmentPanel, #selectedManagerBadge').addClass('hidden');
+                resetChangeManagerSelection();
+                $('#changeManagerTypeSelect').prop('disabled', true);
+                $('#changeManagerTypeHelp').text('Select an authority first.');
                 $('#cellFormTitle').text('Map Cell to Reporting Authority');
                 $('#employeeFormTitle').text('Map Employees to Reporting Managers');
                 $('#mappingId').val('');
@@ -529,6 +657,8 @@
                 openCellMappingForm(null, null);
             });
 
+            $('#changeAuthorityBtn').click(showAuthorityChangeForm);
+
             $('#cancelBtn').click(function() {
                 showGrid();
             });
@@ -537,7 +667,9 @@
                 showGrid();
             });
 
-            $('#backFromCellBtn, #backFromEmployeeBtn').click(function() {
+            $('#cancelAuthorityBtn').click(showGrid);
+
+            $('#backFromCellBtn, #backFromEmployeeBtn, #backFromAuthorityBtn').click(function() {
                 showGrid();
             });
 
@@ -727,6 +859,178 @@
                 method: 'GET'
             }).done(function(data) {
                 reportingAuthorities = data;
+            });
+
+            var reportingAssignmentsRequest = $.ajax({
+                url: contextPath + 'hr/api/reporting-assignments',
+                method: 'GET'
+            }).done(function(data) {
+                reportingAssignments = data || [];
+            });
+
+            function populateAuthorityChangeEmployees() {
+                replaceSelectOptions(
+                    '#authorityEmployeeSelect',
+                    '-- Select Employee --',
+                    reportingAssignments.map(function(assignment) {
+                        return {
+                            value: assignment.employeeId,
+                            text: (assignment.reportingManager ? '[Reporting manager] ' : '')
+                                + assignment.employeeName
+                        };
+                    })
+                );
+                $('#authorityEmployeeSelect').prop('disabled', false);
+                updateSearchableSelect('#authorityEmployeeSelect');
+            }
+
+            function populateNewAuthorities(employeeUserId) {
+                replaceSelectOptions(
+                    '#newAuthoritySelect',
+                    '-- Select New Reporting Authority --',
+                    reportingAuthorities.map(function(authority) {
+                        return {
+                            value: authority.id,
+                            text: '[' + authority.authorityType + '] ' + authority.name,
+                            disabled: employeeUserId != null
+                                && String(employeeUserId) === String(authority.id)
+                        };
+                    })
+                );
+                $('#newAuthoritySelect').prop('disabled', false);
+                updateSearchableSelect('#newAuthoritySelect');
+            }
+
+            function resetChangeManagerSelection() {
+                if(activeChangeManagersRequest && activeChangeManagersRequest.readyState !== 4) {
+                    activeChangeManagersRequest.abort();
+                }
+                $('#changeManagerTypeSelect').val('');
+                $('#changeManagerSection').addClass('hidden');
+                replaceSelectOptions('#changeManagerSelect', '-- Select Reporting Manager --', []);
+                $('#changeManagerSelect').prop({ disabled: true, required: false });
+            }
+
+            $('#newAuthoritySelect').change(function() {
+                resetChangeManagerSelection();
+                var authorityUserId = $(this).val();
+                var authority = reportingAuthorities.find(function(item) {
+                    return String(item.id) === String(authorityUserId);
+                });
+                var authorityType = authority ? authority.authorityType : '';
+                var directOnly = isDirectManagerAuthority(authorityType);
+                var managerTypeSelect = $('#changeManagerTypeSelect');
+
+                $('#changeHodManagerTypeOption').prop({
+                    hidden: authorityType !== 'COO',
+                    disabled: authorityType !== 'COO'
+                });
+                managerTypeSelect.prop('disabled', !authority || directOnly);
+                $('#changeManagerTypeHelp').text(!authority
+                    ? 'Select an authority first.'
+                    : directOnly
+                        ? authorityType + ' authorities support direct reporting only.'
+                        : 'Choose a manager type, or leave direct reporting selected.');
+            });
+
+            $('#changeManagerTypeSelect').change(function() {
+                var managerType = $(this).val();
+                var selectedEmployeeId = $('#authorityEmployeeSelect').val();
+                $('#changeManagerSection').toggleClass('hidden', !managerType);
+                replaceSelectOptions(
+                    '#changeManagerSelect',
+                    managerType ? '-- Loading managers... --' : '-- Select Reporting Manager --',
+                    []);
+                $('#changeManagerSelect').prop({
+                    disabled: !managerType,
+                    required: !!managerType
+                });
+                if(!managerType) {
+                    return;
+                }
+
+                if(activeChangeManagersRequest && activeChangeManagersRequest.readyState !== 4) {
+                    activeChangeManagersRequest.abort();
+                }
+                var request = loadManagersDeferred(managerType);
+                activeChangeManagersRequest = request;
+                request.done(function(data) {
+                    var options = (data || [])
+                        .filter(function(manager) {
+                            return String(manager.id) !== String(selectedEmployeeId);
+                        })
+                        .map(function(manager) {
+                            return { value: manager.id, text: manager.name };
+                        });
+                    if(options.length === 0) {
+                        options.push({
+                            value: '',
+                            text: 'No eligible managers found',
+                            disabled: true
+                        });
+                    }
+                    replaceSelectOptions(
+                        '#changeManagerSelect',
+                        '-- Select Reporting Manager --',
+                        options);
+                    $('#changeManagerSelect').prop('disabled', false);
+                    updateSearchableSelect('#changeManagerSelect');
+                }).fail(function(xhr, status) {
+                    if(status !== 'abort') {
+                        replaceSelectOptions(
+                            '#changeManagerSelect',
+                            '-- Unable to load managers --',
+                            []);
+                        showFormMessage(
+                            '#authorityChangeMessage',
+                            'Unable to load managers for the selected type.');
+                    }
+                }).always(function() {
+                    if(activeChangeManagersRequest === request) {
+                        activeChangeManagersRequest = null;
+                    }
+                });
+            });
+
+            $('#authorityEmployeeSelect').change(function() {
+                var employeeId = $(this).val();
+                var assignment = reportingAssignments.find(function(item) {
+                    return String(item.employeeId) === String(employeeId);
+                });
+                $('#newAuthoritySelect').val('').prop('disabled', !assignment);
+                resetChangeManagerSelection();
+                $('#changeManagerTypeSelect').prop('disabled', true);
+                $('#changeManagerTypeHelp').text('Select an authority first.');
+                $('#currentAssignmentPanel, #selectedManagerBadge').addClass('hidden');
+                if(!assignment) {
+                    replaceSelectOptions('#newAuthoritySelect', '-- Select New Reporting Authority --', []);
+                    return;
+                }
+
+                populateNewAuthorities(assignment.employeeUserId);
+                $('#selectedEmployeeName').text(assignment.employeeName || '-');
+                $('#selectedManagerBadge').toggleClass('hidden', assignment.reportingManager !== true);
+
+                var authorityText = assignment.authorityName
+                    ? (assignment.authorityType ? '[' + assignment.authorityType + '] ' : '')
+                        + assignment.authorityName
+                    : 'Not assigned';
+                $('#currentAuthorityName').text(authorityText);
+
+                var sourceText = 'No reporting authority is currently assigned.';
+                if(assignment.mappingSource === 'CELL') {
+                    sourceText = 'Inherited from cell default'
+                        + (assignment.cellName ? ': ' + assignment.cellName : '') + '.';
+                } else if(assignment.mappingSource === 'EMPLOYEE') {
+                    sourceText = assignment.managerName
+                        ? 'Employee override routed through ' + assignment.managerName + '.'
+                        : 'Employee-level override (direct reporting).';
+                }
+                $('#currentAssignmentSource').text(sourceText);
+                $('#currentManagerType').text(assignment.managerName
+                    ? 'Current manager type: ' + (assignment.managerType || 'Other')
+                    : 'Current route: direct to authority');
+                $('#currentAssignmentPanel').removeClass('hidden');
             });
 
             function loadManagersDeferred(type) {
@@ -1230,6 +1534,35 @@
                 }
             });
 
+            $('#changeAuthorityForm').submit(function(e) {
+                var employeeId = $('#authorityEmployeeSelect').val();
+                var authorityUserId = $('#newAuthoritySelect').val();
+                if(!employeeId || !authorityUserId) {
+                    showFormMessage(
+                        '#authorityChangeMessage',
+                        'Please select an employee and the new reporting authority.');
+                    e.preventDefault();
+                    return;
+                }
+                var assignment = reportingAssignments.find(function(item) {
+                    return String(item.employeeId) === String(employeeId);
+                });
+                if(assignment && assignment.employeeUserId != null
+                        && String(assignment.employeeUserId) === String(authorityUserId)) {
+                    showFormMessage(
+                        '#authorityChangeMessage',
+                        'An employee cannot be their own reporting authority.');
+                    e.preventDefault();
+                    return;
+                }
+                if($('#changeManagerTypeSelect').val() && !$('#changeManagerSelect').val()) {
+                    showFormMessage(
+                        '#authorityChangeMessage',
+                        'Please select a reporting manager for the selected manager type.');
+                    e.preventDefault();
+                }
+            });
+
             // Form validation
             $('#mappingForm').submit(function(e) {
                 var authorityType = selectedAuthorityType();
@@ -1256,7 +1589,7 @@
                 }
             });
 
-			$('#cellMappingForm, #mappingForm').on('change input', 'select, input', function() {
+			$('#cellMappingForm, #mappingForm, #changeAuthorityForm').on('change input', 'select, input', function() {
 				$(this).closest('form').find('.reporting-form-message').text('').addClass('hidden');
 			});
             
@@ -1267,4 +1600,3 @@
 </body>
 
 </html>
-

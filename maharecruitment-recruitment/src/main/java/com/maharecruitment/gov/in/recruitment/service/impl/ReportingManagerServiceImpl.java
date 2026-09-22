@@ -24,6 +24,7 @@ import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus;
@@ -329,8 +330,13 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             return Map.of();
         }
 
+        return getLatestReportingMappingsByEmployeeId(mappingRepository.findByEmployeeIdIn(employeeIds));
+    }
+
+    private Map<Long, EmployeeReportingMappingEntity> getLatestReportingMappingsByEmployeeId(
+            Iterable<EmployeeReportingMappingEntity> mappings) {
         Map<Long, EmployeeReportingMappingEntity> mappingsByEmployeeId = new HashMap<>();
-        for (EmployeeReportingMappingEntity mapping : mappingRepository.findByEmployeeIdIn(employeeIds)) {
+        for (EmployeeReportingMappingEntity mapping : mappings) {
             if (mapping == null || mapping.getEmployeeId() == null) {
                 continue;
             }
@@ -652,6 +658,112 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Map<String, Object>> getEmployeeReportingAssignments() {
+        List<EmployeeEntity> employees = employeeRepository
+                .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+                        INTERNAL, ACTIVE);
+        if (employees.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> employeeIds = employees.stream()
+                .map(EmployeeEntity::getEmployeeId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, EmployeeEntity> employeesById = employees.stream()
+                .filter(employee -> employee.getEmployeeId() != null)
+                .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, employee -> employee));
+        List<EmployeeReportingMappingEntity> relevantMappings = mappingRepository.findByEmployeeIdIn(employeeIds);
+        Map<Long, EmployeeReportingMappingEntity> explicitMappings =
+                getLatestReportingMappingsByEmployeeId(relevantMappings);
+
+        List<EmployeeCellMappingEntity> employeeCellMappings = employeeCellMappingRepository
+                .findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAsc(employeeIds);
+        Map<Long, EmployeeCellMappingEntity> cellsByEmployeeId = employeeCellMappings.stream()
+                .filter(mapping -> mapping.getEmployee() != null
+                        && mapping.getEmployee().getEmployeeId() != null
+                        && mapping.getCell() != null)
+                .collect(Collectors.toMap(
+                        mapping -> mapping.getEmployee().getEmployeeId(),
+                        mapping -> mapping,
+                        (first, ignored) -> first));
+
+        Set<Long> cellIds = employeeCellMappings.stream()
+                .filter(mapping -> mapping.getCell() != null && mapping.getCell().getCellId() != null)
+                .map(mapping -> mapping.getCell().getCellId())
+                .collect(Collectors.toSet());
+        Map<Long, CellReportingAuthorityMappingEntity> cellAuthorities = cellIds.isEmpty()
+                ? Map.of()
+                : cellAuthorityMappingRepository.findByCellCellIdIn(cellIds).stream()
+                        .collect(Collectors.toMap(
+                                mapping -> mapping.getCell().getCellId(),
+                                mapping -> mapping,
+                                (first, ignored) -> first));
+
+        Set<Long> authorityUserIds = new LinkedHashSet<>();
+        explicitMappings.values().stream()
+                .map(EmployeeReportingMappingEntity::getHodUserId)
+                .filter(id -> id != null)
+                .forEach(authorityUserIds::add);
+        cellAuthorities.values().stream()
+                .map(CellReportingAuthorityMappingEntity::getAuthorityUserId)
+                .filter(id -> id != null)
+                .forEach(authorityUserIds::add);
+        Map<Long, User> authoritiesById = authorityUserIds.isEmpty()
+                ? Map.of()
+                : userRepository.findAllById(authorityUserIds).stream()
+                        .collect(Collectors.toMap(User::getId, user -> user));
+        Map<Long, String> authorityTypesByUserId = loadReportingAuthorityTypes();
+
+        Set<Long> reportingManagerIds = relevantMappings.stream()
+                .map(EmployeeReportingMappingEntity::getManagerEmployeeId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        explicitMappings.forEach((employeeId, mapping) -> {
+            String type = normalizeManagerType(mapping.getManagerType());
+            if (mapping.getManagerEmployeeId() == null
+                    && (TYPE_HOD.equals(type) || TYPE_STM.equals(type) || TYPE_PM.equals(type))) {
+                reportingManagerIds.add(employeeId);
+            }
+        });
+
+        return employees.stream().map(employee -> {
+            Long employeeId = employee.getEmployeeId();
+            EmployeeReportingMappingEntity explicit = explicitMappings.get(employeeId);
+            EmployeeCellMappingEntity employeeCell = cellsByEmployeeId.get(employeeId);
+            CellReportingAuthorityMappingEntity cellAuthority = employeeCell == null
+                    ? null
+                    : cellAuthorities.get(employeeCell.getCell().getCellId());
+
+            Long authorityUserId = explicit != null
+                    ? explicit.getHodUserId()
+                    : cellAuthority == null ? null : cellAuthority.getAuthorityUserId();
+            User authority = authoritiesById.get(authorityUserId);
+            String resolvedAuthorityType = resolveAuthorityType(authority, authorityTypesByUserId);
+            String authorityType = resolvedAuthorityType == null ? "" : resolvedAuthorityType;
+
+            EmployeeEntity directManager = explicit == null || explicit.getManagerEmployeeId() == null
+                    ? null
+                    : employeesById.get(explicit.getManagerEmployeeId());
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("employeeId", employeeId);
+            row.put("employeeUserId", employee.getUser() == null ? null : employee.getUser().getId());
+            row.put("employeeName", formatEmployeeName(employee));
+            row.put("reportingManager", reportingManagerIds.contains(employeeId));
+            row.put("mappingSource", explicit != null ? "EMPLOYEE" : cellAuthority != null ? "CELL" : "NONE");
+            row.put("cellName", employeeCell == null ? "" : employeeCell.getCell().getCellName());
+            row.put("authorityUserId", authorityUserId);
+            row.put("authorityType", authorityType);
+            row.put("authorityName", authority == null ? "" : formatAuthorityName(authority));
+            row.put("managerType", explicit == null ? "" : explicit.getManagerType());
+            row.put("managerEmployeeId", explicit == null ? null : explicit.getManagerEmployeeId());
+            row.put("managerName", directManager == null ? "" : formatEmployeeName(directManager));
+            return row;
+        }).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getCellReportingMappings() {
         List<CellMaster> cells = cellMasterRepository
                 .findByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc(
@@ -763,6 +875,47 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     @Override
     @Transactional
+    public void changeReportingAuthority(
+            Long employeeId,
+            Long authorityUserId,
+            String managerType,
+            Long managerEmployeeId) {
+        if (employeeId == null) {
+            throw new IllegalArgumentException("Employee selection is required.");
+        }
+        if (authorityUserId == null) {
+            throw new IllegalArgumentException("Reporting authority selection is required.");
+        }
+        String authorityType = requireReportingAuthority(authorityUserId);
+        String requestedManagerType = managerType == null ? "" : managerType.trim();
+        if (!requestedManagerType.isEmpty() && managerEmployeeId == null) {
+            throw new IllegalArgumentException("Please select a manager for the selected manager type.");
+        }
+        if (requestedManagerType.isEmpty() && managerEmployeeId != null) {
+            throw new IllegalArgumentException("Please select the manager type.");
+        }
+        String effectiveManagerType = requestedManagerType.isEmpty()
+                ? (isDirectManagerAuthority(authorityType) ? authorityType : null)
+                : requestedManagerType;
+        MappingRequest request = validateRequest(
+                authorityUserId,
+                effectiveManagerType,
+                managerEmployeeId,
+                null,
+                List.of(employeeId),
+                authorityType);
+
+        EmployeeReportingMappingEntity mapping = mappingRepository
+                .findFirstByEmployeeIdOrderByMappingIdDesc(employeeId)
+                .orElseGet(EmployeeReportingMappingEntity::new);
+        mappingRepository.save(toEntity(mapping, request, employeeId));
+        log.info(
+                "Changed reporting assignment for employeeId={} to authorityUserId={}, managerType={}, managerEmployeeId={}",
+                employeeId, authorityUserId, request.managerType(), request.managerEmployeeId());
+    }
+
+    @Override
+    @Transactional
     public void saveCellReportingMapping(Long cellId, Long authorityUserId) {
         if (cellId == null) {
             throw new IllegalArgumentException("Cell selection is required.");
@@ -829,10 +982,23 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             Long managerEmployeeId,
             Long projectId,
             List<Long> employeeIds) {
+        return validateRequest(
+                hodUserId, managerType, managerEmployeeId, projectId, employeeIds, null);
+    }
+
+    private MappingRequest validateRequest(
+            Long hodUserId,
+            String managerType,
+            Long managerEmployeeId,
+            Long projectId,
+            List<Long> employeeIds,
+            String resolvedAuthorityType) {
         if (hodUserId == null) {
             throw new IllegalArgumentException("Reporting authority selection is required.");
         }
-        String authorityType = requireReportingAuthority(hodUserId);
+        String authorityType = resolvedAuthorityType == null
+                ? requireReportingAuthority(hodUserId)
+                : resolvedAuthorityType;
 
         String normalizedType = normalizeManagerType(managerType);
         boolean directManagerAuthority = isDirectManagerAuthority(authorityType);
@@ -956,6 +1122,23 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 && user.getRoles() != null
                 && user.getRoles().stream()
                         .anyMatch(role -> role != null && roleName.equalsIgnoreCase(role.getName()));
+    }
+
+    private String formatEmployeeName(EmployeeEntity employee) {
+        String name = employee.getFullName() == null ? "" : employee.getFullName();
+        String code = employee.getEmployeeCode() == null ? "" : employee.getEmployeeCode();
+        String designation = employee.getDesignation() == null
+                || employee.getDesignation().getDesignationName() == null
+                        ? ""
+                        : employee.getDesignation().getDesignationName();
+        StringBuilder displayName = new StringBuilder(name);
+        if (!code.isBlank()) {
+            displayName.append(" (").append(code).append(')');
+        }
+        if (!designation.isBlank()) {
+            displayName.append(" - ").append(designation);
+        }
+        return displayName.toString();
     }
 
     private String normalizeManagerType(String managerType) {

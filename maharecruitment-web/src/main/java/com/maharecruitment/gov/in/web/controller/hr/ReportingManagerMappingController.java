@@ -29,7 +29,7 @@ public class ReportingManagerMappingController {
     @Autowired
     private ReportingManagerService reportingManagerService;
 
-    @GetMapping("/reportingManager")
+    @GetMapping({ "/reportingManager", "/reportingManagers" })
     public String reportingManagerView(Model model) {
         model.addAttribute("sidebarActive", "Reporting Manager");
         return "hr/reporting-manager-mapping";
@@ -77,6 +77,12 @@ public class ReportingManagerMappingController {
         return ResponseEntity.ok(reportingManagerService.getAllMappings());
     }
 
+    @GetMapping("/api/reporting-assignments")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getEmployeeReportingAssignments() {
+        return ResponseEntity.ok(reportingManagerService.getEmployeeReportingAssignments());
+    }
+
     @GetMapping("/api/cell-reporting-mappings")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getCellReportingMappings() {
@@ -103,7 +109,7 @@ public class ReportingManagerMappingController {
             redirectAttributes.addFlashAttribute(
                     "errorMessage", "Unable to save the cell reporting authority. Please try again.");
         }
-        return "redirect:/hr/reportingManager";
+        return "redirect:/hr/reportingManagers";
     }
 
     @PostMapping("/saveReportingMapping")
@@ -142,6 +148,32 @@ public class ReportingManagerMappingController {
                     "errorMessage", "Unable to save reporting manager mapping. Please try again.");
         }
 
-        return "redirect:/hr/reportingManager";
+        return "redirect:/hr/reportingManagers";
+    }
+
+    @PostMapping("/changeReportingAuthority")
+    public String changeReportingAuthority(
+            @RequestParam Long employeeId,
+            @RequestParam Long authorityUserId,
+            @RequestParam(required = false) String managerType,
+            @RequestParam(required = false) Long managerEmployeeId,
+            RedirectAttributes redirectAttributes) {
+        try {
+            reportingManagerService.changeReportingAuthority(
+                    employeeId, authorityUserId, managerType, managerEmployeeId);
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Employee reporting assignment changed successfully.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("Reporting authority change failed for employeeId={} and authorityUserId={}: {}",
+                    employeeId, authorityUserId, e.getMessage());
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Unable to change reporting authority: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected reporting authority change failure for employeeId={} and authorityUserId={}",
+                    employeeId, authorityUserId, e);
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Unable to change the reporting authority. Please try again.");
+        }
+        return "redirect:/hr/reportingManagers";
     }
 }

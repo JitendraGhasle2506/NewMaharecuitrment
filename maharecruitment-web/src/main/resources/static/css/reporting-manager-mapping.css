@@ -372,6 +372,10 @@
 	background: linear-gradient(120deg, #4b437f 0%, #6157a1 60%, #766bc0 100%);
 }
 
+.authority-change-header {
+	background: linear-gradient(120deg, #17624b 0%, #238164 60%, #2d9b78 100%);
+}
+
 .mapping-editor-card > .card-body {
 	background: #f7f9fc;
 	padding: 24px 26px 26px;
@@ -404,6 +408,37 @@
 
 .workflow-panel + .workflow-panel {
 	margin-top: 15px;
+}
+
+.current-assignment {
+	background: #f8fafc;
+	border: 1px solid #dce4ed;
+	border-radius: 11px;
+	display: grid;
+	gap: 18px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	margin-top: 18px;
+	padding: 16px 18px;
+}
+
+.current-assignment > div {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 9px;
+	min-width: 0;
+}
+
+.current-assignment-label,
+.current-assignment small {
+	color: #667085;
+	font-size: 0.75rem;
+	width: 100%;
+}
+
+.current-assignment strong {
+	color: #1d2939;
+	font-size: 0.86rem;
+	min-width: 0;
 }
 
 .workflow-step-head {
@@ -613,6 +648,10 @@
 	}
 
 	.mapping-overview {
+		grid-template-columns: 1fr;
+	}
+
+	.current-assignment {
 		grid-template-columns: 1fr;
 	}
 

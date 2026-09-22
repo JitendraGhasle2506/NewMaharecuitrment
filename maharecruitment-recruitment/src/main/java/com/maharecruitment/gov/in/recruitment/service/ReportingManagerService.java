@@ -19,12 +19,17 @@ public interface ReportingManagerService {
     
     List<Map<String, Object>> getAllMappings();
 
+    List<Map<String, Object>> getEmployeeReportingAssignments();
+
     List<Map<String, Object>> getCellReportingMappings();
     
     void saveMapping(Long hodUserId, String managerType, Long managerEmployeeId, Long projectId, List<Long> employeeIds);
 
     void updateMapping(Long mappingId, Long hodUserId, String managerType, Long managerEmployeeId,
             Long projectId, Long employeeId);
+
+    void changeReportingAuthority(
+            Long employeeId, Long authorityUserId, String managerType, Long managerEmployeeId);
 
     void saveCellReportingMapping(Long cellId, Long authorityUserId);
 
