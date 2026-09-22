@@ -9,7 +9,7 @@
     <link rel="stylesheet" th:href="@{/assets/vendor/datatables/dataTables.bootstrap5.min.css}">
     <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
     <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
-    <link rel="stylesheet" th:href="@{/css/reporting-manager-mapping.css(v='20260806')}">
+    <link rel="stylesheet" th:href="@{/css/reporting-manager-mapping.css(v='20260922')}">
 </head>
 
 <body>
@@ -186,79 +186,76 @@
                                  <form autocomplete="off" th:action="@{/hr/saveReportingMapping}" method="post" id="mappingForm">
                                  <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                  <input autocomplete="off" type="hidden" id="mappingId" name="mappingId" value="">
-                                 <input autocomplete="off" type="hidden" id="defaultManagerType" name="managerType" value="OTHER" disabled>
+                                 <!-- The submitted manager type; set from the dropdowns below. -->
+                                 <input autocomplete="off" type="hidden" id="managerTypeInput" name="managerType" value="" disabled>
                                  <div class="alert alert-danger reporting-form-message hidden" id="employeeFormMessage" role="alert" tabindex="-1"></div>
-                                
+
                                 <!-- Step 1: Reporting Authority -->
                                 <div class="workflow-panel">
-                                    <label class="form-label d-block">1. Select Reporting Authority (COO, HOD, STM, PM or Other Employee) <span class="text-danger">*</span></label>
-                                    <div class="option-grid">
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
-                                               name="authorityType" id="authorityTypeCOO" value="COO" required>
-                                        <label class="form-check-label" for="authorityTypeCOO">Chief Operating Officer (COO)</label>
+                                    <div class="workflow-step-head">
+                                        <span class="workflow-step-badge" aria-hidden="true">1</span>
+                                        <div>
+                                            <h3>Reporting authority</h3>
+                                            <p>Choose the authority type, then the person who will approve for the mapped employees.</p>
+                                        </div>
                                     </div>
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
-                                               name="authorityType" id="authorityTypeHOD" value="HOD" required>
-                                        <label class="form-check-label" for="authorityTypeHOD">Head of Department (HOD)</label>
-                                    </div>
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
-                                               name="authorityType" id="authorityTypeSTM" value="STM" required>
-                                        <label class="form-check-label" for="authorityTypeSTM">Senior Technical Manager (STM)</label>
-                                    </div>
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
-                                               name="authorityType" id="authorityTypePM" value="PM" required>
-                                        <label class="form-check-label" for="authorityTypePM">Project Manager (PM)</label>
-                                    </div>
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
-                                               name="authorityType" id="authorityTypeOther" value="OTHER" required>
-                                        <label class="form-check-label" for="authorityTypeOther">Other Employee</label>
-                                    </div>
-                                    </div>
-                                    <div class="mt-3 hidden select-wrap" id="authorityUserSection">
-                                        <label class="form-label" for="authoritySelect" id="authorityUserLabel">Select Reporting Authority <span class="text-danger">*</span></label>
-                                        <select autocomplete="off" class="form-select searchable-select" id="authoritySelect" name="hodUserId"
-                                                data-placeholder="Search reporting authority" required disabled>
-                                            <option value="">-- Select Reporting Authority --</option>
-                                        </select>
+                                    <div class="row g-3">
+                                        <div class="col-lg-5">
+                                            <label class="form-label" for="authorityTypeSelect">
+                                                Select Reporting Authority (COO, HOD, STM, PM or Other Employee) <span class="text-danger">*</span>
+                                            </label>
+                                            <select autocomplete="off" class="form-select" id="authorityTypeSelect" name="authorityType" required>
+                                                <option value="">-- Select Authority Type --</option>
+                                                <option value="COO">Chief Operating Officer (COO)</option>
+                                                <option value="HOD">Head of Department (HOD)</option>
+                                                <option value="STM">Senior Technical Manager (STM)</option>
+                                                <option value="PM">Project Manager (PM)</option>
+                                                <option value="OTHER">Other Employee</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-7 hidden" id="authorityUserSection">
+                                            <label class="form-label" for="authoritySelect" id="authorityUserLabel">Select Reporting Authority <span class="text-danger">*</span></label>
+                                            <select autocomplete="off" class="form-select searchable-select" id="authoritySelect" name="hodUserId"
+                                                    data-placeholder="Search reporting authority" required disabled>
+                                                <option value="">-- Select Reporting Authority --</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Step 2: Manager Type -->
-                                <div class="workflow-panel" id="managerTypeSection">
-                                    <label class="form-label d-block">2. Select Manager Type <span class="text-muted">(optional)</span></label>
-                                    <button type="button" class="btn btn-sm btn-link px-0 mb-2" id="clearManagerTypeBtn">Clear manager type / Report directly</button>
-                                    <div class="option-grid">
-                                    <div class="form-check choice-pill hidden" id="hodManagerTypeOption">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeHOD" value="HOD">
-                                        <label class="form-check-label" for="typeHOD">Head of Department (HOD)</label>
+                                <div class="workflow-panel hidden" id="managerTypeSection">
+                                    <div class="workflow-step-head">
+                                        <span class="workflow-step-badge" aria-hidden="true">2</span>
+                                        <div>
+                                            <h3>Manager type <span class="text-muted fw-normal">(optional)</span></h3>
+                                            <p>Route employees through a manager, or keep them reporting directly to the authority.</p>
+                                        </div>
                                     </div>
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeSTM" value="STM">
-                                        <label class="form-check-label" for="typeSTM">Senior Technical Manager (STM)</label>
-                                    </div>
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typePM" value="PM">
-                                        <label class="form-check-label" for="typePM">Project Manager (PM)</label>
-                                    </div>
-                                    <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeOther" value="OTHER">
-                                        <label class="form-check-label" for="typeOther">Other Employees</label>
-                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-lg-5">
+                                            <label class="form-label" for="managerTypeSelect">Select Manager Type</label>
+                                            <select autocomplete="off" class="form-select" id="managerTypeSelect" disabled>
+                                                <option value="">Report directly to the authority (no manager)</option>
+                                                <option value="HOD" id="hodManagerTypeOption">Head of Department (HOD)</option>
+                                                <option value="STM">Senior Technical Manager (STM)</option>
+                                                <option value="PM">Project Manager (PM)</option>
+                                                <option value="OTHER">Other Employee</option>
+                                            </select>
+                                            <div class="form-text">HOD is available only when the authority is COO.</div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Step 3: Specific Manager -->
                                 <div class="workflow-panel hidden" id="managerSection">
                                     <label class="form-label" for="managerSelect" id="managerLabel">3. Select Manager <span class="text-danger">*</span></label>
-                                    <select autocomplete="off" class="form-select searchable-select select-wrap" id="managerSelect"
-                                            name="managerEmployeeId" data-placeholder="Search manager by name" required>
-                                        <option value="">-- Select Manager --</option>
-                                    </select>
+                                    <div class="select-wrap">
+                                        <select autocomplete="off" class="form-select searchable-select" id="managerSelect"
+                                                name="managerEmployeeId" data-placeholder="Search manager by name" required>
+                                            <option value="">-- Select Manager --</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <!-- Mapping targets -->
@@ -395,12 +392,6 @@
                 $('#employeeSelectionSummary').text(summary);
             }
 
-            function syncChoiceState() {
-                $('.choice-pill').each(function() {
-                    $(this).toggleClass('selected', $(this).find('.form-check-input').is(':checked'));
-                });
-            }
-
             function debounce(callback, delay) {
                 var timer = null;
                 return function() {
@@ -414,7 +405,6 @@
             }
 
             syncSearchableSelect();
-            syncChoiceState();
 
             function isMappedCell(row) {
                 return row && (row.mapped === true || String(row.mapped).toLowerCase() === 'true');
@@ -488,6 +478,8 @@
                 $('#cellFormTitle').text('Map Cell to Reporting Authority');
                 $('#employeeFormTitle').text('Map Employees to Reporting Managers');
                 $('#mappingId').val('');
+                $('#authorityTypeSelect, #managerTypeSelect').val('');
+                setManagerType('');
                 $('#authorityUserSection').addClass('hidden');
                 replaceSelectOptions('#authoritySelect', '-- Select Reporting Authority --', []);
                 $('#authoritySelect').prop('disabled', true);
@@ -501,7 +493,6 @@
                 $('#managerLabel').text('3. Select Manager *');
                 $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
                 updateManagerTypeOptions();
-                syncChoiceState();
                 scrollToCard('#gridCard');
 
 				setTimeout(function() {
@@ -549,8 +540,6 @@
             $('#backFromCellBtn, #backFromEmployeeBtn').click(function() {
                 showGrid();
             });
-
-            $(document).on('change', '.authorityTypeOption, .managerTypeOption', syncChoiceState);
 
             function populateCellMappingForm(cellId, authorityUserId) {
                 var cellSelect = $('#cellSelect');
@@ -749,8 +738,8 @@
 
             function resetDependentSelections() {
                 cancelEmployeeRequests();
-                $('input[name="managerType"]').prop('checked', false);
-                $('#defaultManagerType').prop('disabled', true);
+                $('#managerTypeSelect').val('');
+                setManagerType('');
                 replaceSelectOptions('#managerSelect', '-- Select Manager --', []);
                 $('#managerSelect').val('').prop('required', false);
                 $('#managerSection, #employeeSection, #submitSection').addClass('hidden');
@@ -808,12 +797,17 @@
             }
 
             function selectedAuthorityType() {
-                return $('input[name="authorityType"]:checked').val() || '';
+                return $('#authorityTypeSelect').val() || '';
+            }
+
+            // The hidden managerType input is what gets submitted; disabled means no manager type yet.
+            function setManagerType(type) {
+                $('#managerTypeInput').val(type || '').prop('disabled', !type);
             }
 
             function selectedManagerType() {
-                return $('input[name="managerType"]:checked').val()
-                    || ($('#defaultManagerType').prop('disabled') ? '' : 'OTHER');
+                var input = $('#managerTypeInput');
+                return input.prop('disabled') ? '' : (input.val() || '');
             }
 
             function populateAuthorityUsers(authorityType, currentSelection) {
@@ -853,18 +847,19 @@
             function updateManagerTypeOptions() {
                 var authorityType = selectedAuthorityType();
                 var isCoo = authorityType === 'COO';
+                var managerTypeSelect = $('#managerTypeSelect');
+                // Manager type applies only to COO and HOD, once a specific authority is chosen.
                 $('#managerTypeSection').toggleClass(
-                    'hidden', isDirectManagerAuthority(authorityType));
-                $('#hodManagerTypeOption').toggleClass('hidden', !isCoo);
-                if(!isCoo && $('#typeHOD').is(':checked')) {
-                    $('#typeHOD').prop('checked', false);
+                    'hidden', !authorityType || isDirectManagerAuthority(authorityType));
+                $('#hodManagerTypeOption').prop({ hidden: !isCoo, disabled: !isCoo });
+                if(!isCoo && managerTypeSelect.val() === 'HOD') {
+                    managerTypeSelect.val('');
                 }
+                managerTypeSelect.prop('disabled', !$('#authoritySelect').val());
             }
 
             function showDirectAuthorityMapping(authorityType, authorityUserId) {
-                $('#defaultManagerType').prop('disabled', true);
-                $('input[name="managerType"][value="'+authorityType+'"]').prop('checked', true);
-                syncChoiceState();
+                setManagerType(authorityType);
                 $('#managerSection').addClass('hidden');
                 $('#managerSelect').val('').prop('required', false);
                 updateSearchableSelect('#managerSelect');
@@ -878,10 +873,10 @@
                 });
             }
 
+            // "Report directly": employees map to the authority with manager type OTHER and no manager.
             function showUnassignedManagerTypeMapping(authorityUserId) {
-                $('input.managerTypeOption').prop('checked', false);
-                $('#defaultManagerType').prop('disabled', false);
-                syncChoiceState();
+                $('#managerTypeSelect').val('');
+                setManagerType('OTHER');
                 $('#managerSection').addClass('hidden');
                 $('#managerSelect').val('').prop('required', false);
                 updateSearchableSelect('#managerSelect');
@@ -895,9 +890,16 @@
                 });
             }
 
-            $('.authorityTypeOption').change(function() {
+            $('#authorityTypeSelect').change(function() {
                 var authorityType = $(this).val();
                 resetDependentSelections();
+                replaceSelectOptions('#authoritySelect', '-- Select Reporting Authority --', []);
+                $('#authoritySelect').prop('disabled', true);
+                updateManagerTypeOptions();
+                if(!authorityType) {
+                    $('#authorityUserSection').addClass('hidden');
+                    return;
+                }
                 reportingAuthoritiesRequest.done(function() {
                     populateAuthorityUsers(authorityType, null);
                 }).fail(function() {
@@ -908,16 +910,6 @@
                         []);
                     $('#authoritySelect').prop('disabled', true);
                 });
-                updateManagerTypeOptions();
-            });
-
-            $('#clearManagerTypeBtn').click(function() {
-                resetDependentSelections();
-                syncChoiceState();
-                var authorityUserId = $('#authoritySelect').val();
-                if(authorityUserId) {
-                    showUnassignedManagerTypeMapping(authorityUserId);
-                }
             });
 
             $('#authoritySelect').change(function() {
@@ -991,11 +983,10 @@
             }
 
             // 2. On selecting a manager type
-            $('.managerTypeOption').change(function() {
+            $('#managerTypeSelect').change(function() {
                 cancelEmployeeRequests();
                 var type = $(this).val();
                 var authorityUserId = $('#authoritySelect').val();
-                $('#defaultManagerType').prop('disabled', true);
                 $('#managerSelect').val('').prop('required', false);
                 updateSearchableSelect('#managerSelect');
                 $('#managerSection').addClass('hidden');
@@ -1004,15 +995,24 @@
 
                 if(!authorityUserId) {
                     showFormMessage('#employeeFormMessage', 'Please select a reporting authority first.');
-                    $(this).prop('checked', false);
+                    $(this).val('');
+                    setManagerType('');
+                    return;
+                }
+
+                if(!type) {
+                    showUnassignedManagerTypeMapping(authorityUserId);
                     return;
                 }
 
                 if(type === 'HOD' && selectedAuthorityType() !== 'COO') {
                     showFormMessage('#employeeFormMessage', 'HOD manager mapping is available only when COO is selected.');
-                    $(this).prop('checked', false);
+                    $(this).val('');
+                    showUnassignedManagerTypeMapping(authorityUserId);
                     return;
                 }
+
+                setManagerType(type);
 
                 $('#managerSection').removeClass('hidden');
                 $('#managerSelect').prop('required', true);
@@ -1057,12 +1057,9 @@
                 reportingAuthoritiesRequest.done(function() {
                     // Populate form dynamically after authority options are available.
                     $('#mappingId').val(mappingId);
-                    $('input[name="authorityType"][value="'+authorityType+'"]').prop('checked', true);
+                    $('#authorityTypeSelect').val(authorityType);
                     populateAuthorityUsers(authorityType, hod);
                     updateManagerTypeOptions();
-                    $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
-                    $('#defaultManagerType').prop('disabled', true);
-                    syncChoiceState();
 
                     if(isDirectManagerAuthority(authorityType)) {
                         showDirectAuthorityMapping(authorityType, hod);
@@ -1073,6 +1070,9 @@
                         showUnassignedManagerTypeMapping(hod);
                         return;
                     }
+
+                    $('#managerTypeSelect').val(mgrType);
+                    setManagerType(mgrType);
 
                     if(mgr) {
                         // Preserve editing for older single-manager mappings.

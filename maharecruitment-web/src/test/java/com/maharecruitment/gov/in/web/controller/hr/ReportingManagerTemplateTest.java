@@ -43,4 +43,17 @@ class ReportingManagerTemplateTest {
                 .contains("select.select2({")
                 .doesNotContain("dropdownParent: select.closest('.card-body')");
     }
+
+    @Test
+    void authorityAndManagerTypesAreChosenFromDropdownsNotRadioButtons() throws Exception {
+        String template = Files.readString(TEMPLATE_PATH);
+
+        assertThat(template)
+                .contains("<select autocomplete=\"off\" class=\"form-select\" id=\"authorityTypeSelect\" name=\"authorityType\" required>",
+                        "Select Reporting Authority (COO, HOD, STM, PM or Other Employee)",
+                        "<option value=\"COO\">", "<option value=\"HOD\">", "<option value=\"STM\">",
+                        "<option value=\"PM\">", "<option value=\"OTHER\">Other Employee</option>",
+                        "id=\"managerTypeSelect\"", "id=\"managerTypeInput\" name=\"managerType\"")
+                .doesNotContain("type=\"radio\"");
+    }
 }

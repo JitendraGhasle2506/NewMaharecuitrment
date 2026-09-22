@@ -406,43 +406,45 @@
 	margin-top: 15px;
 }
 
-.option-grid {
-	display: grid;
-	gap: 10px;
-	grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
-}
-
-.choice-pill {
-	align-items: center;
-	background: #fbfcfe;
-	border: 1px solid #d7dfe8;
-	border-radius: 9px;
+.workflow-step-head {
+	align-items: flex-start;
+	border-bottom: 1px solid #eef2f6;
 	display: flex;
-	min-height: 52px;
-	padding: 11px 13px;
-	transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+	gap: 12px;
+	margin-bottom: 16px;
+	padding-bottom: 14px;
 }
 
-.choice-pill:hover {
-	border-color: #7eb3d3;
+.workflow-step-badge {
+	align-items: center;
+	background: #eef1fb;
+	border: 1px solid #d9def5;
+	border-radius: 50%;
+	color: #4b437f;
+	display: inline-flex;
+	flex: 0 0 32px;
+	font-size: 0.85rem;
+	font-weight: 750;
+	height: 32px;
+	justify-content: center;
 }
 
-.choice-pill.selected {
-	background: #eef7fc;
-	border-color: #2680b8;
-	box-shadow: 0 0 0 3px rgba(23, 105, 159, 0.08);
+.workflow-step-head h3 {
+	color: #1d2939;
+	font-size: 0.98rem;
+	font-weight: 700;
+	margin: 3px 0 2px;
 }
 
-.choice-pill .form-check-input {
-	flex: 0 0 auto;
-	margin-top: 0;
+.workflow-step-head p {
+	color: #667085;
+	font-size: 0.78rem;
+	margin: 0;
 }
 
-.choice-pill .form-check-label {
-	cursor: pointer;
-	font-size: 0.82rem;
-	font-weight: 600;
-	margin-left: 8px;
+.reporting-manager-page .form-select:disabled {
+	background-color: #f2f4f7;
+	cursor: not-allowed;
 }
 
 .select-wrap {
