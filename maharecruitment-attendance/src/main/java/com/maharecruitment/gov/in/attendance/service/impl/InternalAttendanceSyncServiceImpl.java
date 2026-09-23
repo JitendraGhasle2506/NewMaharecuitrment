@@ -600,6 +600,11 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
     }
 
     private String buildEmployeeCode(EmployeeEntity employee) {
+        String storedEmployeeCode = normalizeText(employee != null ? employee.getEmployeeCode() : null);
+        if (isPermanentEmployeeCode(storedEmployeeCode)) {
+            return storedEmployeeCode;
+        }
+
         if (employee == null || !StringUtils.hasText(employee.getAadhaarNumber())) {
             throw new IllegalArgumentException("Aadhaar number is missing.");
         }
@@ -610,6 +615,14 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         }
 
         return properties.getUniqueCodePrefix() + digitsOnly.substring(digitsOnly.length() - 4);
+    }
+
+    private boolean isPermanentEmployeeCode(String employeeCode) {
+        if (!StringUtils.hasText(employeeCode)) {
+            return false;
+        }
+        String normalizedCode = employeeCode.toUpperCase();
+        return !"PENDING".equals(normalizedCode) && !normalizedCode.startsWith("TMP-");
     }
 
     private long elapsedMillis(long startedAtNanos) {

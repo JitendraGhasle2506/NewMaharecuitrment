@@ -339,6 +339,30 @@ class InternalAttendanceSyncServiceImplTest {
     }
 
     @Test
+    void syncAttendanceKeepsCollisionResolvedStoredEmployeeCodesDistinct() {
+        LocalDate attendanceDate = LocalDate.of(2026, 9, 22);
+        EmployeeEntity firstEmployee = buildEmployee(3374L, "111122221940");
+        firstEmployee.setEmployeeCode("MahaIT1940");
+        EmployeeEntity secondEmployee = buildEmployee(3768L, "999988881940");
+        secondEmployee.setEmployeeCode("MahaIT940");
+        candidateEmployees = List.of(firstEmployee, secondEmployee);
+        apiResponse = List.of(
+                new InternalAttendanceDayRecord(
+                        "First Employee", "MahaIT1940", attendanceDate, "09:47", null, "P"),
+                new InternalAttendanceDayRecord(
+                        "Second Employee", "MahaIT940", attendanceDate, "09:55", null, "P"));
+
+        InternalAttendanceSyncResult result = service.syncAttendance(attendanceDate, attendanceDate);
+
+        assertEquals(2, result.getEmployeesAttempted());
+        assertEquals(2, result.getEmployeesSynced());
+        assertEquals(0, result.getEmployeesSkipped());
+        assertEquals(2, result.getAttendanceRowsInserted());
+        assertEquals("MahaIT1940", firstEmployee.getEmployeeCode());
+        assertEquals("MahaIT940", secondEmployee.getEmployeeCode());
+    }
+
+    @Test
     void syncAttendanceReportsUpstreamUnavailabilityForAllTargets() {
         LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
         candidateEmployees = List.of(buildEmployee(301L, "123412341234"), buildEmployee(302L, "567856785678"));
