@@ -9,6 +9,8 @@ public interface ReportingManagerService {
     List<Map<String, Object>> getHodUsers();
 
     List<Map<String, Object>> getReportingAuthorities();
+
+    List<Map<String, Object>> getCellAuthorityUsers();
     
     List<Map<String, Object>> getManagersByType(String type);
     
@@ -31,7 +33,8 @@ public interface ReportingManagerService {
     void changeReportingAuthority(
             Long employeeId, Long authorityUserId, String managerType, Long managerEmployeeId);
 
-    void saveCellReportingMapping(Long cellId, Long authorityUserId);
+    void saveCellReportingMapping(
+            Long mappingId, Long cellId, Integer authorityLevel, Long authorityUserId);
 
     List<Long> getEffectiveEmployeeIdsForAuthority(Long authorityUserId);
 

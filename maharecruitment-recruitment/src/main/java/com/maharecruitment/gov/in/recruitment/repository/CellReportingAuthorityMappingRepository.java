@@ -17,10 +17,18 @@ public interface CellReportingAuthorityMappingRepository
         extends JpaRepository<CellReportingAuthorityMappingEntity, Long> {
 
     @EntityGraph(attributePaths = { "cell", "cell.wing" })
-    Optional<CellReportingAuthorityMappingEntity> findByCellCellId(Long cellId);
+    Optional<CellReportingAuthorityMappingEntity> findFirstByCellCellIdAndAuthorityLevelOrderByMappingIdAsc(
+            Long cellId,
+            Integer authorityLevel);
 
     @EntityGraph(attributePaths = { "cell", "cell.wing" })
-    List<CellReportingAuthorityMappingEntity> findAllByOrderByCellCellNameAsc();
+    Optional<CellReportingAuthorityMappingEntity> findFirstByCellCellIdOrderByAuthorityLevelAsc(Long cellId);
+
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    List<CellReportingAuthorityMappingEntity> findByCellCellIdOrderByAuthorityLevelAsc(Long cellId);
+
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    List<CellReportingAuthorityMappingEntity> findAllByOrderByCellCellNameAscAuthorityLevelAsc();
 
     @EntityGraph(attributePaths = { "cell", "cell.wing" })
     List<CellReportingAuthorityMappingEntity> findByCellCellIdIn(Collection<Long> cellIds);

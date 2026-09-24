@@ -484,7 +484,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                         .collect(Collectors.toMap(
                                 mapping -> mapping.getCell().getCellId(),
                                 Function.identity(),
-                                this::latestCellAuthorityMapping));
+                                this::primaryCellAuthorityMapping));
 
         Map<Long, Long> employeeIdByUserId = employeesByCellId.values().stream()
                 .flatMap(employees -> employees.values().stream())
@@ -648,10 +648,12 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         return nullableId(first.getMappingId()) >= nullableId(second.getMappingId()) ? first : second;
     }
 
-    private CellReportingAuthorityMappingEntity latestCellAuthorityMapping(
+    private CellReportingAuthorityMappingEntity primaryCellAuthorityMapping(
             CellReportingAuthorityMappingEntity first,
             CellReportingAuthorityMappingEntity second) {
-        return nullableId(first.getMappingId()) >= nullableId(second.getMappingId()) ? first : second;
+        int firstLevel = first.getAuthorityLevel() == null ? 1 : first.getAuthorityLevel();
+        int secondLevel = second.getAuthorityLevel() == null ? 1 : second.getAuthorityLevel();
+        return firstLevel <= secondLevel ? first : second;
     }
 
     private boolean hasEmployeeAndCell(EmployeeCellMappingEntity mapping) {

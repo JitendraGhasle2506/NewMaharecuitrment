@@ -12,7 +12,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,9 +19,6 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "cell_reporting_authority_mapping",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_cell_reporting_authority_mapping_cell",
-                columnNames = "cell_id"),
         indexes = @Index(
                 name = "idx_cell_reporting_authority_user",
                 columnList = "authority_user_id"))
@@ -42,4 +38,7 @@ public class CellReportingAuthorityMappingEntity extends RecruitmentAuditable {
 
     @Column(name = "authority_user_id", nullable = false)
     private Long authorityUserId;
+
+    @Column(name = "authority_level", nullable = false)
+    private Integer authorityLevel = 1;
 }

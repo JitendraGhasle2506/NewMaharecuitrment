@@ -54,6 +54,21 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private static final String ACTIVE = "ACTIVE";
     private static final String ACTIVE_FLAG_Y = "Y";
     private static final String INTERNAL = "INTERNAL";
+    private static final String MAHAIT = "MAHAIT";
+    private static final Set<String> CELL_AUTHORITY_RECRUITMENT_TYPES = Set.of(INTERNAL, MAHAIT);
+    private static final Set<String> CELL_AUTHORITY_ROLES = Set.of(
+            "ROLE_EMPLOYEE",
+            "ROLE_AUDITOR",
+            "ROLE_CFO",
+            "ROLE_COO",
+            "ROLE_CTO",
+            "ROLE_HOD",
+            "ROLE_HR",
+            "ROLE_INFRA",
+            "ROLE_MD",
+            "ROLE_PM",
+            "ROLE_STM",
+            "ROLE_ADMIN");
     private static final Set<String> HOD_DESIGNATION_NAMES = Set.of(
             "HOD",
             "HEAD OF DEPARTMENT",
@@ -108,6 +123,99 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getReportingAuthorities() {
         return toAuthorityOptions(loadReportingAuthorityTypes());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getCellAuthorityUsers() {
+        List<EmployeeEntity> employees = employeeRepository
+                .findActiveCellAuthorityEmployees(CELL_AUTHORITY_RECRUITMENT_TYPES);
+        Map<String, User> usersByEmail = loadActiveUsersByEmployeeEmail(employees);
+        Map<String, User> usersByMobile = loadActiveUsersByEmployeeMobile(employees);
+        Map<Long, Map.Entry<EmployeeEntity, User>> eligibleUsers = new LinkedHashMap<>();
+        for (EmployeeEntity employee : employees) {
+            User user = employee.getUser();
+            if (user == null) {
+                user = usersByEmail.get(normalizeEmail(employee.getEmail()));
+            }
+            if (user == null) {
+                user = usersByMobile.get(normalizeMobileNumber(employee.getMobile()));
+            }
+            if (user != null && user.getId() != null
+                    && Boolean.TRUE.equals(user.getActive())
+                    && hasAnyRole(user, CELL_AUTHORITY_ROLES)) {
+                eligibleUsers.putIfAbsent(user.getId(), Map.entry(employee, user));
+            }
+        }
+        return eligibleUsers.values().stream()
+                .map(entry -> {
+                    EmployeeEntity employee = entry.getKey();
+                    User user = entry.getValue();
+                    Map<String, Object> option = new LinkedHashMap<>();
+                    option.put("id", user.getId());
+                    option.put("name", employee.getFullName() == null
+                            ? user.getName() == null ? "" : user.getName().trim()
+                            : employee.getFullName().trim());
+                    option.put("roles", formatUserRoles(user));
+                    return option;
+                })
+                .toList();
+    }
+
+    private Map<String, User> loadActiveUsersByEmployeeEmail(List<EmployeeEntity> employees) {
+        Set<String> emails = employees.stream()
+                .filter(employee -> employee.getUser() == null)
+                .map(EmployeeEntity::getEmail)
+                .map(this::normalizeEmail)
+                .filter(email -> !email.isEmpty())
+                .collect(Collectors.toSet());
+        if (emails.isEmpty()) {
+            return Map.of();
+        }
+        return userRepository.findActiveUsersByNormalizedEmailIn(emails).stream()
+                .collect(Collectors.toMap(
+                        user -> normalizeEmail(user.getEmail()),
+                        user -> user,
+                        (first, ignored) -> first));
+    }
+
+    private Map<String, User> loadActiveUsersByEmployeeMobile(List<EmployeeEntity> employees) {
+        Set<String> mobiles = employees.stream()
+                .filter(employee -> employee.getUser() == null)
+                .map(EmployeeEntity::getMobile)
+                .map(this::normalizeMobileNumber)
+                .filter(mobile -> !mobile.isEmpty())
+                .collect(Collectors.toSet());
+        if (mobiles.isEmpty()) {
+            return Map.of();
+        }
+        return userRepository.findActiveUsersByMobileNumberIn(mobiles).stream()
+                .collect(Collectors.toMap(
+                        user -> normalizeMobileNumber(user.getMobileNo()),
+                        user -> user,
+                        (first, ignored) -> first));
+    }
+
+    private boolean hasAnyRole(User user, Set<String> roleNames) {
+        return user.getRoles() != null && user.getRoles().stream()
+                .map(role -> role.getName() == null ? "" : role.getName().trim().toUpperCase(Locale.ROOT))
+                .anyMatch(roleNames::contains);
+    }
+
+    private String formatUserRoles(User user) {
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            return "USER";
+        }
+        String roles = user.getRoles().stream()
+                .map(role -> role.getName() == null ? "" : role.getName().trim())
+                .filter(role -> !role.isEmpty())
+                .map(role -> role.toUpperCase(Locale.ROOT))
+                .filter(CELL_AUTHORITY_ROLES::contains)
+                .map(role -> role.replaceFirst("^ROLE_", ""))
+                .distinct()
+                .sorted()
+                .collect(Collectors.joining(", "));
+        return roles.isEmpty() ? "USER" : roles;
     }
 
     private Map<Long, String> loadReportingAuthorityTypes() {
@@ -698,7 +806,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                         .collect(Collectors.toMap(
                                 mapping -> mapping.getCell().getCellId(),
                                 mapping -> mapping,
-                                (first, ignored) -> first));
+                                this::primaryCellAuthority));
 
         Set<Long> authorityUserIds = new LinkedHashSet<>();
         explicitMappings.values().stream()
@@ -777,13 +885,15 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         Map<Long, Long> fallbackEmployeeCounts = toEmployeeCounts(
                 employeeCellMappingRepository.summarizeActiveEmployeesWithoutExplicitReportingByCell(
                         ACTIVE_FLAG_Y, ACTIVE));
-        Map<Long, CellReportingAuthorityMappingEntity> mappingsByCellId =
-                cellAuthorityMappingRepository.findAllByOrderByCellCellNameAsc().stream()
-                        .collect(Collectors.toMap(
+        Map<Long, List<CellReportingAuthorityMappingEntity>> mappingsByCellId =
+                cellAuthorityMappingRepository.findAllByOrderByCellCellNameAscAuthorityLevelAsc().stream()
+                        .collect(Collectors.groupingBy(
                                 mapping -> mapping.getCell().getCellId(),
-                                mapping -> mapping));
+                                LinkedHashMap::new,
+                                Collectors.toList()));
 
         Set<Long> authorityUserIds = mappingsByCellId.values().stream()
+                .flatMap(List::stream)
                 .map(CellReportingAuthorityMappingEntity::getAuthorityUserId)
                 .collect(Collectors.toSet());
         Map<Long, User> authoritiesById = userRepository.findAllById(authorityUserIds).stream()
@@ -791,8 +901,23 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         Map<Long, String> authorityTypesByUserId = loadReportingAuthorityTypes();
 
         return cells.stream().map(cell -> {
-            CellReportingAuthorityMappingEntity mapping = mappingsByCellId.get(cell.getCellId());
+            List<CellReportingAuthorityMappingEntity> mappings = mappingsByCellId
+                    .getOrDefault(cell.getCellId(), List.of());
+            CellReportingAuthorityMappingEntity mapping = mappings.isEmpty() ? null : mappings.get(0);
             User authority = mapping == null ? null : authoritiesById.get(mapping.getAuthorityUserId());
+            List<Map<String, Object>> authorities = mappings.stream().map(levelMapping -> {
+                User levelAuthority = authoritiesById.get(levelMapping.getAuthorityUserId());
+                Map<String, Object> authorityRow = new LinkedHashMap<>();
+                authorityRow.put("mappingId", levelMapping.getMappingId());
+                authorityRow.put("authorityLevel", levelMapping.getAuthorityLevel());
+                authorityRow.put("authorityUserId", levelMapping.getAuthorityUserId());
+                authorityRow.put("authorityName",
+                        levelAuthority == null ? "" : formatAuthorityName(levelAuthority));
+                authorityRow.put("authorityType",
+                        levelAuthority == null ? "" : defaultAuthorityType(
+                                resolveAuthorityType(levelAuthority, authorityTypesByUserId)));
+                return authorityRow;
+            }).toList();
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("cellId", cell.getCellId());
             row.put("cellName", cell.getCellName());
@@ -800,11 +925,15 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             row.put("employeeCount", employeeCounts.getOrDefault(cell.getCellId(), 0L));
             row.put("fallbackEmployeeCount", fallbackEmployeeCounts.getOrDefault(cell.getCellId(), 0L));
             row.put("mapped", mapping != null);
+            row.put("authorityCount", authorities.size());
+            row.put("authorities", authorities);
             row.put("mappingId", mapping == null ? null : mapping.getMappingId());
+            row.put("authorityLevel", mapping == null ? null : mapping.getAuthorityLevel());
             row.put("authorityUserId", mapping == null ? null : mapping.getAuthorityUserId());
             row.put("authorityName", authority == null ? "" : formatAuthorityName(authority));
             row.put("authorityType",
-                    authority == null ? "" : resolveAuthorityType(authority, authorityTypesByUserId));
+                    authority == null ? "" : defaultAuthorityType(
+                            resolveAuthorityType(authority, authorityTypesByUserId)));
             return row;
         }).toList();
     }
@@ -916,10 +1045,12 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     @Override
     @Transactional
-    public void saveCellReportingMapping(Long cellId, Long authorityUserId) {
+    public void saveCellReportingMapping(
+            Long mappingId, Long cellId, Integer authorityLevel, Long authorityUserId) {
         if (cellId == null) {
             throw new IllegalArgumentException("Cell selection is required.");
         }
+        int normalizedAuthorityLevel = normalizeAuthorityLevel(authorityLevel);
         if (authorityUserId == null) {
             throw new IllegalArgumentException("Reporting authority selection is required.");
         }
@@ -931,14 +1062,45 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 || !ACTIVE_FLAG_Y.equalsIgnoreCase(cell.getWing().getActiveFlag())) {
             throw new IllegalArgumentException("Only an active cell in an active wing can be mapped.");
         }
-        requireReportingAuthority(authorityUserId);
+        requireActiveUser(authorityUserId);
 
-        CellReportingAuthorityMappingEntity mapping = cellAuthorityMappingRepository.findByCellCellId(cellId)
-                .orElseGet(CellReportingAuthorityMappingEntity::new);
+        List<CellReportingAuthorityMappingEntity> existingMappings = cellAuthorityMappingRepository
+                .findByCellCellIdOrderByAuthorityLevelAsc(cellId);
+        if (normalizedAuthorityLevel == 2 && existingMappings.stream()
+                .noneMatch(existing -> Integer.valueOf(1).equals(existing.getAuthorityLevel()))) {
+            throw new IllegalArgumentException("Assign the Level 1 authority before adding Level 2 authorities.");
+        }
+
+        boolean authorityAlreadyMapped = existingMappings.stream()
+                .anyMatch(existing -> authorityUserId.equals(existing.getAuthorityUserId())
+                        && (mappingId == null || !mappingId.equals(existing.getMappingId())));
+        if (authorityAlreadyMapped) {
+            throw new IllegalArgumentException(
+                    "The selected authority is already assigned to this cell.");
+        }
+
+        CellReportingAuthorityMappingEntity mapping;
+        if (mappingId != null) {
+            mapping = cellAuthorityMappingRepository.findById(mappingId)
+                    .orElseThrow(() -> new IllegalArgumentException("Selected cell authority mapping was not found."));
+            if (mapping.getCell() == null
+                    || !cellId.equals(mapping.getCell().getCellId())
+                    || !Integer.valueOf(normalizedAuthorityLevel).equals(mapping.getAuthorityLevel())) {
+                throw new IllegalArgumentException("The selected authority mapping does not belong to this cell and level.");
+            }
+        } else if (normalizedAuthorityLevel == 1) {
+            mapping = cellAuthorityMappingRepository
+                    .findFirstByCellCellIdAndAuthorityLevelOrderByMappingIdAsc(cellId, 1)
+                    .orElseGet(CellReportingAuthorityMappingEntity::new);
+        } else {
+            mapping = new CellReportingAuthorityMappingEntity();
+        }
         mapping.setCell(cell);
+        mapping.setAuthorityLevel(normalizedAuthorityLevel);
         mapping.setAuthorityUserId(authorityUserId);
         cellAuthorityMappingRepository.save(mapping);
-        log.info("Mapped cellId={} to reporting authority userId={}", cellId, authorityUserId);
+        log.info("Mapped cellId={} authorityLevel={} mappingId={} to reporting authority userId={}",
+                cellId, normalizedAuthorityLevel, mapping.getMappingId(), authorityUserId);
     }
 
     @Override
@@ -1090,6 +1252,16 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         return authorityType;
     }
 
+    private User requireActiveUser(Long userId) {
+        return userRepository.findByIdAndActiveTrue(userId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Selected reporting authority was not found or is inactive."));
+    }
+
+    private String defaultAuthorityType(String authorityType) {
+        return authorityType == null || authorityType.isBlank() ? TYPE_OTHER : authorityType;
+    }
+
     private String resolveAuthorityType(User user, Map<Long, String> authorityTypesByUserId) {
         String roleAuthorityType = resolveAuthorityType(user);
         if (roleAuthorityType != null || user == null) {
@@ -1153,6 +1325,24 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             throw new IllegalArgumentException("A valid manager type is required.");
         }
         return normalized;
+    }
+
+    private int normalizeAuthorityLevel(Integer authorityLevel) {
+        int normalizedLevel = authorityLevel == null ? 1 : authorityLevel;
+        if (normalizedLevel < 1 || normalizedLevel > 2) {
+            throw new IllegalArgumentException("Authority level must be Level 1 or Level 2.");
+        }
+        return normalizedLevel;
+    }
+
+    private CellReportingAuthorityMappingEntity primaryCellAuthority(
+            CellReportingAuthorityMappingEntity first,
+            CellReportingAuthorityMappingEntity second) {
+        return authorityLevel(first) <= authorityLevel(second) ? first : second;
+    }
+
+    private int authorityLevel(CellReportingAuthorityMappingEntity mapping) {
+        return mapping == null || mapping.getAuthorityLevel() == null ? 1 : mapping.getAuthorityLevel();
     }
 
     private EmployeeReportingMappingEntity toEntity(

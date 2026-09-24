@@ -87,6 +87,17 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     List<EmployeeEntity> findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
             String recruitmentType, String status);
 
+    @EntityGraph(attributePaths = { "user", "user.roles" })
+    @Query("""
+            select employee
+            from EmployeeEntity employee
+            where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
+              and upper(trim(coalesce(employee.recruitmentType, ''))) in :recruitmentTypes
+            order by lower(employee.fullName), employee.employeeId
+            """)
+    List<EmployeeEntity> findActiveCellAuthorityEmployees(
+            @Param("recruitmentTypes") Collection<String> recruitmentTypes);
+
     @EntityGraph(attributePaths = {
             "agency",
             "departmentRegistration",

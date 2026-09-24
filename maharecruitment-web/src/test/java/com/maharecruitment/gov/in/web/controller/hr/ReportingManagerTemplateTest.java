@@ -75,4 +75,20 @@ class ReportingManagerTemplateTest {
                         "their existing team assignments will not change",
                         "Change reporting authority or manager type");
     }
+
+    @Test
+    void cellMappingLoadsCellsAndAllActiveUsersIndependently() throws Exception {
+        String template = Files.readString(TEMPLATE_PATH);
+
+        assertThat(template)
+                .contains("hr/api/cell-reporting-mappings",
+                        "hr/api/cell-authority-users",
+                        "cellMappingsRequest.done(function()",
+                        "cellAuthorityUsersRequest.done(function()",
+                        "text: authority.name + ' [' + authority.roles + ']'",
+                        "Add L2",
+                        "Edit L2 #",
+                        "All active users are available for Level 1 and Level 2.")
+                .doesNotContain("$.when(cellMappingsRequest, reportingAuthoritiesRequest).done(function()");
+    }
 }

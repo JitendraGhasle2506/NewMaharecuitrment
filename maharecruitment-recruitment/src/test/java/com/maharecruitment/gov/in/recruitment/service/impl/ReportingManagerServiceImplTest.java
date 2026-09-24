@@ -195,6 +195,31 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
+    void getCellAuthorityUsersIncludesEligibleInternalAndMahaitEmployeeUsers() {
+        User first = userWithRole(21L, "Asha", "ROLE_EMPLOYEE");
+        User second = userWithRole(22L, "Vijay", "ROLE_AGENCY");
+        second.getRoles().clear();
+        Role auditorRole = new Role();
+        auditorRole.setName("ROLE_AUDITOR");
+        second.addRole(auditorRole);
+        EmployeeEntity internalEmployee = employee(
+                121L, "Asha Employee", "EMP121", "INTERNAL", "ACTIVE");
+        internalEmployee.setUser(first);
+        EmployeeEntity mahaitEmployee = employee(
+                122L, "Vijay Employee", "EMP122", "MAHAIT", "ACTIVE");
+        mahaitEmployee.setUser(second);
+        when(employeeRepository.findActiveCellAuthorityEmployees(Set.of("INTERNAL", "MAHAIT")))
+                .thenReturn(List.of(internalEmployee, mahaitEmployee));
+
+        List<Map<String, Object>> result = service.getCellAuthorityUsers();
+
+        assertEquals(List.of(21L, 22L), result.stream().map(row -> row.get("id")).toList());
+        assertEquals("Asha Employee", result.get(0).get("name"));
+        assertEquals("EMPLOYEE", result.get(0).get("roles"));
+        assertEquals("AUDITOR", result.get(1).get("roles"));
+    }
+
+    @Test
     void getProjectsReturnsActiveProjectsForSelection() {
         when(projectRepository.findByActiveFlagIgnoreCaseOrderByProjectNameAsc("Y"))
                 .thenReturn(List.of(project(12L, "Citizen Services")));
@@ -855,16 +880,54 @@ class ReportingManagerServiceImplTest {
                 .activeFlag("Y")
                 .build();
         when(cellMasterRepository.findByCellId(11L)).thenReturn(Optional.of(cell));
-        when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
-        when(cellAuthorityMappingRepository.findByCellCellId(11L)).thenReturn(Optional.empty());
+        when(userRepository.findByIdAndActiveTrue(7L)).thenReturn(Optional.of(user(7L, "HOD")));
+        when(cellAuthorityMappingRepository.findByCellCellIdOrderByAuthorityLevelAsc(11L))
+                .thenReturn(List.of());
+        when(cellAuthorityMappingRepository.findFirstByCellCellIdAndAuthorityLevelOrderByMappingIdAsc(11L, 1))
+                .thenReturn(Optional.empty());
 
-        service.saveCellReportingMapping(11L, 7L);
+        service.saveCellReportingMapping(null, 11L, 1, 7L);
 
         ArgumentCaptor<CellReportingAuthorityMappingEntity> captor =
                 ArgumentCaptor.forClass(CellReportingAuthorityMappingEntity.class);
         verify(cellAuthorityMappingRepository).save(captor.capture());
         assertEquals(11L, captor.getValue().getCell().getCellId());
         assertEquals(7L, captor.getValue().getAuthorityUserId());
+        assertEquals(1, captor.getValue().getAuthorityLevel());
+    }
+
+    @Test
+    void saveCellReportingMappingAllowsMultipleLevelTwoAuthorities() {
+        WingMaster wing = WingMaster.builder().wingId(3L).activeFlag("Y").build();
+        CellMaster cell = CellMaster.builder()
+                .cellId(11L)
+                .cellName("Applications")
+                .wing(wing)
+                .activeFlag("Y")
+                .build();
+        CellReportingAuthorityMappingEntity levelOne = new CellReportingAuthorityMappingEntity();
+        levelOne.setMappingId(31L);
+        levelOne.setCell(cell);
+        levelOne.setAuthorityLevel(1);
+        levelOne.setAuthorityUserId(7L);
+        CellReportingAuthorityMappingEntity existingLevelTwo = new CellReportingAuthorityMappingEntity();
+        existingLevelTwo.setMappingId(32L);
+        existingLevelTwo.setCell(cell);
+        existingLevelTwo.setAuthorityLevel(2);
+        existingLevelTwo.setAuthorityUserId(8L);
+        when(cellMasterRepository.findByCellId(11L)).thenReturn(Optional.of(cell));
+        when(userRepository.findByIdAndActiveTrue(9L)).thenReturn(Optional.of(user(9L, "Second L2")));
+        when(cellAuthorityMappingRepository.findByCellCellIdOrderByAuthorityLevelAsc(11L))
+                .thenReturn(List.of(levelOne, existingLevelTwo));
+
+        service.saveCellReportingMapping(null, 11L, 2, 9L);
+
+        ArgumentCaptor<CellReportingAuthorityMappingEntity> captor =
+                ArgumentCaptor.forClass(CellReportingAuthorityMappingEntity.class);
+        verify(cellAuthorityMappingRepository).save(captor.capture());
+        assertNull(captor.getValue().getMappingId());
+        assertEquals(2, captor.getValue().getAuthorityLevel());
+        assertEquals(9L, captor.getValue().getAuthorityUserId());
     }
 
     @Test

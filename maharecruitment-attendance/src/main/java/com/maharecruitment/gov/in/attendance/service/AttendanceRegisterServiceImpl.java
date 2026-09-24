@@ -1618,7 +1618,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		Long authorityUserId = employeeCellMappingRepository.findByEmployeeEmployeeId(employee.getEmployeeId())
 				.map(EmployeeCellMappingEntity::getCell)
 				.map(CellMaster::getCellId)
-				.flatMap(cellReportingAuthorityMappingRepository::findByCellCellId)
+				.flatMap(cellReportingAuthorityMappingRepository::findFirstByCellCellIdOrderByAuthorityLevelAsc)
 				.map(CellReportingAuthorityMappingEntity::getAuthorityUserId)
 				.filter(userId -> employee.getUser() == null || !userId.equals(employee.getUser().getId()))
 				.orElse(null);

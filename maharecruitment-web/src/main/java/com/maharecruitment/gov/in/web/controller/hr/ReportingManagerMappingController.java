@@ -47,6 +47,12 @@ public class ReportingManagerMappingController {
         return ResponseEntity.ok(reportingManagerService.getReportingAuthorities());
     }
 
+    @GetMapping("/api/cell-authority-users")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getCellAuthorityUsers() {
+        return ResponseEntity.ok(reportingManagerService.getCellAuthorityUsers());
+    }
+
     @GetMapping("/api/managers")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getManagers(@RequestParam String type) {
@@ -91,21 +97,24 @@ public class ReportingManagerMappingController {
 
     @PostMapping("/saveCellReportingMapping")
     public String saveCellReportingMapping(
+            @RequestParam(required = false) Long mappingId,
             @RequestParam Long cellId,
+            @RequestParam(defaultValue = "1") Integer authorityLevel,
             @RequestParam Long authorityUserId,
             RedirectAttributes redirectAttributes) {
         try {
-            reportingManagerService.saveCellReportingMapping(cellId, authorityUserId);
+            reportingManagerService.saveCellReportingMapping(
+                    mappingId, cellId, authorityLevel, authorityUserId);
             redirectAttributes.addFlashAttribute(
-                    "successMessage", "Cell reporting authority mapped successfully.");
+                    "successMessage", "Cell Level " + authorityLevel + " reporting authority mapped successfully.");
         } catch (IllegalArgumentException | IllegalStateException e) {
-            log.warn("Cell reporting mapping validation failed for cellId={} and authorityUserId={}: {}",
-                    cellId, authorityUserId, e.getMessage());
+            log.warn("Cell reporting mapping validation failed for cellId={}, authorityLevel={}, authorityUserId={}: {}",
+                    cellId, authorityLevel, authorityUserId, e.getMessage());
             redirectAttributes.addFlashAttribute(
                     "errorMessage", "Error mapping cell reporting authority: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Unexpected cell reporting mapping failure for cellId={} and authorityUserId={}",
-                    cellId, authorityUserId, e);
+            log.error("Unexpected cell reporting mapping failure for cellId={}, authorityLevel={}, authorityUserId={}",
+                    cellId, authorityLevel, authorityUserId, e);
             redirectAttributes.addFlashAttribute(
                     "errorMessage", "Unable to save the cell reporting authority. Please try again.");
         }

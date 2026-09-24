@@ -182,7 +182,8 @@ class AttendanceRegisterServiceImplReportingTest {
         CellReportingAuthorityMappingEntity authorityMapping = new CellReportingAuthorityMappingEntity();
         authorityMapping.setCell(cell);
         authorityMapping.setAuthorityUserId(userId);
-        when(cellReportingAuthorityMappingRepository.findByCellCellId(11L)).thenReturn(Optional.of(authorityMapping));
+        when(cellReportingAuthorityMappingRepository.findFirstByCellCellIdOrderByAuthorityLevelAsc(11L))
+                .thenReturn(Optional.of(authorityMapping));
     }
 
     private User user(Long id, String name) {

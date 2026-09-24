@@ -24,6 +24,8 @@ import db.postmigration.V119__internal_vacancy_multiple_replacement_employees;
 import db.postmigration.V121__employee_profile_marriage_details;
 import db.postmigration.V122__employee_birthday_wishes;
 import db.postmigration.V123__manpower_designation_type;
+import db.postmigration.V131__cell_reporting_authority_levels;
+import db.postmigration.V132__multiple_level_two_cell_authorities;
 
 class PostSchemaFlywayRunnerTest {
 
@@ -62,6 +64,10 @@ class PostSchemaFlywayRunnerTest {
                 migrations, V122__employee_birthday_wishes.class);
         int designationTypeMigrationIndex = indexOf(
                 migrations, V123__manpower_designation_type.class);
+        int authorityLevelsMigrationIndex = indexOf(
+                migrations, V131__cell_reporting_authority_levels.class);
+        int multipleLevelTwoMigrationIndex = indexOf(
+                migrations, V132__multiple_level_two_cell_authorities.class);
         assertThat(employeeCellMigrationIndex).isGreaterThanOrEqualTo(0);
         assertThat(cellAuthorityMigrationIndex).isGreaterThan(employeeCellMigrationIndex);
         assertThat(projectDepartmentMigrationIndex).isGreaterThan(cellAuthorityMigrationIndex);
@@ -82,6 +88,8 @@ class PostSchemaFlywayRunnerTest {
                 .isGreaterThan(employeeMarriageDetailsMigrationIndex);
         assertThat(designationTypeMigrationIndex)
                 .isGreaterThan(employeeBirthdayWishesMigrationIndex);
+        assertThat(authorityLevelsMigrationIndex).isGreaterThan(designationTypeMigrationIndex);
+        assertThat(multipleLevelTwoMigrationIndex).isGreaterThan(authorityLevelsMigrationIndex);
     }
 
     private int indexOf(List<?> migrations, Class<?> migrationType) {
