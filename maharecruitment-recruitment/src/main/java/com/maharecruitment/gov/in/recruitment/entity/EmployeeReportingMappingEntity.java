@@ -39,4 +39,8 @@ public class EmployeeReportingMappingEntity extends RecruitmentAuditable {
     @Column(name = "employee_id", nullable = false)
     private Long employeeId; // The Assigned Internal Employee ID
 
+    @org.hibernate.annotations.ColumnDefault("'PRIMARY'")
+    @Column(name = "reporting_type", nullable = false, length = 30)
+    private String reportingType = "PRIMARY";
+
 }

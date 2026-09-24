@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Employee Organizational Hierarchy</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-hierarchy.css}">
+</head>
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header('Employee Hierarchy', 'Human Resources', ~{::section})}">
+    <section id="employeeHierarchy" class="eh-page" th:attr="data-api=@{/api/employees/hierarchy},data-context=@{/}">
+        <header class="eh-heading">
+            <div><span class="eh-eyebrow">PEOPLE &amp; REPORTING</span><h1>Employee hierarchy</h1>
+                <p>Explore your teams, one connection at a time.</p></div>
+            <a class="btn btn-outline-primary" th:href="@{/hr/reportingManager}">Manage reporting mappings</a>
+        </header>
+        <form id="ehFilters" class="eh-filters">
+            <div class="eh-field"><label for="ehHod">Head of department</label>
+                <select id="ehHod" required><option value="">Loading HODs…</option></select></div>
+            <div class="eh-field"><label for="ehDepartment">Department</label>
+                <select id="ehDepartment"><option value="">All departments</option></select></div>
+            <div class="eh-field"><label for="ehDesignation">Designation</label>
+                <select id="ehDesignation"><option value="">All designations</option></select></div>
+            <div class="eh-field"><label for="ehType">Reporting type</label>
+                <select id="ehType"><option value="PRIMARY">Primary</option><option value="ADMINISTRATIVE">Administrative</option>
+                    <option value="PROJECT">Project</option><option value="LEAVE_APPROVAL">Leave approval</option></select></div>
+            <button type="submit" class="eh-primary">Show hierarchy</button>
+        </form>
+        <div class="eh-workspace">
+            <div class="eh-toolbar">
+                <form id="ehSearchForm" class="eh-search" role="search">
+                    <label for="ehSearch" class="eh-sr-only">Employee name or employee code</label>
+                    <input id="ehSearch" type="search" placeholder="Search name or employee code" minlength="2" maxlength="100" autocomplete="off">
+                    <button type="submit" title="Search entire hierarchy">Search</button>
+                    <button id="ehClear" type="button" title="Clear search and restore hierarchy">Clear</button>
+                    <div id="ehResults" class="eh-results" aria-label="Search results" hidden></div>
+                </form>
+                <div class="eh-controls" role="group" aria-label="Chart controls">
+                    <button id="ehZoomOut" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                    <output id="ehZoom" aria-live="polite">100%</output>
+                    <button id="ehZoomIn" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                    <button id="ehReset" type="button" title="Reset zoom to 100%">Reset</button>
+                    <button id="ehFit" type="button" title="Fit all visible employees on screen">Fit to screen</button>
+                </div>
+            </div>
+            <div class="eh-legend"><span><i class="eh-dot eh-dot-root"></i> Selected HOD</span>
+                <span><i class="eh-dot eh-dot-match"></i> Search match</span>
+                <span class="eh-hint">Expand a card to load its reports. Scroll to explore larger teams.</span></div>
+            <p id="ehStatus" class="eh-status" role="status" aria-live="polite">Select a HOD to view their reporting hierarchy.</p>
+            <div id="ehViewport" class="eh-viewport" tabindex="0" aria-label="Employee hierarchy. Scroll to explore the chart.">
+                <div id="ehSurface" class="eh-surface"><div id="ehStage" class="eh-stage">
+                    <svg id="ehLines" class="eh-lines" aria-hidden="true"></svg>
+                    <div id="ehCards"></div>
+                </div></div>
+                <div id="ehEmpty" class="eh-empty"><span aria-hidden="true">♧</span><h2>Your team at a glance</h2>
+                    <p>Select a head of department above to get started.</p></div>
+            </div>
+            <footer class="eh-footer"><span id="ehCount">0 employees displayed</span>
+                <span>Active employees only · Filters preserve connecting managers</span></footer>
+        </div>
+        <noscript><p class="alert alert-warning">Enable JavaScript to explore the employee hierarchy.</p></noscript>
+        <script defer th:src="@{/js/employee-hierarchy.js}"></script>
+    </section>
+</th:block>
+</body>
+</html>

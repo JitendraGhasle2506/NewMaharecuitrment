@@ -108,6 +108,7 @@ import db.postmigration.V129__employee_tax_invoice_line;
 import db.postmigration.V130__cto_cfo_roles;
 import db.postmigration.V131__cell_reporting_authority_levels;
 import db.postmigration.V132__multiple_level_two_cell_authorities;
+import db.postmigration.V133__employee_hierarchy_reporting_types;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -242,6 +243,7 @@ public class PostSchemaFlywayRunner {
                 new V130__cto_cfo_roles(),
                 new V131__cell_reporting_authority_levels(),
                 new V132__multiple_level_two_cell_authorities(),
+                new V133__employee_hierarchy_reporting_types(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

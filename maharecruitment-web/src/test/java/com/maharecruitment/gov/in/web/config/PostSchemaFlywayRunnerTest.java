@@ -26,6 +26,7 @@ import db.postmigration.V122__employee_birthday_wishes;
 import db.postmigration.V123__manpower_designation_type;
 import db.postmigration.V131__cell_reporting_authority_levels;
 import db.postmigration.V132__multiple_level_two_cell_authorities;
+import db.postmigration.V133__employee_hierarchy_reporting_types;
 
 class PostSchemaFlywayRunnerTest {
 
@@ -90,6 +91,8 @@ class PostSchemaFlywayRunnerTest {
                 .isGreaterThan(employeeBirthdayWishesMigrationIndex);
         assertThat(authorityLevelsMigrationIndex).isGreaterThan(designationTypeMigrationIndex);
         assertThat(multipleLevelTwoMigrationIndex).isGreaterThan(authorityLevelsMigrationIndex);
+        assertThat(indexOf(migrations, V133__employee_hierarchy_reporting_types.class))
+                .isGreaterThan(multipleLevelTwoMigrationIndex);
     }
 
     private int indexOf(List<?> migrations, Class<?> migrationType) {
