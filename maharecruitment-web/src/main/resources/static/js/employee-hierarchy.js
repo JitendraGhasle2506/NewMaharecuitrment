@@ -11,14 +11,61 @@
     const cards = $('ehCards');
     const lines = $('ehLines');
     const results = $('ehResults');
-    const CARD_WIDTH = 220, CARD_HEIGHT = 190, GAP_X = 28, GAP_Y = 64, PADDING = 40;
+    const styles = getComputedStyle(page);
+    const CARD_WIDTH = parseFloat(styles.getPropertyValue('--eh-card-width')) || 256;
+    const CARD_HEIGHT = parseFloat(styles.getPropertyValue('--eh-card-height')) || 232;
+    const GAP_X = 32, GAP_Y = 72, PADDING = 44, CONTROL_SPACE = 88;
+    const compactScreen = window.matchMedia('(max-width: 767px)');
     let root = null, scale = 1, chartWidth = 0, chartHeight = 0, leftInset = 0;
     let selectedId = null, generation = 0, queryGeneration = 0, searchController = null;
     let filters = null, displayed = new Map(), busy = new Set(), fitMode = false;
+    let searchTimer = null, optionsReady = false, filtersManuallyToggled = false, hierarchyController = null;
 
     function status(message, error = false) {
         $('ehStatus').textContent = message;
         $('ehStatus').classList.toggle('eh-error', error);
+    }
+
+    function emptyState(state = 'idle', message = '') {
+        const copy = {
+            idle: ['YOUR ORGANIZATION, CONNECTED', 'Every great team starts with a connection',
+                'Select a head of department above to explore employees and their reporting relationships.'],
+            loading: ['BUILDING YOUR CHART', 'Connecting your team…', 'Loading active employees and their reporting relationships.'],
+            error: ['LET’S TRY THAT AGAIN', 'The hierarchy could not be loaded', message],
+            unavailable: ['NO HOD AVAILABLE', 'Your hierarchy starts with a HOD',
+                'Link a HOD user to an active employee record and configure their reporting mappings.']
+        }[state];
+        $('ehEmpty').classList.toggle('is-loading', state === 'loading');
+        $('ehEmpty').classList.toggle('is-error', state === 'error');
+        $('ehEmptyEyebrow').textContent = copy[0];
+        $('ehEmptyTitle').textContent = copy[1];
+        $('ehEmptyText').textContent = copy[2];
+        $('ehRetry').hidden = state !== 'error';
+    }
+
+    function filterVisibility(open) {
+        $('ehFilterFields').hidden = !open;
+        $('ehFilterToggle').setAttribute('aria-expanded', String(open));
+    }
+
+    function filterSummary() {
+        const count = Number(Boolean($('ehDepartment').value)) + Number(Boolean($('ehDesignation').value))
+            + Number($('ehType').value !== 'PRIMARY');
+        $('ehFilterCount').textContent = count;
+        $('ehFilterCount').hidden = !count;
+        $('ehResetFilters').disabled = !count;
+        $('ehShow').disabled = !$('ehHod').value;
+    }
+
+    function summary(visible = 0, levels = 0) {
+        $('ehVisibleCount').textContent = root ? visible : '—';
+        $('ehReportsCount').textContent = root ? root.totalChildren : '—';
+        $('ehLevelsCount').textContent = root ? levels : '—';
+        $('ehScope').textContent = root ? `${root.employeeName} · ${$('ehType').selectedOptions[0].text} reporting`
+            : 'Choose a HOD to explore their team';
+        $('ehScope').title = $('ehScope').textContent;
+        ['ehZoomIn', 'ehZoomOut', 'ehReset', 'ehFit', 'ehSearch', 'ehSearchButton'].forEach(id => { $(id).disabled = !root; });
+        $('ehClear').hidden = !selectedId && !$('ehSearch').value;
     }
 
     async function get(url, signal) {
@@ -56,8 +103,10 @@
     }
 
     function cancelSearch() {
+        window.clearTimeout(searchTimer);
         queryGeneration++;
         if (searchController) searchController.abort();
+        $('ehSearchForm').setAttribute('aria-busy', 'false');
         results.hidden = true;
         results.replaceChildren();
     }
@@ -65,22 +114,29 @@
     async function load() {
         const current = ++generation;
         cancelSearch();
+        if (hierarchyController) hierarchyController.abort();
         selectedId = null;
         $('ehSearch').value = '';
         busy = new Set();
         filters = { rootId: $('ehHod').value, reportingType: $('ehType').value };
         if ($('ehDepartment').value) filters.departmentId = $('ehDepartment').value;
         if ($('ehDesignation').value) filters.designationId = $('ehDesignation').value;
+        filterSummary();
         root = null;
         render();
+        viewport.setAttribute('aria-busy', 'false');
         if (!filters.rootId) {
+            emptyState();
             status('Select a HOD to view their reporting hierarchy.');
             return;
         }
         viewport.setAttribute('aria-busy', 'true');
+        emptyState('loading');
+        $('ehShow').disabled = true;
+        hierarchyController = new AbortController();
         status('Loading the reporting hierarchy…');
         try {
-            const loaded = decorate(await get(url()));
+            const loaded = decorate(await get(url(), hierarchyController.signal));
             if (current !== generation) return;
             root = loaded;
             root.expanded = true;
@@ -89,9 +145,14 @@
             status(root.totalChildren ? 'Expand an employee to explore their direct reports.'
                 : 'No subordinate is available for this employee and the selected filters.');
         } catch (error) {
-            if (current === generation) { root = null; render(); status(error.message, true); }
+            if (current === generation && error.name !== 'AbortError') {
+                root = null; render(); emptyState('error', error.message); status(error.message, true);
+            }
         } finally {
-            if (current === generation) viewport.setAttribute('aria-busy', 'false');
+            if (current === generation) {
+                viewport.setAttribute('aria-busy', 'false');
+                $('ehShow').disabled = !$('ehHod').value;
+            }
         }
     }
 
@@ -123,7 +184,7 @@
         article.classList.toggle('eh-found', node.employeeId === selectedId);
         article.classList.toggle('eh-ancestor', !node.filterMatch);
         const initials = (node.employeeName || '?').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase();
-        const avatar = element('div', 'eh-avatar', initials);
+        const avatar = element('div', `eh-avatar eh-avatar-${node.employeeId % 4}`, initials);
         avatar.setAttribute('aria-hidden', 'true');
         if (node.profilePhoto) {
             const photo = element('img');
@@ -139,14 +200,23 @@
         name.title = name.textContent;
         const designation = element('div', 'eh-designation', node.designation || 'Designation not set');
         designation.title = designation.textContent;
-        const code = element('div', 'eh-code', [node.employeeCode, node.department].filter(Boolean).join(' · '));
+        const code = element('span', 'eh-code', node.employeeCode || 'Code not set');
         code.title = code.textContent;
-        article.append(avatar, name, designation, code);
-        if (node === root) article.append(element('span', 'eh-root-tag', 'SELECTED HOD'));
+        const top = element('div', 'eh-card-top');
+        top.append(element('span', 'eh-node-badge', node === root ? 'SELECTED HOD'
+            : node.employeeId === selectedId ? 'SEARCH MATCH' : 'TEAM MEMBER'), code);
+        const identity = element('div', 'eh-identity');
+        const identityCopy = element('div', 'eh-identity-copy');
+        identityCopy.append(name, designation);
+        identity.append(avatar, identityCopy);
+        const department = element('div', 'eh-department', node.department || 'Department not set');
+        department.title = department.textContent;
+        article.append(top, identity, department);
         if (!node.filterMatch) article.title = 'Connecting manager retained for the selected filters';
         const footer = element('div', 'eh-card-footer');
         if (node.totalChildren) {
-            const toggle = button(`${node.expanded ? '−' : '+'} ${node.totalChildren} reports`, 'toggle', node.employeeId,
+            const toggle = button(busy.has(node.employeeId) ? 'Loading…'
+                : `${node.expanded ? '−' : '+'} ${node.totalChildren} direct report${node.totalChildren === 1 ? '' : 's'}`, 'toggle', node.employeeId,
                 `${node.expanded ? 'Collapse' : 'Expand'} reports of ${node.employeeName}`);
             toggle.setAttribute('aria-expanded', String(node.expanded));
             footer.append(toggle);
@@ -174,6 +244,9 @@
             stage.style.width = stage.style.height = '0px';
             surface.style.width = surface.style.height = '0px';
             $('ehCount').textContent = '0 employees displayed';
+            scale = 1;
+            $('ehZoom').value = '100%';
+            summary();
             return;
         }
         const ordered = [];
@@ -214,6 +287,7 @@
             let path = `M ${entry.x} ${bottom} V ${bus} M ${childEntries[0].x} ${bus} H ${childEntries.at(-1).x}`;
             for (const child of childEntries) path += ` M ${child.x} ${bus} V ${child.y}`;
             const connector = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            if (entry.node === root) connector.classList.add('eh-root-line');
             connector.setAttribute('d', path);
             lines.append(connector);
         }
@@ -225,6 +299,7 @@
         lines.setAttribute('width', chartWidth);
         lines.setAttribute('height', chartHeight);
         $('ehCount').textContent = `${ordered.length} employee${ordered.length === 1 ? '' : 's'} displayed`;
+        summary(ordered.length, maxDepth + 1);
         applyScale();
         if (focusedId) {
             const selector = focusedAction ? `button[data-id="${focusedId}"][data-action="${focusedAction}"]`
@@ -238,7 +313,7 @@
         stage.style.left = `${leftInset}px`;
         stage.style.transform = `scale(${scale})`;
         surface.style.width = `${Math.max(viewport.clientWidth, chartWidth * scale)}px`;
-        surface.style.height = `${Math.max(viewport.clientHeight, chartHeight * scale)}px`;
+        surface.style.height = `${Math.max(viewport.clientHeight, chartHeight * scale + CONTROL_SPACE)}px`;
         $('ehZoom').value = `${Math.round(scale * 100)}%`;
     }
 
@@ -256,7 +331,7 @@
     function fit() {
         if (!root) return;
         scale = Math.min(1, Math.max(.001, Math.min((viewport.clientWidth - 20) / chartWidth,
-            (viewport.clientHeight - 20) / chartHeight)));
+            (viewport.clientHeight - CONTROL_SPACE) / chartHeight)));
         fitMode = true;
         applyScale();
         viewport.scrollLeft = viewport.scrollTop = 0;
@@ -265,8 +340,8 @@
     function initialView(focusId = null) {
         fit();
         // Keep cards readable on phones and wide trees; exact overview is always available via Fit.
-        if (scale < .75) {
-            zoom(.85);
+        if (scale < (compactScreen.matches ? 1 : .85)) {
+            zoom(compactScreen.matches ? 1 : .85);
             const entry = displayed.get(focusId || root.employeeId);
             viewport.scrollLeft = entry.x * scale + leftInset - viewport.clientWidth / 2;
             viewport.scrollTop = focusId ? Math.max(0, entry.y * scale - viewport.clientHeight / 3) : 0;
@@ -319,20 +394,24 @@
     });
 
     async function search(event) {
-        event.preventDefault();
+        event?.preventDefault();
         if (!root) { status('Select a HOD and load a hierarchy before searching.'); return; }
         const term = $('ehSearch').value.trim();
         if (term.length < 2) { status('Enter at least 2 characters to search by name or employee code.'); return; }
         cancelSearch();
         const currentQuery = queryGeneration, current = generation;
         searchController = new AbortController();
+        $('ehSearchForm').setAttribute('aria-busy', 'true');
+        $('ehClear').hidden = false;
         status('Searching all levels, including collapsed branches…');
         try {
             const matches = await get(url({ q: term }, '/search'), searchController.signal);
             if (current !== generation || currentQuery !== queryGeneration) return;
             results.replaceChildren();
             for (const match of matches) {
-                const result = element('button', '', `${match.employeeName}${match.employeeCode ? ` · ${match.employeeCode}` : ''}`);
+                const result = element('button');
+                result.append(element('span', '', match.employeeName));
+                if (match.employeeCode) result.append(element('small', '', match.employeeCode));
                 result.type = 'button';
                 result.addEventListener('click', () => showMatch(match));
                 results.append(result);
@@ -343,6 +422,8 @@
                 : `${matches.length} matching employee${matches.length === 1 ? '' : 's'} found.`);
         } catch (error) {
             if (error.name !== 'AbortError' && current === generation && currentQuery === queryGeneration) status(error.message, true);
+        } finally {
+            if (currentQuery === queryGeneration) $('ehSearchForm').setAttribute('aria-busy', 'false');
         }
     }
 
@@ -366,7 +447,13 @@
     $('ehFilters').addEventListener('submit', event => { event.preventDefault(); load(); });
     $('ehFilters').addEventListener('change', load);
     $('ehSearchForm').addEventListener('submit', search);
-    $('ehSearch').addEventListener('input', cancelSearch);
+    $('ehSearch').addEventListener('input', () => {
+        cancelSearch();
+        const term = $('ehSearch').value.trim();
+        $('ehClear').hidden = !term && !selectedId;
+        if (!term && selectedId) load();
+        else if (term.length >= 2) searchTimer = window.setTimeout(() => search(), 350);
+    });
     $('ehClear').addEventListener('click', load);
     $('ehZoomIn').addEventListener('click', () => zoom(scale * 1.25));
     $('ehZoomOut').addEventListener('click', () => zoom(scale / 1.25));
@@ -376,9 +463,68 @@
         viewport.scrollTop = 0;
         viewport.scrollLeft = Math.max(0, chartWidth / 2 + leftInset - viewport.clientWidth / 2);
     });
-    page.addEventListener('keydown', event => {
-        if (event.key === 'Escape') { results.hidden = true; $('ehSearch').focus(); }
+    $('ehSearchForm').addEventListener('keydown', event => {
+        if (event.key === 'Escape') { cancelSearch(); $('ehSearch').focus(); }
+        if (results.hidden || !['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+        const choices = [...results.querySelectorAll('button')];
+        if (!choices.length) return;
+        event.preventDefault();
+        const index = choices.indexOf(document.activeElement);
+        const next = index < 0 ? (event.key === 'ArrowDown' ? 0 : choices.length - 1)
+            : (index + (event.key === 'ArrowDown' ? 1 : -1) + choices.length) % choices.length;
+        choices[next].focus();
     });
+    document.addEventListener('click', event => {
+        if (!$('ehSearchForm').contains(event.target)) results.hidden = true;
+    });
+    $('ehFilterToggle').addEventListener('click', () => {
+        filtersManuallyToggled = true;
+        filterVisibility($('ehFilterFields').hidden);
+    });
+    filterVisibility(!compactScreen.matches);
+    compactScreen.addEventListener('change', () => {
+        if (!filtersManuallyToggled) filterVisibility(!compactScreen.matches);
+    });
+    $('ehResetFilters').addEventListener('click', () => {
+        $('ehDepartment').value = '';
+        $('ehDesignation').value = '';
+        $('ehType').value = 'PRIMARY';
+        load();
+    });
+    $('ehRetry').addEventListener('click', () => optionsReady ? load() : initialize());
+    $('ehFullscreen').hidden = !document.fullscreenEnabled;
+    $('ehFullscreen').addEventListener('click', async () => {
+        try {
+            if (document.fullscreenElement) await document.exitFullscreen();
+            else await $('ehWorkspace').requestFullscreen();
+        } catch (error) { status('Full-screen view is unavailable. You can still use the zoom and fit controls.'); }
+    });
+    document.addEventListener('fullscreenchange', () => {
+        const active = document.fullscreenElement === $('ehWorkspace');
+        $('ehFullscreen').setAttribute('aria-pressed', String(active));
+        $('ehFullscreen').setAttribute('aria-label', active ? 'Exit full screen' : 'Open chart in full screen');
+        $('ehFullscreen').title = active ? 'Exit full screen' : 'Full screen';
+        $('ehFullscreenLabel').textContent = active ? 'Exit full screen' : 'Full screen';
+    });
+
+    // Mouse dragging complements native touch/trackpad scrolling; card controls never start a drag.
+    let drag = null;
+    viewport.addEventListener('pointerdown', event => {
+        if (!root || event.pointerType !== 'mouse' || event.button !== 0 || event.target.closest('.eh-card, button')) return;
+        drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop };
+        viewport.setPointerCapture(event.pointerId);
+        viewport.classList.add('eh-dragging');
+        event.preventDefault();
+    });
+    viewport.addEventListener('pointermove', event => {
+        if (!drag || event.pointerId !== drag.id) return;
+        viewport.scrollLeft = drag.left + drag.x - event.clientX;
+        viewport.scrollTop = drag.top + drag.y - event.clientY;
+    });
+    function endDrag() { drag = null; viewport.classList.remove('eh-dragging'); }
+    viewport.addEventListener('pointerup', endDrag);
+    viewport.addEventListener('pointercancel', endDrag);
+    viewport.addEventListener('lostpointercapture', endDrag);
     new ResizeObserver(() => { if (root) { if (fitMode) fit(); else applyScale(); } }).observe(viewport);
 
     function options(id, values, placeholder) {
@@ -393,6 +539,8 @@
             options('ehHod', data.hods, 'Select a HOD');
             options('ehDepartment', data.departments, 'All departments');
             options('ehDesignation', data.designations, 'All designations');
+            optionsReady = true;
+            filterSummary();
             const initial = new URLSearchParams(window.location.search).get('hodEmployeeId');
             if (initial && /^\d+$/.test(initial)) {
                 if (![...$('ehHod').options].some(option => option.value === initial)) {
@@ -401,9 +549,11 @@
                 $('ehHod').value = initial;
                 await load();
             } else if (!data.hods.length) {
+                emptyState('unavailable');
                 status('No active HOD employee is available. Link the HOD user to an active employee record and configure reporting mappings.');
             }
-        } catch (error) { status(error.message, true); }
+        } catch (error) { emptyState('error', error.message); status(error.message, true); }
     }
+    summary();
     initialize();
 })();

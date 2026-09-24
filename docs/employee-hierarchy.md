@@ -2,6 +2,7 @@
 
 Open `/hr/employee-hierarchy`, or select **Employee hierarchy** on `/hr/reportingManager`.
 The page and all hierarchy/photo APIs require `ROLE_HR`.
+The responsive workspace includes collapsible filters, visible-node/level counts, live name/code search with keyboard navigation, full-screen viewing where supported, and a floating zoom toolbar. Drag empty canvas space with a mouse, or scroll on touch devices. Mobile opens at 100% zoom with additional filters collapsed; **Fit** provides an overview of the entire visible tree.
 To open a particular employee as the root, use `?hodEmployeeId=1001` (an **employee ID**, not a user ID).
 
 ## Data rules
