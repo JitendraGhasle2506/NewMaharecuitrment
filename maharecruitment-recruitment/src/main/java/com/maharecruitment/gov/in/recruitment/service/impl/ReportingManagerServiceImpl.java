@@ -1066,11 +1066,6 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
         List<CellReportingAuthorityMappingEntity> existingMappings = cellAuthorityMappingRepository
                 .findByCellCellIdOrderByAuthorityLevelAsc(cellId);
-        if (normalizedAuthorityLevel == 2 && existingMappings.stream()
-                .noneMatch(existing -> Integer.valueOf(1).equals(existing.getAuthorityLevel()))) {
-            throw new IllegalArgumentException("Assign the Level 1 authority before adding Level 2 authorities.");
-        }
-
         boolean authorityAlreadyMapped = existingMappings.stream()
                 .anyMatch(existing -> authorityUserId.equals(existing.getAuthorityUserId())
                         && (mappingId == null || !mappingId.equals(existing.getMappingId())));

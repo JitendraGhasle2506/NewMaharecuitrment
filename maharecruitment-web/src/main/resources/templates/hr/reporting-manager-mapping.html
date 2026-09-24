@@ -818,12 +818,10 @@
                                     + '<i class="fa fa-edit me-1"></i>L1 '
                                     + (levelOne ? 'Change' : 'Map') + '</button>'
                             ];
-                            if(levelOne) {
-                                buttons.push('<button type="button" class="btn btn-sm btn-primary edit-cell-mapping-btn ms-1"'
-                                    + ' data-cell="' + Number(row.cellId)
-                                    + '" data-level="2" data-mapping="" data-authority="">'
-                                    + '<i class="fa fa-plus me-1"></i>Add L2</button>');
-                            }
+                            buttons.push('<button type="button" class="btn btn-sm btn-primary edit-cell-mapping-btn ms-1"'
+                                + ' data-cell="' + Number(row.cellId)
+                                + '" data-level="2" data-mapping="" data-authority="">'
+                                + '<i class="fa fa-plus me-1"></i>Add L2</button>');
                             levelTwoAuthorities.forEach(function(authority, index) {
                                 buttons.push('<button type="button" class="btn btn-sm btn-outline-secondary edit-cell-mapping-btn ms-1"'
                                     + ' data-cell="' + Number(row.cellId)

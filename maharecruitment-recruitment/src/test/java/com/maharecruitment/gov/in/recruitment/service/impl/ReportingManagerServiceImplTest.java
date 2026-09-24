@@ -897,7 +897,7 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
-    void saveCellReportingMappingAllowsMultipleLevelTwoAuthorities() {
+    void saveCellReportingMappingAllowsLevelTwoWithoutLevelOne() {
         WingMaster wing = WingMaster.builder().wingId(3L).activeFlag("Y").build();
         CellMaster cell = CellMaster.builder()
                 .cellId(11L)
@@ -905,11 +905,6 @@ class ReportingManagerServiceImplTest {
                 .wing(wing)
                 .activeFlag("Y")
                 .build();
-        CellReportingAuthorityMappingEntity levelOne = new CellReportingAuthorityMappingEntity();
-        levelOne.setMappingId(31L);
-        levelOne.setCell(cell);
-        levelOne.setAuthorityLevel(1);
-        levelOne.setAuthorityUserId(7L);
         CellReportingAuthorityMappingEntity existingLevelTwo = new CellReportingAuthorityMappingEntity();
         existingLevelTwo.setMappingId(32L);
         existingLevelTwo.setCell(cell);
@@ -918,7 +913,7 @@ class ReportingManagerServiceImplTest {
         when(cellMasterRepository.findByCellId(11L)).thenReturn(Optional.of(cell));
         when(userRepository.findByIdAndActiveTrue(9L)).thenReturn(Optional.of(user(9L, "Second L2")));
         when(cellAuthorityMappingRepository.findByCellCellIdOrderByAuthorityLevelAsc(11L))
-                .thenReturn(List.of(levelOne, existingLevelTwo));
+                .thenReturn(List.of(existingLevelTwo));
 
         service.saveCellReportingMapping(null, 11L, 2, 9L);
 
