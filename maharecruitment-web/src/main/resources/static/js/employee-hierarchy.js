@@ -13,7 +13,7 @@
     const results = $('ehResults');
     const styles = getComputedStyle(page);
     const CARD_WIDTH = parseFloat(styles.getPropertyValue('--eh-card-width')) || 200;
-    const CARD_HEIGHT = parseFloat(styles.getPropertyValue('--eh-card-height')) || 196;
+    const CARD_HEIGHT = parseFloat(styles.getPropertyValue('--eh-card-height')) || 220;
     const GAP_X = parseFloat(styles.getPropertyValue('--eh-gap-x')) || 20;
     const GAP_Y = parseFloat(styles.getPropertyValue('--eh-gap-y')) || 36;
     const PADDING = parseFloat(styles.getPropertyValue('--eh-chart-padding')) || 32;
@@ -182,7 +182,7 @@
         article.style.top = `${y}px`;
         article.dataset.id = node.employeeId;
         article.tabIndex = -1;
-        article.setAttribute('aria-label', `${node.employeeName}, ${node.designation || 'Designation not set'}`);
+        article.setAttribute('aria-label', `${node.employeeName}, ${node.designation || 'Designation not set'}, ${node.totalSubordinates} total subordinates`);
         article.classList.toggle('eh-root', node === root);
         article.classList.toggle('eh-found', node.employeeId === selectedId);
         article.classList.toggle('eh-ancestor', !node.filterMatch);
@@ -206,9 +206,12 @@
         designation.append(element('span', 'eh-position-label', 'Position: '),
             element('span', 'eh-designation-value', node.designation || 'Designation not set'));
         designation.title = designation.textContent;
+        const subordinates = element('div', 'eh-subordinate-count');
+        subordinates.append('Total subordinates: ', element('strong', '', node.totalSubordinates));
+        subordinates.title = 'Direct and indirect subordinates in the selected hierarchy, including collapsed and unloaded branches.';
         const identity = element('div', 'eh-identity');
         const identityCopy = element('div', 'eh-identity-copy');
-        identityCopy.append(name, designation);
+        identityCopy.append(name, designation, subordinates);
         identity.append(avatar, identityCopy);
         article.append(identity);
         if (node.totalChildren) {
@@ -361,6 +364,7 @@
             branch.children.forEach(child => { if (!byId.has(child.employeeId)) byId.set(child.employeeId, child); });
             node.children = [...byId.values()];
             node.totalChildren = branch.totalChildren;
+            node.totalSubordinates = branch.totalSubordinates;
             node.nextOffset = branch.nextOffset;
             node.expanded = true;
             fitMode = false;

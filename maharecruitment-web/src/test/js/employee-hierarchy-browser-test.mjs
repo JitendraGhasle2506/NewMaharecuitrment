@@ -18,6 +18,7 @@ assert.ok(browser, 'Set CHROME_BIN to a Chrome/Chromium executable');
 const artifacts = await mkdtemp(join(tmpdir(), 'employee-hierarchy-test-'));
 const names = ['Ananya Deshmukh', 'Rohan Patil', 'Sara Shah', 'Dev Mehta', 'Mira Joshi', 'Aarav Kulkarni', 'Nisha Rao'];
 const children = new Map([[1, [2, 3, 4]], [2, [5, 6]], [3, [7]]]);
+const totalSubordinates = new Map([[1, 6], [2, 2], [3, 1]]);
 let failNextTree = false;
 function node(id, expanded = false) {
     const reports = children.get(id) || [];
@@ -25,6 +26,7 @@ function node(id, expanded = false) {
         designation: id === 1 ? 'Head of Department' : id < 5 ? 'Team Manager' : 'Software Engineer',
         department: 'Technology', profilePhoto: id === 2 || id === 4 ? `/api/employees/hierarchy/photo/${id}` : null,
         totalChildren: reports.length, hasChildren: !!reports.length,
+        totalSubordinates: totalSubordinates.get(id) || 0,
         filterMatch: true, nextOffset: reports.length && !expanded ? 0 : null,
         children: expanded ? reports.map(id => node(id)) : [] };
 }
@@ -115,6 +117,9 @@ try {
         if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
         return result.result.value;
     };
+    const assertSubordinates = async (id, total, message) => assert.equal(
+        await evaluate(`document.querySelector('.eh-card[data-id="${id}"] .eh-subordinate-count').textContent`),
+        `Total subordinates: ${total}`, message);
     const waitFor = expression => evaluate(`new Promise((resolve, reject) => {
         let attempts = 0; const timer = setInterval(() => {
             if (${expression}) { clearInterval(timer); resolve(true); }
@@ -126,18 +131,24 @@ try {
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`document.querySelector('.eh-root .eh-name-value').textContent`), names[0]);
     assert.equal(await evaluate(`document.querySelector('.eh-root .eh-designation-value').textContent`), 'Head of Department');
+    await assertSubordinates(1, 6, 'HOD total includes indirect, unloaded subordinates');
+    await assertSubordinates(2, 2, 'Collapsed manager shows the full total');
+    await assertSubordinates(3, 1);
+    await assertSubordinates(4, 0, 'Leaf shows zero subordinates');
     assert.equal(await evaluate(`document.querySelectorAll('.eh-card .eh-code, .eh-card .eh-department, .eh-card .eh-node-badge, .eh-card .eh-leaf').length`), 0);
     assert.equal(await evaluate(`Array.from(document.querySelectorAll('.eh-card')).every(card => {
         const text = card.textContent;
         return !text.includes('EMP00') && !text.includes('Technology') && !text.includes('direct reports')
             && getComputedStyle(card).backgroundColor === 'rgba(0, 0, 0, 0)';
-    })`), true, 'Transparent nodes show only name and designation with icon controls');
+    })`), true, 'Transparent nodes show name, designation and subordinate total without IDs or departments');
     await waitFor(`document.querySelector('.eh-root img').naturalWidth > 0`);
     assert.equal(await evaluate(`document.getElementById('ehVisibleCount').textContent`), '4');
     assert.equal(await evaluate(`document.getElementById('ehReportsCount').textContent`), '3');
     assert.equal(await evaluate(`document.getElementById('ehLevelsCount').textContent`), '2');
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 6`);
+    await assertSubordinates(1, 6, 'Expanding a branch does not change the HOD total');
+    await assertSubordinates(2, 2, 'Branch loading retains its total');
     const overlap = await evaluate(`(() => {
         const cards = [...document.querySelectorAll('.eh-card')].map(e => e.getBoundingClientRect());
         return cards.some((a,i) => cards.some((b,j) => i < j && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top));
@@ -178,6 +189,8 @@ try {
     await waitFor(`document.querySelectorAll('.eh-card').length === 6`);
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
     assert.equal(await evaluate(`document.querySelectorAll('.eh-card').length`), 4);
+    await assertSubordinates(1, 6, 'Collapsing a branch does not reduce the total');
+    await assertSubordinates(2, 2);
     await evaluate(`document.getElementById('ehSearch').value='EMP006'; document.getElementById('ehSearch').dispatchEvent(new Event('input'))`);
     await waitFor(`document.querySelector('#ehResults button')`);
     await evaluate(`document.getElementById('ehSearch').dispatchEvent(new KeyboardEvent('keydown', {key:'ArrowDown', bubbles:true}))`);
@@ -185,9 +198,13 @@ try {
     await evaluate(`document.querySelector('#ehResults button').click()`);
     assert.equal(await evaluate(`document.querySelector('.eh-found .eh-name-value').textContent`), names[5]);
     assert.equal(await evaluate(`document.querySelectorAll('.eh-card').length`), 3);
+    await assertSubordinates(1, 6, 'Search paths retain full subtree totals');
+    await assertSubordinates(2, 2);
+    await assertSubordinates(6, 0);
     await evaluate(`document.querySelector('button[data-id="1"][data-action="more"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 5`);
     assert.equal(await evaluate(`document.querySelectorAll('.eh-card[data-id="2"]').length`), 1, 'Path and paginated branch merge without duplicates');
+    await assertSubordinates(1, 6, 'Merging a page retains the total');
     await evaluate(`document.getElementById('ehClear').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 4 && !document.querySelector('.eh-found')`);
     await evaluate(`document.getElementById('ehReset').click()`);
@@ -237,7 +254,7 @@ try {
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`document.getElementById('ehViewport').getAttribute('aria-busy')`), 'false');
     assert.deepEqual(exceptions, [], 'No browser JavaScript exceptions');
-    console.log(`PASS: minimal transparent nodes, photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, filters, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
+    console.log(`PASS: minimal transparent nodes, total subordinate counts (including unloaded branches), photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, filters, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
 } finally {
     if (cdp && socket?.readyState === WebSocket.OPEN) await cdp('Browser.close').catch(() => {});
     socket?.close();

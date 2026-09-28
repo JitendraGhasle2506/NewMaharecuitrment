@@ -18,6 +18,8 @@ public class EmployeeHierarchyNode {
     private final String department;
     private final String profilePhoto;
     private final int totalChildren;
+    /** All descendants in the filtered hierarchy, including unloaded branches; excludes this employee. */
+    private final int totalSubordinates;
     private final boolean filterMatch;
     @Setter
     private Integer nextOffset;

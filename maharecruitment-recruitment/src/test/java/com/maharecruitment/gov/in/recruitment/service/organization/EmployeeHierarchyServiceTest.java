@@ -28,9 +28,12 @@ class EmployeeHierarchyServiceTest {
                 List.of(mapping(3, 2L), mapping(2, null)));
         EmployeeHierarchyNode root = tree(1, null, 0, 25, 3);
         assertThat(root.getEmployeeName()).isEqualTo("HOD");
+        assertThat(root.getTotalSubordinates()).isEqualTo(2);
+        assertThat(root.getChildren().getFirst().getTotalSubordinates()).isEqualTo(1);
         assertThat(root.getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(2L);
         assertThat(root.getChildren().getFirst().getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(3L);
         assertThat(root.getChildren().getFirst().getChildren().getFirst().isHasChildren()).isFalse();
+        assertThat(root.getChildren().getFirst().getChildren().getFirst().getTotalSubordinates()).isZero();
         assertThat(root.getNextOffset()).isNull();
     }
 
@@ -40,10 +43,15 @@ class EmployeeHierarchyServiceTest {
                 List.of(mapping(2, null), mapping(3, null), mapping(4, 2L)));
         EmployeeHierarchyNode first = tree(1, null, 0, 1, 1);
         assertThat(first.getTotalChildren()).isEqualTo(2);
+        assertThat(first.getTotalSubordinates()).isEqualTo(3);
         assertThat(first.getNextOffset()).isEqualTo(1);
         assertThat(first.getChildren().getFirst().getChildren()).isEmpty();
         assertThat(first.getChildren().getFirst().isHasChildren()).isTrue();
         assertThat(first.getChildren().getFirst().getNextOffset()).isZero();
+        assertThat(first.getChildren().getFirst().getTotalSubordinates()).isEqualTo(1);
+        assertThat(tree(1, null, 1, 1, 1).getTotalSubordinates()).isEqualTo(3);
+        assertThat(tree(1, null, 0, 1, 0).getTotalSubordinates()).isEqualTo(3);
+        assertThat(tree(1, 2L, 0, 25, 1).getTotalSubordinates()).isEqualTo(1);
         assertThat(tree(1, null, 1, 1, 1).getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(3L);
         assertThat(tree(1, 2L, 0, 25, 1).getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(4L);
         assertThat(tree(1, null, Integer.MAX_VALUE, 25, 1).getChildren()).isEmpty();
@@ -54,7 +62,10 @@ class EmployeeHierarchyServiceTest {
         setup(List.of(employee(1, "HOD", 10), employee(2, "Manager", 10), employee(3, "Leaf", 10), employee(4, "Self", 10)),
                 List.of(mapping(1, 3L), mapping(2, 1L), mapping(3, 2L), mapping(4, 4L)));
         EmployeeHierarchyNode root = tree(1, null, 0, 25, 8);
+        assertThat(root.getTotalSubordinates()).isEqualTo(2);
+        assertThat(root.getChildren().getFirst().getTotalSubordinates()).isEqualTo(1);
         assertThat(root.getChildren().getFirst().getChildren().getFirst().getChildren()).isEmpty();
+        assertThat(root.getChildren().getFirst().getChildren().getFirst().getTotalSubordinates()).isZero();
         assertThat(service.search(1L, EmployeeReportingType.PRIMARY, null, null, "leaf").getFirst().path())
                 .extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(1L, 2L, 3L);
     }
@@ -64,6 +75,7 @@ class EmployeeHierarchyServiceTest {
         setup(List.of(employee(1, "HOD", 10), employee(2, "Manager", 10), employee(3, "Leaf", 10)),
                 List.of(mapping(3, 999L), mapping(3, 1L), mapping(2, null)));
         assertThat(tree(1, null, 0, 25, 8).getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(2L);
+        assertThat(tree(1, null, 0, 25, 8).getTotalSubordinates()).isEqualTo(1);
         assertThatThrownBy(() -> tree(1, 999L, 0, 25, 1)).isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> tree(999, null, 0, 25, 1)).isInstanceOf(ResponseStatusException.class);
     }
@@ -74,19 +86,25 @@ class EmployeeHierarchyServiceTest {
                 List.of(mapping(2, null), mapping(3, 2L), mapping(4, null)));
         EmployeeHierarchyNode filtered = service.tree(1L, null, EmployeeReportingType.PRIMARY, 20L, 30L, 0, 25, 1);
         assertThat(filtered.isFilterMatch()).isFalse();
+        assertThat(filtered.getTotalSubordinates()).isEqualTo(2);
+        assertThat(filtered.getChildren().getFirst().getTotalSubordinates()).isEqualTo(1);
         assertThat(filtered.getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(2L);
         var result = service.search(1L, EmployeeReportingType.PRIMARY, 20L, 30L, "EMP3");
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().path()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(1L, 2L, 3L);
+        assertThat(result.getFirst().path()).extracting(EmployeeHierarchyNode::getTotalSubordinates).containsExactly(2, 1, 0);
         assertThat(service.search(1L, EmployeeReportingType.PRIMARY, 20L, null, "Manager")).isEmpty();
         assertThat(service.tree(1L, null, EmployeeReportingType.PRIMARY, 99L, null, 0, 25, 1).isHasChildren()).isFalse();
+        assertThat(service.tree(1L, null, EmployeeReportingType.PRIMARY, 99L, null, 0, 25, 1).getTotalSubordinates()).isZero();
     }
 
     @Test
     void reportingTypesAreIsolatedAndInputsAreBounded() {
         setup(List.of(employee(1, "HOD", 10), employee(2, "Manager", 10)), List.of(mapping(2, null)));
         when(repository.findReportingRelationships("PROJECT")).thenReturn(List.of());
-        assertThat(service.tree(1L, null, EmployeeReportingType.PROJECT, null, null, 0, 25, 1).getChildren()).isEmpty();
+        EmployeeHierarchyNode project = service.tree(1L, null, EmployeeReportingType.PROJECT, null, null, 0, 25, 1);
+        assertThat(project.getChildren()).isEmpty();
+        assertThat(project.getTotalSubordinates()).isZero();
         verify(repository).findReportingRelationships("PROJECT");
         assertThatThrownBy(() -> tree(1, null, -1, 25, 1)).isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> tree(1, null, 0, 101, 1)).isInstanceOf(ResponseStatusException.class);
@@ -104,6 +122,8 @@ class EmployeeHierarchyServiceTest {
             if (id > 1) mappings.add(mapping(id, (long) id - 1));
         }
         setup(employees, mappings);
+        assertThat(tree(1, null, 0, 25, 0).getTotalSubordinates()).isEqualTo(1999);
+        assertThat(tree(1, 1999L, 0, 25, 1).getTotalSubordinates()).isEqualTo(1);
         assertThat(tree(1, 1999L, 0, 25, 1).getChildren().getFirst().getEmployeeId()).isEqualTo(2000L);
         assertThat(service.search(1L, EmployeeReportingType.PRIMARY, null, null, "EMP2000").getFirst().path()).hasSize(2000);
     }
@@ -121,7 +141,18 @@ class EmployeeHierarchyServiceTest {
         EmployeeHierarchyNode root = tree(1, null, 0, 100, 8);
         int count = 1 + root.getChildren().size() + root.getChildren().stream().mapToInt(n -> n.getChildren().size()).sum();
         assertThat(count).isEqualTo(500);
+        assertThat(root.getTotalSubordinates()).isEqualTo(1100);
+        assertThat(root.getChildren()).allSatisfy(node -> assertThat(node.getTotalSubordinates()).isEqualTo(10));
         assertThat(root.getChildren()).anyMatch(node -> node.getNextOffset() != null);
+    }
+
+    @Test
+    void totalsExcludeUnavailableEmployeesAndDisconnectedBranches() {
+        setup(List.of(employee(1, "HOD", 10), employee(2, "Manager", 10), employee(3, "Disconnected", 10)),
+                List.of(mapping(2, null), mapping(99, 2L), mapping(3, 99L)));
+        EmployeeHierarchyNode root = tree(1, null, 0, 25, 1);
+        assertThat(root.getTotalSubordinates()).isEqualTo(1);
+        assertThat(root.getChildren().getFirst().getTotalSubordinates()).isZero();
     }
 
     private EmployeeHierarchyNode tree(long root, Long node, int offset, int limit, int depth) {

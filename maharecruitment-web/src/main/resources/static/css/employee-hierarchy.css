@@ -1,7 +1,7 @@
 .eh-page {
     --eh-ink: #1a2b44; --eh-muted: #68788d; --eh-blue: #2563eb; --eh-teal: #0b807d;
     --eh-border: #e1e7ef; --eh-line: #a9bdcf; --eh-radius: 16px;
-    --eh-card-width: 200px; --eh-card-height: 196px;
+    --eh-card-width: 200px; --eh-card-height: 220px;
     --eh-gap-x: 20px; --eh-gap-y: 36px; --eh-chart-padding: 32px;
     color: var(--eh-ink); max-width: 100%; min-width: 0; padding: 8px 2px 24px;
     font-family: inherit; font-size: 14px;
@@ -101,6 +101,8 @@
 .eh-name-label { color: #078aac; font-weight: 750; }
 .eh-designation { margin-top: 3px; font-size: 12px; line-height: 17px; color: #283d52; font-weight: 500; }
 .eh-position-label { font-weight: 750; }
+.eh-subordinate-count { margin-top: 4px; font-size: 11px; line-height: 18px; color: #52677d; white-space: nowrap; }
+.eh-subordinate-count strong { color: var(--eh-teal); font-weight: 750; font-variant-numeric: tabular-nums; }
 .eh-card-footer { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: auto; height: 36px; flex: 0 0 36px; }
 .eh-card-footer button {
     display: inline-flex; align-items: center; justify-content: center; padding: 0;

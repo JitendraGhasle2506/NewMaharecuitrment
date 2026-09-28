@@ -168,8 +168,14 @@ public class EmployeeHierarchyService {
         // Preserve connectors through non-matching ancestors instead of incorrectly re-parenting employees.
         List<Long> reversed = new ArrayList<>(visited);
         Collections.reverse(reversed);
+        Map<Long, Integer> subordinateCounts = new HashMap<>();
         for (Long id : reversed) {
-            if (included.contains(id) && parents.containsKey(id)) included.add(parents.get(id));
+            if (included.contains(id) && parents.containsKey(id)) {
+                Long parentId = parents.get(id);
+                included.add(parentId);
+                // Children precede parents here: count each subtree once, before response pagination.
+                subordinateCounts.merge(parentId, subordinateCounts.getOrDefault(id, 0) + 1, Integer::sum);
+            }
         }
         included.add(rootId);
         Map<Long, List<Long>> children = new HashMap<>();
@@ -180,7 +186,7 @@ public class EmployeeHierarchyService {
         }
         // Preserve deterministic breadth-first order for search results.
         visited.retainAll(included);
-        return new Graph(employees, children, parents, visited, matches);
+        return new Graph(employees, children, parents, visited, matches, subordinateCounts);
     }
 
     private EmployeeHierarchyNode node(Graph graph, Long id) {
@@ -189,7 +195,7 @@ public class EmployeeHierarchyService {
         EmployeeHierarchyNode node = new EmployeeHierarchyNode(id, employee.getEmployeeName(),
                 employee.getEmployeeCode(), employee.getDesignation(), employee.getDepartment(),
                 Boolean.TRUE.equals(employee.getHasPhoto()) ? "/api/employees/hierarchy/photo/" + id : null,
-                count, graph.matches.contains(id));
+                count, graph.subordinateCounts.getOrDefault(id, 0), graph.matches.contains(id));
         node.setNextOffset(count == 0 ? null : 0);
         return node;
     }
@@ -205,5 +211,6 @@ public class EmployeeHierarchyService {
     }
 
     private record Graph(Map<Long, EmployeeRow> employees, Map<Long, List<Long>> children,
-                         Map<Long, Long> parent, Set<Long> included, Set<Long> matches) { }
+                         Map<Long, Long> parent, Set<Long> included, Set<Long> matches,
+                         Map<Long, Integer> subordinateCounts) { }
 }

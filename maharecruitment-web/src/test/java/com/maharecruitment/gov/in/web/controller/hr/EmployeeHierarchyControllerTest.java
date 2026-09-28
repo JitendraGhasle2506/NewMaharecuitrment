@@ -61,7 +61,7 @@ class EmployeeHierarchyControllerTest {
 
     @Test
     void returnsExpectedJsonWithPrimaryDefaultAndThymeleafView() throws Exception {
-        EmployeeHierarchyNode node = new EmployeeHierarchyNode(1001L, "HOD Name", "EMP001", "HOD", "Finance", null, 0, true);
+        EmployeeHierarchyNode node = new EmployeeHierarchyNode(1001L, "HOD Name", "EMP001", "HOD", "Finance", null, 0, 0, true);
         when(context.getBean(EmployeeHierarchyService.class).tree(1001L, null, EmployeeReportingType.PRIMARY,
                 null, null, 0, 25, 1)).thenReturn(node);
         var mvc = MockMvcBuilders.standaloneSetup(controller).build();
@@ -69,10 +69,26 @@ class EmployeeHierarchyControllerTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.employeeId").value(1001))
                 .andExpect(jsonPath("$.data.children").isEmpty())
+                .andExpect(jsonPath("$.data.totalSubordinates").value(0))
                 .andExpect(jsonPath("$.data.hasChildren").value(false));
         assertThat(controller.page(new ExtendedModelMap())).isEqualTo("hr/employee-hierarchy");
         mvc.perform(get("/api/employees/hierarchy/1001").param("reportingType", "UNKNOWN"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returnsTotalSubordinatesEvenWhenChildrenAreNotLoaded() throws Exception {
+        EmployeeHierarchyNode node = new EmployeeHierarchyNode(1001L, "HOD Name", "EMP001", "HOD", "Finance", null, 2, 6, true);
+        node.setNextOffset(0);
+        when(context.getBean(EmployeeHierarchyService.class).tree(1001L, null, EmployeeReportingType.PRIMARY,
+                null, null, 0, 25, 0)).thenReturn(node);
+        MockMvcBuilders.standaloneSetup(controller).build()
+                .perform(get("/api/employees/hierarchy/1001").param("depth", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalChildren").value(2))
+                .andExpect(jsonPath("$.data.totalSubordinates").value(6))
+                .andExpect(jsonPath("$.data.children").isEmpty())
+                .andExpect(jsonPath("$.data.nextOffset").value(0));
     }
 
     @Test

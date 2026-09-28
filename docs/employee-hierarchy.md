@@ -21,7 +21,8 @@ To open a particular employee as the root, use `?hodEmployeeId=1001` (an **emplo
 
 Optional parameters: `departmentId`, `designationId`, `nodeId` (branch within the selected root), `offset` (default 0), `limit` (default 25, maximum 100), `depth` (default 1, maximum 8 **per response**).
 
-Returns `{success: true, message, data}`. Each recursive node includes employee ID, name, code, designation, department, protected photo URL, `children`, `hasChildren`, `totalChildren`, `filterMatch`, and `nextOffset`.
+Returns `{success: true, message, data}`. Each recursive node includes employee ID, name, code, designation, department, protected photo URL, `children`, `hasChildren`, `totalChildren`, `totalSubordinates`, `filterMatch`, and `nextOffset`.
+`totalChildren` counts direct reports. `totalSubordinates` counts all direct and indirect descendants in the selected reporting type and filtered hierarchy, including connecting ancestors and collapsed/unloaded branches, excluding the employee themselves. Leaves return zero. Counts are aggregated once, bottom-up, before pagination; no additional database queries are needed.
 `nextOffset: null` means all direct children are included; `nextOffset: 0` with `hasChildren: true` means the branch is not loaded yet, not a leaf.
 Requests contain at most 500 nodes. There is no logical hierarchy-depth limit: continue at any descendant using `nodeId`, keeping the original HOD ID in the URL.
 
@@ -34,7 +35,7 @@ Two bulk projection queries build a graph per tree/search request; traversal is 
 
 Restart/redeploy so post-schema migration **V133** runs. It adds `reporting_type`, backfills existing mappings as `PRIMARY`, and adds an index. Supported read filters are `PRIMARY`, `ADMINISTRATIVE`, `PROJECT`, `LEAVE_APPROVAL`. Existing mapping forms continue to create PRIMARY mappings; this change does not add an editor for other types or alter existing approval routing.
 
-The compact, transparent chart nodes display only a circular photo, name, and designation. Employee codes, departments, badges, and report-count labels are not rendered on nodes. Small icon-only controls retain expansion and pagination, while employee-code search and department filtering remain available in the toolbar.
+The compact, transparent chart nodes display a circular photo, name, designation, and total subordinate count. Employee codes, departments, and badges are not rendered on nodes. Small icon-only controls retain expansion and pagination, while employee-code search and department filtering remain available in the toolbar. Expanding, collapsing, searching, or loading another page does not reduce the total subordinate count to just the visible employees.
 
 Employee photos use the existing managed upload policy through an HR-only proxy. Missing or invalid photos fall back to the local default SVG avatar; filesystem paths are never sent to the browser.
 
