@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +19,8 @@ import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
+import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver;
+import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver.AttendanceEventWindow;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProjectMappingEntity;
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeReportingType;
@@ -87,13 +88,15 @@ public class HodDashboardService {
                             projectMappingsByEmployeeId.get(employee.getEmployeeId()))));
         }
         List<EmployeeView> employees = List.copyOf(employeeViewsById.values());
-        Set<Long> presentEmployeeIds = presentEmployeeIds(employeeViewsById.keySet(), LocalDate.now());
-        List<EmployeeView> presentEmployees = employeeViewsById.entrySet().stream()
-                .filter(entry -> presentEmployeeIds.contains(entry.getKey()))
-                .map(Map.Entry::getValue)
+        Map<Long, AttendanceEventWindow> presentAttendanceByEmployeeId = presentAttendanceByEmployeeId(
+                employeeViewsById.keySet(), LocalDate.now());
+        List<PresentEmployeeView> presentEmployees = employeeViewsById.entrySet().stream()
+                .filter(entry -> presentAttendanceByEmployeeId.containsKey(entry.getKey()))
+                .map(entry -> toPresentEmployeeView(
+                        entry.getValue(), presentAttendanceByEmployeeId.get(entry.getKey())))
                 .toList();
         List<EmployeeView> absentEmployees = employeeViewsById.entrySet().stream()
-                .filter(entry -> !presentEmployeeIds.contains(entry.getKey()))
+                .filter(entry -> !presentAttendanceByEmployeeId.containsKey(entry.getKey()))
                 .map(Map.Entry::getValue)
                 .toList();
         Map<Long, List<EmployeeView>> employeesByCellId = employeeViewsByCellId(
@@ -194,19 +197,27 @@ public class HodDashboardService {
         return counts;
     }
 
-    private Set<Long> presentEmployeeIds(Collection<Long> employeeIds, LocalDate attendanceDate) {
+    private Map<Long, AttendanceEventWindow> presentAttendanceByEmployeeId(
+            Collection<Long> employeeIds,
+            LocalDate attendanceDate) {
         if (employeeIds.isEmpty()) {
-            return Set.of();
+            return Map.of();
         }
-        Set<Long> presentEmployeeIds = new LinkedHashSet<>();
+        Map<Long, AttendanceEventWindow> attendanceByEmployeeId = new HashMap<>();
         for (DailyAttendanceInternalEntity attendance : dailyAttendanceInternalRepository
                 .findByEmployeeIdInAndAttendanceDateBetween(employeeIds, attendanceDate, attendanceDate)) {
             if (attendance.getEmployeeId() != null
                     && "PRESENT".equalsIgnoreCase(text(attendance.getStatus(), ""))) {
-                presentEmployeeIds.add(attendance.getEmployeeId());
+                AttendanceEventWindow currentWindow = AttendanceEventTimeResolver.resolve(attendance);
+                attendanceByEmployeeId.merge(
+                        attendance.getEmployeeId(),
+                        currentWindow,
+                        (existingWindow, newWindow) -> AttendanceEventTimeResolver.resolve(
+                                existingWindow.inTime(), existingWindow.outTime(),
+                                newWindow.inTime(), newWindow.outTime()));
             }
         }
-        return presentEmployeeIds;
+        return attendanceByEmployeeId;
     }
 
     private Map<Long, Integer> countProjectsByCell(Collection<ProjectMst> projects) {
@@ -248,6 +259,14 @@ public class HodDashboardService {
                         : text(projectMapping.getProject().getProjectName(), "-"));
     }
 
+    private PresentEmployeeView toPresentEmployeeView(EmployeeView employee, AttendanceEventWindow attendance) {
+        return new PresentEmployeeView(
+                employee.fullName(),
+                employee.designation(),
+                text(AttendanceEventTimeResolver.format(attendance.inTime()), "-"),
+                text(AttendanceEventTimeResolver.format(attendance.outTime()), "-"));
+    }
+
     private String text(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
     }
@@ -261,7 +280,7 @@ public class HodDashboardService {
             List<EmployeeView> employees,
             List<CellView> cells,
             List<ProjectView> projects,
-            List<EmployeeView> presentEmployees,
+            List<PresentEmployeeView> presentEmployees,
             List<EmployeeView> absentEmployees) {
         private static HodDashboardView empty() {
             return new HodDashboardView(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of());
@@ -277,6 +296,9 @@ public class HodDashboardService {
             String status,
             String cellName,
             String projectName) {
+    }
+
+    public record PresentEmployeeView(String fullName, String designation, String inTime, String outTime) {
     }
 
     public record CellView(Long cellId, String cellName, String wingName, int employeeCount, int projectCount,

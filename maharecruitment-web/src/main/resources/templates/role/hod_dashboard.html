@@ -105,6 +105,18 @@
             border-bottom: 1px solid #e3eaf2;
         }
         .hod-detail-panel .panel-heading h4 { color: #173f63; font-size: 1rem; font-weight: 700; }
+        .present-panel-heading { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem 1rem; }
+        .present-panel-title { display: flex; align-items: center; gap: .6rem; }
+        .present-employee-search { position: relative; width: min(100%, 22rem); margin-left: auto; }
+        .present-employee-search i {
+            position: absolute;
+            top: 50%;
+            left: .85rem;
+            color: #70859a;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        .present-employee-search .form-control { min-height: 2.5rem; padding-left: 2.4rem; }
         .hod-detail-panel .table thead th {
             padding: .85rem 1rem;
             border-bottom-width: 1px;
@@ -134,6 +146,7 @@
         @media (max-width: 575.98px) {
             .hod-dashboard-hero { margin: -1rem -1rem 1.25rem; padding: 1.5rem; border-radius: 0 0 14px 14px; }
             .hod-stat-card { min-height: 145px; }
+            .present-employee-search { width: 100%; margin-left: 0; }
         }
     </style>
 </head>
@@ -340,27 +353,40 @@
 
                         <section class="tab-pane fade hod-detail-panel" id="present-panel" role="tabpanel"
                                 aria-labelledby="present-tab" tabindex="0">
-                            <div class="panel-heading d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">Present employees today</h4>
-                                <span class="badge text-bg-success" th:text="${dashboard.presentEmployeesCount}">0</span>
+                            <div class="panel-heading present-panel-heading">
+                                <div class="present-panel-title">
+                                    <h4 class="mb-0">Present employees today</h4>
+                                    <span class="badge text-bg-success" th:text="${dashboard.presentEmployeesCount}">0</span>
+                                </div>
+                                <label class="present-employee-search" for="presentEmployeeSearch">
+                                    <span class="visually-hidden">Search present employees by name or designation</span>
+                                    <i class="fa fa-search" aria-hidden="true"></i>
+                                    <input class="form-control" id="presentEmployeeSearch" type="search"
+                                           placeholder="Search name or designation" autocomplete="off"
+                                           aria-controls="presentEmployeeTable">
+                                </label>
                             </div>
                             <div class="table-responsive">
-                                <table class="table align-middle table-hover mb-0">
+                                <table class="table align-middle table-hover mb-0" id="presentEmployeeTable">
                                     <thead><tr>
                                         <th scope="col">Employee Name</th>
                                         <th scope="col">Designation</th>
-                                        <th scope="col">Cell</th>
-                                        <th scope="col">Project</th>
+                                        <th scope="col">In Time</th>
+                                        <th scope="col">Out Time</th>
                                     </tr></thead>
                                     <tbody>
-                                        <tr th:each="employee : ${dashboard.presentEmployees}">
+                                        <tr class="present-employee-row" th:each="employee : ${dashboard.presentEmployees}"
+                                            th:attr="data-search=${#strings.toLowerCase(employee.fullName + ' ' + employee.designation)}">
                                             <td th:text="${employee.fullName}"></td>
                                             <td th:text="${employee.designation}"></td>
-                                            <td th:text="${employee.cellName}"></td>
-                                            <td th:text="${employee.projectName}"></td>
+                                            <td th:text="${employee.inTime}"></td>
+                                            <td th:text="${employee.outTime}"></td>
                                         </tr>
                                         <tr th:if="${#lists.isEmpty(dashboard.presentEmployees)}">
-                                            <td colspan="5" class="text-center text-muted py-4">No present attendance is recorded for your team today.</td>
+                                            <td colspan="4" class="text-center text-muted py-4">No present attendance is recorded for your team today.</td>
+                                        </tr>
+                                        <tr class="d-none" id="presentEmployeeNoResults">
+                                            <td colspan="4" class="text-center text-muted py-4">No present employees match your search.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -405,6 +431,21 @@
             tab.addEventListener('shown.bs.tab', () => {
                 document.getElementById('dashboard-empty-state')?.classList.add('is-hidden');
             });
+        });
+
+        const presentEmployeeSearch = document.getElementById('presentEmployeeSearch');
+        const presentEmployeeRows = Array.from(document.querySelectorAll('.present-employee-row'));
+        const presentEmployeeNoResults = document.getElementById('presentEmployeeNoResults');
+        presentEmployeeSearch?.addEventListener('input', () => {
+            const searchTerm = presentEmployeeSearch.value.trim().toLocaleLowerCase();
+            let visibleRows = 0;
+            presentEmployeeRows.forEach((row) => {
+                const matches = (row.dataset.search || '').includes(searchTerm);
+                row.classList.toggle('d-none', !matches);
+                visibleRows += matches ? 1 : 0;
+            });
+            presentEmployeeNoResults?.classList.toggle(
+                'd-none', visibleRows > 0 || presentEmployeeRows.length === 0);
         });
     </script>
 </body>
