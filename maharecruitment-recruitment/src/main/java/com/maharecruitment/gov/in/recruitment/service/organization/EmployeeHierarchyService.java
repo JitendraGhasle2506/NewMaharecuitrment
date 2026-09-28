@@ -114,6 +114,12 @@ public class EmployeeHierarchyService {
         return matches;
     }
 
+    /** Returns every active descendant in deterministic breadth-first order, excluding the root employee. */
+    public List<Long> subordinateIds(Long rootId, EmployeeReportingType type) {
+        Graph graph = graph(rootId, type, null, null);
+        return graph.included.stream().filter(id -> !id.equals(rootId)).toList();
+    }
+
     private Graph graph(Long rootId, EmployeeReportingType type, Long departmentId, Long designationId) {
         Map<Long, EmployeeRow> employees = new LinkedHashMap<>();
         Map<Long, Long> employeeByUser = new HashMap<>();

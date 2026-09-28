@@ -9,7 +9,8 @@
 </head>
 <body>
 <th:block th:replace="~{header/header :: var-sidebar-header('Employee Hierarchy', 'Human Resources', ~{::section})}">
-    <section id="employeeHierarchy" class="eh-page" th:attr="data-api=@{/api/employees/hierarchy},data-context=@{/}">
+    <section id="employeeHierarchy" class="eh-page" th:fragment="employee-hierarchy-content"
+             th:attr="data-api=@{${hierarchyApi}},data-context=@{/},data-photo-api=${hierarchyPhotoApi},data-self-mode=${hierarchySelfMode}">
         <svg class="eh-icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <symbol id="eh-i-chart" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="5" rx="1.5"/><path d="M12 8v5M5 17v-4h14v4"/><rect x="2" y="17" width="6" height="4" rx="1"/><rect x="16" y="17" width="6" height="4" rx="1"/></symbol>
             <symbol id="eh-i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2"/></symbol>
@@ -22,12 +23,14 @@
             <symbol id="eh-i-layers" viewBox="0 0 24 24"><path d="m12 3 10 5-10 5L2 8l10-5ZM2 12l10 5 10-5M2 16l10 5 10-5"/></symbol>
         </svg>
         <header class="eh-heading">
-            <div class="eh-heading-copy"><span class="eh-eyebrow">HUMAN RESOURCES <span aria-hidden="true">/</span> PEOPLE &amp; TEAMS</span>
-                <h1>Employee hierarchy<span class="eh-title-dot" aria-hidden="true"></span></h1>
-                <p>A clear view of your people and how they connect.</p></div>
-            <a class="eh-manage" th:href="@{/hr/reportingManager}">Manage reporting <svg class="eh-icon" aria-hidden="true"><use href="#eh-i-arrow"/></svg></a>
+            <div class="eh-heading-copy">
+                <span class="eh-eyebrow" th:text="${hierarchySelfMode ? 'MY TEAM / REPORTING STRUCTURE' : 'HUMAN RESOURCES / PEOPLE &amp; TEAMS'}">HUMAN RESOURCES / PEOPLE &amp; TEAMS</span>
+                <h1><span th:text="${hierarchySelfMode ? 'My team hierarchy' : 'Employee hierarchy'}">Employee hierarchy</span><span class="eh-title-dot" aria-hidden="true"></span></h1>
+                <p th:text="${hierarchySelfMode ? 'Your reporting hierarchy, limited to employees who report under you.' : 'A clear view of your people and how they connect.'}">A clear view of your people and how they connect.</p>
+            </div>
+            <a class="eh-manage" th:if="${!hierarchySelfMode}" th:href="@{/hr/reportingManager}">Manage reporting <svg class="eh-icon" aria-hidden="true"><use href="#eh-i-arrow"/></svg></a>
         </header>
-        <form id="ehFilters" class="eh-filters">
+        <form id="ehFilters" class="eh-filters" th:hidden="${hierarchySelfMode}">
             <div class="eh-filter-main">
                 <span class="eh-selection-icon" aria-hidden="true"><svg class="eh-icon"><use href="#eh-i-chart"/></svg></span>
                 <div class="eh-field eh-hod-field"><label for="ehHod">Head of department</label>
@@ -50,7 +53,7 @@
                 <div class="eh-filter-note"><span>Filters update automatically</span><button id="ehResetFilters" type="button" class="eh-text-button">Reset filters</button></div>
             </div>
         </form>
-        <div class="eh-overview" aria-label="Current chart overview">
+        <div class="eh-overview" aria-label="Current chart overview" th:hidden="${hierarchySelfMode}">
             <div><span class="eh-stat-icon" aria-hidden="true"><svg class="eh-icon"><use href="#eh-i-users"/></svg></span><span><strong id="ehVisibleCount">—</strong><span class="eh-stat-label">Visible employees</span></span></div>
             <div><span class="eh-stat-icon eh-stat-teal" aria-hidden="true"><svg class="eh-icon"><use href="#eh-i-chart"/></svg></span><span><strong id="ehReportsCount">—</strong><span class="eh-stat-label">HOD direct reports</span></span></div>
             <div><span class="eh-stat-icon eh-stat-purple" aria-hidden="true"><svg class="eh-icon"><use href="#eh-i-layers"/></svg></span><span><strong id="ehLevelsCount">—</strong><span class="eh-stat-label">Visible levels</span></span></div>

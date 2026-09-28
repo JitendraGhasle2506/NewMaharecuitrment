@@ -5,6 +5,8 @@
     const $ = id => document.getElementById(id);
     const api = page.dataset.api;
     const context = page.dataset.context.replace(/\/$/, '');
+    const photoApi = page.dataset.photoApi || '';
+    const selfMode = page.dataset.selfMode === 'true';
     const viewport = $('ehViewport');
     const stage = $('ehStage');
     const surface = $('ehSurface');
@@ -77,7 +79,7 @@
             throw new Error('Your session may have expired. Sign in and reload this page.');
         }
         if (!response.ok) {
-            if (response.status === 403) throw new Error('You need HR access to view this hierarchy.');
+            if (response.status === 403) throw new Error('You do not have access to this hierarchy.');
             if (response.status === 404) throw new Error('This employee or branch is no longer available. Reload the hierarchy.');
             throw new Error('Unable to load the hierarchy. Please try again.');
         }
@@ -194,8 +196,8 @@
         photo.decoding = 'async';
         const fallbackPhoto = `${context}/img/employee-default-avatar.svg`;
         // Accept only this application's photo proxy; never display remote URLs or filesystem paths.
-        const expected = `/api/employees/hierarchy/photo/${node.employeeId}`;
-        photo.src = node.profilePhoto === expected ? context + expected : fallbackPhoto;
+        const expected = photoApi ? `${photoApi}/${node.employeeId}` : '';
+        photo.src = expected && node.profilePhoto === expected ? context + expected : fallbackPhoto;
         photo.addEventListener('error', () => { photo.src = fallbackPhoto; }, { once: true });
         avatar.append(photo);
         const name = element('h3');
@@ -545,7 +547,10 @@
             optionsReady = true;
             filterSummary();
             const initial = new URLSearchParams(window.location.search).get('hodEmployeeId');
-            if (initial && /^\d+$/.test(initial)) {
+            if (selfMode && data.hods.length) {
+                $('ehHod').value = String(data.hods[0].id);
+                await load();
+            } else if (initial && /^\d+$/.test(initial)) {
                 if (![...$('ehHod').options].some(option => option.value === initial)) {
                     $('ehHod').add(new Option(`Employee ${initial}`, initial));
                 }

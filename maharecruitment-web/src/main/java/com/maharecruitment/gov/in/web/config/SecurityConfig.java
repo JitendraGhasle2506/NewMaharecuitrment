@@ -250,7 +250,8 @@ public class SecurityConfig {
 
                 .requestMatchers("/stm/**").hasAuthority("ROLE_STM")
                 .requestMatchers("/pm/**").hasAuthority("ROLE_PM")
-                .requestMatchers("/hod1/**", "/hod2/**").hasAuthority("ROLE_HOD")
+                .requestMatchers("/hod1/**").hasAnyAuthority("ROLE_HOD", "ROLE_STM")
+                .requestMatchers("/hod2/**").hasAuthority("ROLE_HOD")
 
                 .requestMatchers("/coo/**")
                     .hasAnyAuthority("ROLE_COO", "ROLE_AUDITOR")

@@ -38,6 +38,14 @@ class RoleBasedNavigationServiceTest {
     }
 
     @Test
+    void stmUsesAndCanAccessTheSharedTeamDashboard() {
+        assertEquals("/hod1/dashboard", service.resolveHomeUrl(List.of("ROLE_STM")));
+        assertTrue(service.canAccessUrl("/hod1/dashboard", List.of("ROLE_STM")));
+        assertTrue(service.canAccessUrl("/stm/dashboard", List.of("ROLE_STM")));
+        assertFalse(service.canAccessUrl("/hod2/dashboard", List.of("ROLE_STM")));
+    }
+
+    @Test
     void canAccessUrlAllowsAuthenticatedFallbackForGeneralPages() {
         assertTrue(service.canAccessUrl("/master/designations", List.of("ROLE_HR")));
         assertTrue(service.canAccessUrl("/common", List.of("ROLE_DEPARTMENT")));

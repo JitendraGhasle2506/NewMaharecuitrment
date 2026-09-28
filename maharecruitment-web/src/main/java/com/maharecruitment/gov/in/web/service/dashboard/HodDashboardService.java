@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.service.dashboard;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -21,11 +22,13 @@ import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntit
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProjectMappingEntity;
+import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeReportingType;
 import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeProjectMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
+import com.maharecruitment.gov.in.recruitment.service.organization.EmployeeHierarchyService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class HodDashboardService {
     private final ReportingManagerService reportingManagerService;
+    private final EmployeeHierarchyService employeeHierarchyService;
     private final EmployeeRepository employeeRepository;
     private final EmployeeCellMappingRepository employeeCellMappingRepository;
     private final EmployeeProjectMappingRepository employeeProjectMappingRepository;
@@ -46,7 +50,10 @@ public class HodDashboardService {
         if (hodUserId == null) {
             return HodDashboardView.empty();
         }
-        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId);
+        List<Long> employeeIds = employeeRepository.findByUser_Id(hodUserId)
+                .map(employee -> employeeHierarchyService.subordinateIds(
+                        employee.getEmployeeId(), EmployeeReportingType.PRIMARY))
+                .orElseGet(() -> reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId));
         List<EmployeeCellMappingEntity> employeeCellMappings = employeeIds.isEmpty()
                 ? List.of()
                 : employeeCellMappingRepository.findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAsc(employeeIds);
@@ -67,7 +74,6 @@ public class HodDashboardService {
 
         Map<Long, EmployeeCellMappingEntity> cellMappingsByEmployeeId = cellMappingsByEmployeeId(employeeCellMappings);
         Map<Long, EmployeeProjectMappingEntity> projectMappingsByEmployeeId = projectMappingsByEmployeeId(employeeProjectMappings);
-        Map<Long, Integer> employeeCountsByCellId = countEmployeesByCell(employeeCellMappings);
         Map<Long, ProjectMst> projectsById = relevantProjects(cellsById.keySet(), employeeProjectMappings);
         Map<Long, Integer> employeeCountsByProjectId = countEmployeesByProject(employeeProjectMappings);
         Map<Long, Integer> projectCountsByCellId = countProjectsByCell(projectsById.values());
@@ -90,13 +96,16 @@ public class HodDashboardService {
                 .filter(entry -> !presentEmployeeIds.contains(entry.getKey()))
                 .map(Map.Entry::getValue)
                 .toList();
+        Map<Long, List<EmployeeView>> employeesByCellId = employeeViewsByCellId(
+                employeeViewsById, cellMappingsByEmployeeId);
         List<CellView> cells = cellsById.values().stream()
                 .map(cell -> new CellView(
                         cell.getCellId(),
                         text(cell.getCellName(), "Unnamed Cell"),
                         cell.getWing() == null ? "-" : text(cell.getWing().getWingName(), "-"),
-                        employeeCountsByCellId.getOrDefault(cell.getCellId(), 0),
-                        projectCountsByCellId.getOrDefault(cell.getCellId(), 0)))
+                        employeesByCellId.getOrDefault(cell.getCellId(), List.of()).size(),
+                        projectCountsByCellId.getOrDefault(cell.getCellId(), 0),
+                        employeesByCellId.getOrDefault(cell.getCellId(), List.of())))
                 .sorted(Comparator.comparing(CellView::cellName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
         List<ProjectView> projects = projectsById.values().stream()
@@ -148,14 +157,19 @@ public class HodDashboardService {
         return result;
     }
 
-    private Map<Long, Integer> countEmployeesByCell(List<EmployeeCellMappingEntity> mappings) {
-        Map<Long, Integer> counts = new HashMap<>();
-        mappings.forEach(mapping -> {
-            if (mapping.getCell() != null && mapping.getCell().getCellId() != null) {
-                counts.merge(mapping.getCell().getCellId(), 1, Integer::sum);
+    private Map<Long, List<EmployeeView>> employeeViewsByCellId(
+            Map<Long, EmployeeView> employeeViewsById,
+            Map<Long, EmployeeCellMappingEntity> cellMappingsByEmployeeId) {
+        Map<Long, List<EmployeeView>> employeesByCellId = new HashMap<>();
+        employeeViewsById.forEach((employeeId, employee) -> {
+            EmployeeCellMappingEntity mapping = cellMappingsByEmployeeId.get(employeeId);
+            if (mapping != null && mapping.getCell() != null && mapping.getCell().getCellId() != null) {
+                employeesByCellId.computeIfAbsent(mapping.getCell().getCellId(), unused -> new ArrayList<>())
+                        .add(employee);
             }
         });
-        return counts;
+        employeesByCellId.replaceAll((cellId, employees) -> List.copyOf(employees));
+        return employeesByCellId;
     }
 
     private Map<Long, ProjectMst> relevantProjects(
@@ -265,7 +279,8 @@ public class HodDashboardService {
             String projectName) {
     }
 
-    public record CellView(Long cellId, String cellName, String wingName, int employeeCount, int projectCount) {
+    public record CellView(Long cellId, String cellName, String wingName, int employeeCount, int projectCount,
+            List<EmployeeView> employees) {
     }
 
     public record ProjectView(Long projectId, String projectName, String projectCode, String cellName,

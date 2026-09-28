@@ -17,13 +17,20 @@ import lombok.RequiredArgsConstructor;
 public class HodDashboardController {
     private final HodDashboardService dashboardService;
 
-    @GetMapping("/hod1/dashboard")
+    @GetMapping({ "/hod1/dashboard", "/stm/dashboard" })
     public String dashboard(HttpSession session, Model model) {
         SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
         if (user == null || user.id() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Your session has expired.");
         }
         model.addAttribute("dashboard", dashboardService.getDashboard(user.id()));
+        model.addAttribute("hierarchyApi", "/hod1/api/employee-hierarchy");
+        model.addAttribute("hierarchyPhotoApi", "");
+        model.addAttribute("hierarchySelfMode", true);
+        boolean stmOnly = user.roles() != null
+                && user.roles().contains("ROLE_STM")
+                && !user.roles().contains("ROLE_HOD");
+        model.addAttribute("dashboardTitle", stmOnly ? "STM Dashboard" : "HOD Dashboard");
         return "role/hod_dashboard";
     }
 }

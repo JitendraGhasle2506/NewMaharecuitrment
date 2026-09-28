@@ -35,6 +35,7 @@ class EmployeeHierarchyServiceTest {
         assertThat(root.getChildren().getFirst().getChildren().getFirst().isHasChildren()).isFalse();
         assertThat(root.getChildren().getFirst().getChildren().getFirst().getTotalSubordinates()).isZero();
         assertThat(root.getNextOffset()).isNull();
+        assertThat(service.subordinateIds(1L, EmployeeReportingType.PRIMARY)).containsExactly(2L, 3L);
     }
 
     @Test

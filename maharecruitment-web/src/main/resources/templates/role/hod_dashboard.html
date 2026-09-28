@@ -2,8 +2,9 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>HOD Dashboard</title>
+    <title th:text="${dashboardTitle}">Team Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-hierarchy.css}">
     <link rel="stylesheet" th:href="@{/css/role-dashboard.css}">
     <style>
         .hod-dashboard-hero {
@@ -119,6 +120,14 @@
         .hod-detail-panel .table tbody tr:last-child td { border-bottom: 0; }
         .hod-detail-panel .table tbody tr:hover { background-color: #f5faff; }
         .count-chip { display: inline-flex; min-width: 2rem; justify-content: center; padding: .25rem .55rem; border-radius: 999px; background: #e9f2fb; color: #1f5f91; font-size: .78rem; font-weight: 700; }
+        .cell-employee-toggle { align-items: center; gap: .35rem; border: 0; cursor: pointer; }
+        .cell-employee-toggle:hover, .cell-employee-toggle:focus-visible { background: #d6e9fa; color: #124f7f; }
+        .cell-employee-toggle i { font-size: .62rem; transition: transform .2s ease; }
+        .cell-employee-toggle[aria-expanded="true"] i { transform: rotate(180deg); }
+        .cell-employee-detail { padding: .75rem 1rem 1rem; background: #f7fbff; border-top: 1px solid #e3edf6; }
+        .cell-employee-detail .table-responsive { border: 1px solid #dce8f3; border-radius: 10px; background: #fff; }
+        .cell-employee-detail table { min-width: 420px; }
+        .cell-employee-detail-title { margin: 0 0 .65rem; color: #315a7c; font-size: .82rem; font-weight: 700; }
         .dashboard-empty-state { padding: 2.25rem 1rem; border: 1px dashed #c9d7e5; border-radius: 14px; background: #fbfdff; color: #70859a; text-align: center; }
         .dashboard-empty-state i { display: block; margin-bottom: .65rem; color: #2f77ad; font-size: 1.45rem; }
         .dashboard-empty-state.is-hidden { display: none; }
@@ -129,10 +138,10 @@
     </style>
 </head>
 <body class="role-shell">
-    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'HOD Dashboard', ~{::section})}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', ${dashboardTitle}, ~{::section})}">
         <section>
             <div class="card add-emp-card">
-                <div class="header"><h2>HOD Dashboard</h2></div>
+                <div class="header"><h2 th:text="${dashboardTitle}">Team Dashboard</h2></div>
                 <div class="card-body">
                     <div class="hod-dashboard-hero">
                         <h1>My Team Overview</h1>
@@ -167,6 +176,16 @@
                                 <span class="hod-stat-label">Projects in Scope</span>
                                 <span class="hod-stat-value" th:text="${dashboard.totalProjects}">0</span>
                                 <span class="hod-stat-hint">Click to view project details</span>
+                            </button>
+                        </div>
+                        <div class="col-sm-6 col-xl">
+                            <button type="button" class="hod-stat-card cells" id="hierarchy-tab"
+                                    data-bs-toggle="tab" data-bs-target="#hierarchy-panel" role="tab"
+                                    aria-controls="hierarchy-panel" aria-selected="false">
+                                <span class="hod-stat-icon"><i class="fa fa-sitemap" aria-hidden="true"></i></span>
+                                <span class="hod-stat-label">Team Hierarchy</span>
+                                <span class="hod-stat-value" aria-hidden="true"><i class="fa fa-users"></i></span>
+                                <span class="hod-stat-hint">Click to view subordinate chart</span>
                             </button>
                         </div>
                         <div class="col-sm-6 col-xl">
@@ -205,26 +224,18 @@
                             <div class="table-responsive">
                                 <table class="table align-middle table-hover mb-0">
                                     <thead><tr>
-                                        <th scope="col">Employee Name</th>
+                                        <th scope="col">Sr. No.</th>
+                                        <th scope="col">Name</th>
                                         <th scope="col">Designation</th>
-                                        <th scope="col">Cell</th>
-                                        <th scope="col">Project</th>
-                                        <th scope="col">Email</th>
-                                        <th scope="col">Type</th>
-                                        <th scope="col">Status</th>
                                     </tr></thead>
                                     <tbody>
-                                        <tr th:each="employee : ${dashboard.employees}">
+                                        <tr th:each="employee, employeeStat : ${dashboard.employees}">
+                                            <td th:text="${employeeStat.count}"></td>
                                             <td th:text="${employee.fullName}"></td>
                                             <td th:text="${employee.designation}"></td>
-                                            <td th:text="${employee.cellName}"></td>
-                                            <td th:text="${employee.projectName}"></td>
-                                            <td th:text="${employee.email}"></td>
-                                            <td th:text="${employee.recruitmentType}"></td>
-                                            <td th:text="${employee.status}"></td>
                                         </tr>
                                         <tr th:if="${#lists.isEmpty(dashboard.employees)}">
-                                            <td colspan="7" class="text-center text-muted py-4">No employees are mapped to you.</td>
+                                            <td colspan="3" class="text-center text-muted py-4">No employees are mapped to you.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -246,12 +257,45 @@
                                         <th scope="col">Projects</th>
                                     </tr></thead>
                                     <tbody>
-                                        <tr th:each="cell : ${dashboard.cells}">
-                                            <td th:text="${cell.cellName}"></td>
-                                            <td th:text="${cell.wingName}"></td>
-                                            <td><span class="count-chip" th:text="${cell.employeeCount}">0</span></td>
-                                            <td><span class="count-chip" th:text="${cell.projectCount}">0</span></td>
-                                        </tr>
+                                        <th:block th:each="cell : ${dashboard.cells}">
+                                            <tr>
+                                                <td th:text="${cell.cellName}"></td>
+                                                <td th:text="${cell.wingName}"></td>
+                                                <td>
+                                                    <button th:if="${cell.employeeCount > 0}" type="button"
+                                                            class="count-chip cell-employee-toggle"
+                                                            data-bs-toggle="collapse" aria-expanded="false"
+                                                            th:attr="data-bs-target=${'#cell-employees-' + cell.cellId},aria-controls=${'cell-employees-' + cell.cellId},aria-label=${'Show employees in ' + cell.cellName}">
+                                                        <span th:text="${cell.employeeCount}">0</span>
+                                                        <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                                                    </button>
+                                                    <span th:if="${cell.employeeCount == 0}" class="count-chip">0</span>
+                                                </td>
+                                                <td><span class="count-chip" th:text="${cell.projectCount}">0</span></td>
+                                            </tr>
+                                            <tr class="cell-employee-detail-row">
+                                                <td colspan="4" class="p-0 border-0">
+                                                    <div class="collapse cell-employee-detail" th:id="${'cell-employees-' + cell.cellId}">
+                                                        <p class="cell-employee-detail-title"
+                                                           th:text="${'Employees in ' + cell.cellName}">Employees in cell</p>
+                                                        <div class="table-responsive">
+                                                            <table class="table align-middle table-hover mb-0">
+                                                                <thead><tr>
+                                                                    <th scope="col">Name</th>
+                                                                    <th scope="col">Designation</th>
+                                                                </tr></thead>
+                                                                <tbody>
+                                                                    <tr th:each="employee : ${cell.employees}">
+                                                                        <td th:text="${employee.fullName}"></td>
+                                                                        <td th:text="${employee.designation}"></td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </th:block>
                                         <tr th:if="${#lists.isEmpty(dashboard.cells)}">
                                             <td colspan="4" class="text-center text-muted py-4">No cells are assigned to your reporting scope.</td>
                                         </tr>
@@ -287,6 +331,11 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </section>
+
+                        <section class="tab-pane fade hod-detail-panel hod-hierarchy-panel p-0" id="hierarchy-panel" role="tabpanel"
+                                 aria-labelledby="hierarchy-tab" tabindex="0">
+                            <th:block th:replace="~{hr/employee-hierarchy :: employee-hierarchy-content}"></th:block>
                         </section>
 
                         <section class="tab-pane fade hod-detail-panel" id="present-panel" role="tabpanel"

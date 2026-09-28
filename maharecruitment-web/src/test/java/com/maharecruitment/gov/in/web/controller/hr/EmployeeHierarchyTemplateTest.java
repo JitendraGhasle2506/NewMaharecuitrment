@@ -24,6 +24,9 @@ class EmployeeHierarchyTemplateTest {
         request.setContextPath("/portal");
         var application = JakartaServletWebApplication.buildApplication(new MockServletContext());
         var context = new WebContext(application.buildExchange(request, new MockHttpServletResponse()));
+        context.setVariable("hierarchyApi", "/api/employees/hierarchy");
+        context.setVariable("hierarchyPhotoApi", "/api/employees/hierarchy/photo");
+        context.setVariable("hierarchySelfMode", false);
         var engine = new SpringTemplateEngine();
         engine.setTemplateResolver(new StringTemplateResolver());
         String html = engine.process(template, context);

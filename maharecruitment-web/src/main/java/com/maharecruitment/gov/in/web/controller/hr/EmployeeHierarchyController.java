@@ -49,6 +49,9 @@ public class EmployeeHierarchyController {
     @GetMapping("/hr/employee-hierarchy")
     public String page(Model model) {
         model.addAttribute("sidebarActive", "Reporting Manager");
+        model.addAttribute("hierarchyApi", "/api/employees/hierarchy");
+        model.addAttribute("hierarchyPhotoApi", "/api/employees/hierarchy/photo");
+        model.addAttribute("hierarchySelfMode", false);
         return "hr/employee-hierarchy";
     }
 

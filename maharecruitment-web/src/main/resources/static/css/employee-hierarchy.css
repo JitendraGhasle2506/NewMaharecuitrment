@@ -8,6 +8,8 @@
 }
 .eh-page *, .eh-page *::before, .eh-page *::after { box-sizing: border-box; }
 .eh-page [hidden] { display: none !important; }
+.hod-hierarchy-panel .eh-page { width: 100%; padding: 20px; overflow: hidden; }
+.eh-page[data-self-mode="true"] .eh-heading { margin-bottom: 16px; }
 .eh-icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }
 .eh-icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .eh-page button, .eh-page select, .eh-page input { font: inherit; }
@@ -151,6 +153,7 @@
     .eh-selection-icon { display: none; }
 }
 @media (max-width: 767px) {
+    .hod-hierarchy-panel .eh-page { padding: 15px; }
     .eh-heading { align-items: flex-start; gap: 12px; margin-bottom: 16px; }.eh-heading p { font-size: 12px; }
     .eh-heading .eh-manage { font-size: 11px !important; padding: 8px 10px; }
     .eh-filters { padding: 15px; }.eh-filter-main { gap: 12px; flex-wrap: wrap; }
@@ -170,9 +173,22 @@
     .eh-canvas-hint { font-size: 9px; left: 14px; }
 }
 @media (max-width: 480px) {
+    .hod-hierarchy-panel .eh-page { padding: 12px; }
     .eh-heading { flex-wrap: wrap; }.eh-heading .eh-manage { min-height: 36px; background: transparent; border: 0; padding: 0; color: #5179af; }
-    .eh-heading h1 { font-size: 26px; }.eh-eyebrow { font-size: 8px; letter-spacing: 1.1px; }
+    .eh-heading h1 { font-size: clamp(21px, 7vw, 26px); gap: 8px; overflow-wrap: anywhere; }.eh-eyebrow { font-size: 8px; letter-spacing: 1.1px; }
+    .eh-title-dot { width: 7px; height: 7px; flex: 0 0 7px; }
+    .eh-workspace { border-radius: 12px; }
+    .eh-workspace-heading { align-items: flex-start; }
+    .eh-workspace-heading p { max-width: calc(100vw - 120px); white-space: normal; }
+    .eh-toolbar { padding: 12px; }
+    .eh-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: 100%; }
     .eh-search-input { padding: 0 9px; gap: 7px; }.eh-search > button { padding: 8px; }
+    .eh-search #ehClear { grid-column: 1 / -1; }
+    .eh-results { grid-column: 1 / -1; }
+    .eh-legend { flex-wrap: wrap; white-space: normal; }
+    .eh-viewport { min-height: 360px; }
+    .eh-controls { max-width: calc(100% - 20px); overflow-x: auto; }
+    .eh-footer > span:last-child { display: none; }
     .eh-page input, .eh-field select { font-size: 16px; } /* Avoid automatic iOS zoom on form focus. */
     .eh-search input { font-size: 16px; }.eh-search input::placeholder { font-size: 11px; }
 }

@@ -16,7 +16,6 @@ public class RoleLandingServiceImpl implements RoleLandingService {
             Map.entry("/admin/dashboard", "Admin Dashboard"),
             Map.entry("/user/dashboard", "User Dashboard"),
             Map.entry("/agency/dashboard", "Agency Dashboard"),
-            Map.entry("/stm/dashboard", "STM Dashboard"),
             Map.entry("/pm/dashboard", "PM Dashboard"),
             Map.entry("/hod1/dashboard", "HOD Dashboard"),
             Map.entry("/hod2/dashboard", "HOD Dashboard"),
