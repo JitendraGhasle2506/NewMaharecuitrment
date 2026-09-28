@@ -23,7 +23,8 @@ function node(id, expanded = false) {
     const reports = children.get(id) || [];
     return { employeeId: id, employeeName: names[id - 1], employeeCode: `EMP00${id}`,
         designation: id === 1 ? 'Head of Department' : id < 5 ? 'Team Manager' : 'Software Engineer',
-        department: 'Technology', profilePhoto: null, totalChildren: reports.length, hasChildren: !!reports.length,
+        department: 'Technology', profilePhoto: id === 2 || id === 4 ? `/api/employees/hierarchy/photo/${id}` : null,
+        totalChildren: reports.length, hasChildren: !!reports.length,
         filterMatch: true, nextOffset: reports.length && !expanded ? 0 : null,
         children: expanded ? reports.map(id => node(id)) : [] };
 }
@@ -35,7 +36,12 @@ page = page.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"')
 const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
     try {
-        if (url.pathname.startsWith('/api/')) {
+        if (url.pathname === '/api/employees/hierarchy/photo/2') {
+            response.setHeader('Content-Type', 'image/svg+xml');
+            response.end(await readFile(join(base, 'static/img/employee-default-avatar.svg')));
+        } else if (url.pathname === '/api/employees/hierarchy/photo/4') {
+            response.statusCode = 404; response.end();
+        } else if (url.pathname.startsWith('/api/')) {
             let data;
             if (url.pathname.endsWith('/options')) data = {
                 hods: [{ id: 1, label: names[0] }], departments: [{ id: 10, label: 'Technology' }],
@@ -57,8 +63,9 @@ const server = createServer(async (request, response) => {
             response.end(JSON.stringify({ success: true, data }));
         } else if (url.pathname === '/') {
             response.setHeader('Content-Type', 'text/html'); response.end(page);
-        } else if (['/js/employee-hierarchy.js', '/css/employee-hierarchy.css'].includes(url.pathname)) {
-            response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'text/javascript' : 'text/css');
+        } else if (['/js/employee-hierarchy.js', '/css/employee-hierarchy.css', '/img/employee-default-avatar.svg'].includes(url.pathname)) {
+            response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'text/javascript'
+                : url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css');
             response.end(await readFile(join(base, 'static', url.pathname)));
         } else { response.statusCode = 404; response.end(); }
     } catch (error) { response.statusCode = 500; response.end(String(error)); }
@@ -84,7 +91,10 @@ try {
     const pending = new Map(), exceptions = [];
     socket.onmessage = event => {
         const message = JSON.parse(event.data);
-        if (message.method === 'Runtime.exceptionThrown') exceptions.push(message.params.exceptionDetails.text);
+        if (message.method === 'Runtime.exceptionThrown') {
+            const details = message.params.exceptionDetails;
+            exceptions.push(details.exception?.description || `${details.text} at ${details.url}:${details.lineNumber}`);
+        }
         if (!pending.has(message.id)) return;
         const { resolve, reject, timeout } = pending.get(message.id);
         clearTimeout(timeout); pending.delete(message.id);
@@ -114,7 +124,15 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1080, deviceScaleFactor: 1, mobile: false });
     await send('Page.navigate', { url: `${origin}/?hodEmployeeId=1` });
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
-    assert.equal(await evaluate(`document.querySelector('.eh-root h3').textContent`), names[0]);
+    assert.equal(await evaluate(`document.querySelector('.eh-root .eh-name-value').textContent`), names[0]);
+    assert.equal(await evaluate(`document.querySelector('.eh-root .eh-designation-value').textContent`), 'Head of Department');
+    assert.equal(await evaluate(`document.querySelectorAll('.eh-card .eh-code, .eh-card .eh-department, .eh-card .eh-node-badge, .eh-card .eh-leaf').length`), 0);
+    assert.equal(await evaluate(`Array.from(document.querySelectorAll('.eh-card')).every(card => {
+        const text = card.textContent;
+        return !text.includes('EMP00') && !text.includes('Technology') && !text.includes('direct reports')
+            && getComputedStyle(card).backgroundColor === 'rgba(0, 0, 0, 0)';
+    })`), true, 'Transparent nodes show only name and designation with icon controls');
+    await waitFor(`document.querySelector('.eh-root img').naturalWidth > 0`);
     assert.equal(await evaluate(`document.getElementById('ehVisibleCount').textContent`), '4');
     assert.equal(await evaluate(`document.getElementById('ehReportsCount').textContent`), '3');
     assert.equal(await evaluate(`document.getElementById('ehLevelsCount').textContent`), '2');
@@ -128,6 +146,10 @@ try {
     assert.equal(await evaluate(`document.querySelectorAll('#ehLines path').length`), 2);
     assert.equal(await evaluate(`document.getElementById('ehLevelsCount').textContent`), '3');
     await evaluate(`document.getElementById('ehFit').click()`);
+    await waitFor(`document.querySelector('.eh-card[data-id="2"] img').naturalWidth > 0`);
+    await waitFor(`document.querySelector('.eh-card[data-id="4"] img').naturalWidth > 0`);
+    assert.ok(await evaluate(`document.querySelector('.eh-card[data-id="2"] img').src.endsWith('/api/employees/hierarchy/photo/2')`), 'Employee photos use the protected proxy');
+    assert.ok(await evaluate(`document.querySelector('.eh-card[data-id="4"] img').src.endsWith('/img/employee-default-avatar.svg')`), 'Missing photos fall back to the default avatar');
     for (const [label, width, height] of [['desktop', 1440, 1080], ['laptop', 1024, 900], ['tablet', 768, 1024], ['mobile', 390, 844], ['small-mobile', 320, 740]]) {
         await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 600 });
         await evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`);
@@ -161,7 +183,7 @@ try {
     await evaluate(`document.getElementById('ehSearch').dispatchEvent(new KeyboardEvent('keydown', {key:'ArrowDown', bubbles:true}))`);
     assert.equal(await evaluate(`document.activeElement === document.querySelector('#ehResults button')`), true, 'Search supports keyboard navigation');
     await evaluate(`document.querySelector('#ehResults button').click()`);
-    assert.equal(await evaluate(`document.querySelector('.eh-found h3').textContent`), names[5]);
+    assert.equal(await evaluate(`document.querySelector('.eh-found .eh-name-value').textContent`), names[5]);
     assert.equal(await evaluate(`document.querySelectorAll('.eh-card').length`), 3);
     await evaluate(`document.querySelector('button[data-id="1"][data-action="more"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 5`);
@@ -204,7 +226,7 @@ try {
     assert.ok(await evaluate(`document.getElementById('ehViewport').scrollLeft`) < dragStart.scrollLeft, 'Drag-to-pan scrolls the chart');
     assert.equal(await evaluate(`document.getElementById('ehViewport').classList.contains('eh-dragging')`), false);
     await send('Page.navigate', { url: `${origin}/` });
-    await waitFor(`document.getElementById('ehHod').options.length > 1`);
+    await waitFor(`document.getElementById('ehHod')?.options.length > 1`);
     assert.equal(await evaluate(`document.getElementById('ehEmpty').hidden`), false, 'Empty state shown until a HOD is selected');
     assert.equal(await evaluate(`document.getElementById('ehZoomIn').disabled`), true, 'Empty chart disables zoom');
     failNextTree = true;
@@ -215,7 +237,7 @@ try {
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`document.getElementById('ehViewport').getAttribute('aria-busy')`), 'false');
     assert.deepEqual(exceptions, [], 'No browser JavaScript exceptions');
-    console.log(`PASS: expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, filters, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
+    console.log(`PASS: minimal transparent nodes, photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, filters, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
 } finally {
     if (cdp && socket?.readyState === WebSocket.OPEN) await cdp('Browser.close').catch(() => {});
     socket?.close();

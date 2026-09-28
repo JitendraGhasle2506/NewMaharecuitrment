@@ -34,7 +34,9 @@ Two bulk projection queries build a graph per tree/search request; traversal is 
 
 Restart/redeploy so post-schema migration **V133** runs. It adds `reporting_type`, backfills existing mappings as `PRIMARY`, and adds an index. Supported read filters are `PRIMARY`, `ADMINISTRATIVE`, `PROJECT`, `LEAVE_APPROVAL`. Existing mapping forms continue to create PRIMARY mappings; this change does not add an editor for other types or alter existing approval routing.
 
-Employee photos use the existing managed upload policy through an HR-only proxy. Missing or invalid photos fall back to initials; filesystem paths are never sent to the browser.
+The compact, transparent chart nodes display only a circular photo, name, and designation. Employee codes, departments, badges, and report-count labels are not rendered on nodes. Small icon-only controls retain expansion and pagination, while employee-code search and department filtering remain available in the toolbar.
+
+Employee photos use the existing managed upload policy through an HR-only proxy. Missing or invalid photos fall back to the local default SVG avatar; filesystem paths are never sent to the browser.
 
 Tests: `EmployeeHierarchyServiceTest`, `EmployeeHierarchyQueryTest`, `EmployeeHierarchyControllerTest`, `EmployeeHierarchyTemplateTest`, and the migration registration test. The query test compiles against the real Hibernate entity model without connecting to a database.
 

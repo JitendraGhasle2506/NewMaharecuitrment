@@ -12,9 +12,12 @@
     const lines = $('ehLines');
     const results = $('ehResults');
     const styles = getComputedStyle(page);
-    const CARD_WIDTH = parseFloat(styles.getPropertyValue('--eh-card-width')) || 256;
-    const CARD_HEIGHT = parseFloat(styles.getPropertyValue('--eh-card-height')) || 232;
-    const GAP_X = 32, GAP_Y = 72, PADDING = 44, CONTROL_SPACE = 88;
+    const CARD_WIDTH = parseFloat(styles.getPropertyValue('--eh-card-width')) || 200;
+    const CARD_HEIGHT = parseFloat(styles.getPropertyValue('--eh-card-height')) || 196;
+    const GAP_X = parseFloat(styles.getPropertyValue('--eh-gap-x')) || 20;
+    const GAP_Y = parseFloat(styles.getPropertyValue('--eh-gap-y')) || 36;
+    const PADDING = parseFloat(styles.getPropertyValue('--eh-chart-padding')) || 32;
+    const CONTROL_SPACE = 80;
     const compactScreen = window.matchMedia('(max-width: 767px)');
     let root = null, scale = 1, chartWidth = 0, chartHeight = 0, leftInset = 0;
     let selectedId = null, generation = 0, queryGeneration = 0, searchController = null;
@@ -179,53 +182,49 @@
         article.style.top = `${y}px`;
         article.dataset.id = node.employeeId;
         article.tabIndex = -1;
-        article.setAttribute('aria-label', `${node.employeeName}, ${node.designation || 'Designation not set'}, ${node.totalChildren} direct reports`);
+        article.setAttribute('aria-label', `${node.employeeName}, ${node.designation || 'Designation not set'}`);
         article.classList.toggle('eh-root', node === root);
         article.classList.toggle('eh-found', node.employeeId === selectedId);
         article.classList.toggle('eh-ancestor', !node.filterMatch);
-        const initials = (node.employeeName || '?').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase();
-        const avatar = element('div', `eh-avatar eh-avatar-${node.employeeId % 4}`, initials);
+        const avatar = element('div', 'eh-avatar');
         avatar.setAttribute('aria-hidden', 'true');
-        if (node.profilePhoto) {
-            const photo = element('img');
-            photo.alt = '';
-            photo.loading = 'lazy';
-            // Only this application's photo proxy is accepted; no remote image URLs or filesystem paths.
-            const expected = `/api/employees/hierarchy/photo/${node.employeeId}`;
-            if (node.profilePhoto === expected) photo.src = context + expected;
-            photo.addEventListener('error', () => photo.remove(), { once: true });
-            avatar.append(photo);
-        }
-        const name = element('h3', '', node.employeeName || 'Employee');
+        const photo = element('img');
+        photo.alt = '';
+        photo.loading = 'lazy';
+        photo.decoding = 'async';
+        const fallbackPhoto = `${context}/img/employee-default-avatar.svg`;
+        // Accept only this application's photo proxy; never display remote URLs or filesystem paths.
+        const expected = `/api/employees/hierarchy/photo/${node.employeeId}`;
+        photo.src = node.profilePhoto === expected ? context + expected : fallbackPhoto;
+        photo.addEventListener('error', () => { photo.src = fallbackPhoto; }, { once: true });
+        avatar.append(photo);
+        const name = element('h3');
+        name.append(element('span', 'eh-name-label', 'Name: '),
+            element('span', 'eh-name-value', node.employeeName || 'Employee'));
         name.title = name.textContent;
-        const designation = element('div', 'eh-designation', node.designation || 'Designation not set');
+        const designation = element('div', 'eh-designation');
+        designation.append(element('span', 'eh-position-label', 'Position: '),
+            element('span', 'eh-designation-value', node.designation || 'Designation not set'));
         designation.title = designation.textContent;
-        const code = element('span', 'eh-code', node.employeeCode || 'Code not set');
-        code.title = code.textContent;
-        const top = element('div', 'eh-card-top');
-        top.append(element('span', 'eh-node-badge', node === root ? 'SELECTED HOD'
-            : node.employeeId === selectedId ? 'SEARCH MATCH' : 'TEAM MEMBER'), code);
         const identity = element('div', 'eh-identity');
         const identityCopy = element('div', 'eh-identity-copy');
         identityCopy.append(name, designation);
         identity.append(avatar, identityCopy);
-        const department = element('div', 'eh-department', node.department || 'Department not set');
-        department.title = department.textContent;
-        article.append(top, identity, department);
-        if (!node.filterMatch) article.title = 'Connecting manager retained for the selected filters';
-        const footer = element('div', 'eh-card-footer');
+        article.append(identity);
         if (node.totalChildren) {
-            const toggle = button(busy.has(node.employeeId) ? 'Loading…'
-                : `${node.expanded ? '−' : '+'} ${node.totalChildren} direct report${node.totalChildren === 1 ? '' : 's'}`, 'toggle', node.employeeId,
+            const footer = element('div', 'eh-card-footer');
+            const toggle = button(busy.has(node.employeeId) ? '…' : node.expanded ? '−' : '+', 'toggle', node.employeeId,
                 `${node.expanded ? 'Collapse' : 'Expand'} reports of ${node.employeeName}`);
+            toggle.title = toggle.getAttribute('aria-label');
             toggle.setAttribute('aria-expanded', String(node.expanded));
             footer.append(toggle);
             if (node.expanded && node.nextOffset !== null) {
-                footer.append(button(busy.has(node.employeeId) ? 'Loading…' : 'Load more', 'more', node.employeeId,
-                    `Load more reports of ${node.employeeName}`));
+                const more = button('…', 'more', node.employeeId, `Load more reports of ${node.employeeName}`);
+                more.title = more.getAttribute('aria-label');
+                footer.append(more);
             }
-        } else footer.append(element('span', 'eh-leaf', 'No direct reports'));
-        article.append(footer);
+            article.append(footer);
+        }
         return article;
     }
 
