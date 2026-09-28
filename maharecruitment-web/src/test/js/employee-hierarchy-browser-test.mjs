@@ -33,7 +33,7 @@ function node(id, expanded = false) {
 let page = await readFile(join(base, 'templates/hr/employee-hierarchy.html'), 'utf8');
 page = page.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"')
     .replace(/th:src="@\{([^}]+)\}"/g, 'src="$1"')
-    .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy" data-context="/"')
+    .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy" data-context="/" data-photo-api="/api/employees/hierarchy/photo"')
     .replace('</head>', '<style>body{font-family:system-ui,sans-serif;margin:24px;background:#f4f7fb}.btn{color:#087ba4;text-decoration:none;font-size:13px}</style></head>');
 const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
@@ -145,8 +145,46 @@ try {
     assert.equal(await evaluate(`document.getElementById('ehVisibleCount').textContent`), '4');
     assert.equal(await evaluate(`document.getElementById('ehReportsCount').textContent`), '3');
     assert.equal(await evaluate(`document.getElementById('ehLevelsCount').textContent`), '2');
+    const upperLevelPositions = await evaluate(`Object.fromEntries([...document.querySelectorAll('.eh-card')].map(card => {
+        const box = card.getBoundingClientRect();
+        return [card.dataset.id, {left: box.left, top: box.top, width: box.width}];
+    }))`);
+    const parentToggleCenter = await evaluate(`(() => {
+        const box = document.querySelector('button[data-id="2"][data-action="toggle"]').getBoundingClientRect();
+        return {x: box.left + box.width / 2, y: box.top + box.height / 2};
+    })()`);
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 6`);
+    const expandedUpperLevelPositions = await evaluate(`Object.fromEntries([...document.querySelectorAll('.eh-card')]
+        .filter(card => ['1', '2', '3', '4'].includes(card.dataset.id)).map(card => {
+            const box = card.getBoundingClientRect();
+            return [card.dataset.id, {left: box.left, top: box.top, width: box.width}];
+        }))`);
+    for (const employeeId of ['1', '2', '3', '4']) {
+        assert.ok(Math.abs(expandedUpperLevelPositions[employeeId].left - upperLevelPositions[employeeId].left) < 1,
+            `Expanding descendants must not shift upper-level employee ${employeeId} `
+            + `(${upperLevelPositions[employeeId].left} -> ${expandedUpperLevelPositions[employeeId].left})`);
+        assert.deepEqual(
+            {top: expandedUpperLevelPositions[employeeId].top, width: expandedUpperLevelPositions[employeeId].width},
+            {top: upperLevelPositions[employeeId].top, width: upperLevelPositions[employeeId].width},
+            `Upper-level dimensions remain fixed for employee ${employeeId}`);
+    }
+    const expandedParentToggleCenter = await evaluate(`(() => {
+        const box = document.querySelector('button[data-id="2"][data-action="toggle"]').getBoundingClientRect();
+        return {x: box.left + box.width / 2, y: box.top + box.height / 2};
+    })()`);
+    assert.ok(Math.abs(expandedParentToggleCenter.x - parentToggleCenter.x) < 1
+        && Math.abs(expandedParentToggleCenter.y - parentToggleCenter.y) < 1,
+    'The parent toggle stays fixed when its icon changes from plus to minus');
+    assert.equal(await evaluate(`(() => {
+        const center = selector => {
+            const box = document.querySelector(selector).getBoundingClientRect();
+            return box.left + box.width / 2;
+        };
+        const parent = center('.eh-card[data-id="2"]');
+        const children = ['5', '6'].map(id => center('.eh-card[data-id="' + id + '"]'));
+        return Math.abs((children[0] + children[1]) / 2 - parent) < 1;
+    })()`), true, 'Child employees are centered around their selected parent');
     await assertSubordinates(1, 6, 'Expanding a branch does not change the HOD total');
     await assertSubordinates(2, 2, 'Branch loading retains its total');
     const overlap = await evaluate(`(() => {
@@ -156,6 +194,21 @@ try {
     assert.equal(overlap, false, 'Employee cards must not overlap');
     assert.equal(await evaluate(`document.querySelectorAll('#ehLines path').length`), 2);
     assert.equal(await evaluate(`document.getElementById('ehLevelsCount').textContent`), '3');
+    await evaluate(`document.querySelector('button[data-id="3"][data-action="toggle"]').click()`);
+    await waitFor(`document.querySelectorAll('.eh-card').length === 5`);
+    assert.equal(await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').getAttribute('aria-expanded')`),
+        'false', 'Expanding another branch collapses the previously expanded branch');
+    assert.equal(await evaluate(`document.querySelector('button[data-id="3"][data-action="toggle"]').getAttribute('aria-expanded')`),
+        'true', 'The newly selected branch remains expanded');
+    assert.equal(await evaluate(`document.querySelector('.eh-card[data-id="5"]') === null && document.querySelector('.eh-card[data-id="7"]') !== null`),
+        true, 'Only one competing branch is visible at a time');
+    assert.equal(await evaluate(`(() => {
+        const center = id => {
+            const box = document.querySelector('.eh-card[data-id="' + id + '"]').getBoundingClientRect();
+            return box.left + box.width / 2;
+        };
+        return Math.abs(center('3') - center('7')) < 1;
+    })()`), true, 'A single child is positioned directly below its selected parent');
     await evaluate(`document.getElementById('ehFit').click()`);
     await waitFor(`document.querySelector('.eh-card[data-id="2"] img').naturalWidth > 0`);
     await waitFor(`document.querySelector('.eh-card[data-id="4"] img').naturalWidth > 0`);

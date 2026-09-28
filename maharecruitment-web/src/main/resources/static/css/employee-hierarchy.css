@@ -70,7 +70,7 @@
 .eh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
 .eh-dot-root { background: var(--eh-teal); }.eh-dot-match { background: #d99620; }
 .eh-chart-frame { position: relative; border-top: 1px solid #e8edf4; border-bottom: 1px solid #e8edf4; }
-.eh-viewport { height: clamp(450px, 62vh, 800px); width: 100%; overflow: auto; position: relative; background: radial-gradient(#cfdae7 .8px, transparent .8px) 0 0 / 20px 20px, #f8fafc; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #c3cfde transparent; cursor: grab; }
+.eh-viewport { height: clamp(450px, 62vh, 800px); width: 100%; overflow: auto; position: relative; background: radial-gradient(#cfdae7 .8px, transparent .8px) 0 0 / 20px 20px, #f8fafc; overscroll-behavior: contain; scrollbar-gutter: stable both-edges; scrollbar-width: thin; scrollbar-color: #c3cfde transparent; cursor: grab; }
 .eh-viewport.eh-dragging { cursor: grabbing; user-select: none; }
 .eh-viewport.eh-dragging * { cursor: grabbing; }
 .eh-surface { position: relative; min-width: 100%; min-height: 100%; overflow: hidden; }

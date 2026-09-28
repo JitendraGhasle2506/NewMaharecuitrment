@@ -21,10 +21,11 @@
     const PADDING = parseFloat(styles.getPropertyValue('--eh-chart-padding')) || 32;
     const CONTROL_SPACE = 80;
     const compactScreen = window.matchMedia('(max-width: 767px)');
-    let root = null, scale = 1, chartWidth = 0, chartHeight = 0, leftInset = 0;
+    let root = null, scale = 1, chartWidth = 0, chartHeight = 0, leftInset = 0, layoutOffsetX = 0;
     let selectedId = null, generation = 0, queryGeneration = 0, searchController = null;
     let filters = null, displayed = new Map(), busy = new Set(), fitMode = false;
     let searchTimer = null, optionsReady = false, filtersManuallyToggled = false, hierarchyController = null;
+    let branchSelectionGeneration = 0;
 
     function status(message, error = false) {
         $('ehStatus').textContent = message;
@@ -120,7 +121,9 @@
         const current = ++generation;
         cancelSearch();
         if (hierarchyController) hierarchyController.abort();
+        branchSelectionGeneration++;
         selectedId = null;
+        layoutOffsetX = 0;
         $('ehSearch').value = '';
         busy = new Set();
         filters = { rootId: $('ehHod').value, reportingType: $('ehType').value };
@@ -144,6 +147,7 @@
             const loaded = decorate(await get(url(), hierarchyController.signal));
             if (current !== generation) return;
             root = loaded;
+            collapseCompetingBranches(root);
             root.expanded = true;
             render();
             initialView();
@@ -233,8 +237,62 @@
         return article;
     }
 
-    // Subtree widths reserve a distinct horizontal interval for every branch.
-    // All nodes at a depth share the same row; connector buses stay in the gap between rows.
+    function loadedPathTo(employeeId) {
+        const path = [];
+        function visit(node) {
+            path.push(node);
+            if (node.employeeId === employeeId) return true;
+            for (const child of node.children) {
+                if (visit(child)) return true;
+            }
+            path.pop();
+            return false;
+        }
+        return root && visit(root) ? path : [];
+    }
+
+    function collapseCompetingBranches(node) {
+        const activePath = new Set(loadedPathTo(node.employeeId));
+        const stack = root ? [root] : [];
+        while (stack.length) {
+            const current = stack.pop();
+            if (current !== root && !activePath.has(current)) current.expanded = false;
+            stack.push(...current.children);
+        }
+    }
+
+    function collapseBranch(node) {
+        const stack = [node];
+        while (stack.length) {
+            const current = stack.pop();
+            current.expanded = false;
+            stack.push(...current.children);
+        }
+    }
+
+    function renderKeepingNodeFixed(node) {
+        const existingEntry = displayed.get(node.employeeId);
+        const screenX = existingEntry
+            ? existingEntry.x * scale + leftInset - viewport.scrollLeft
+            : null;
+        render();
+        restoreNodeScreenPosition(node, screenX);
+    }
+
+    function restoreNodeScreenPosition(node, screenX) {
+        const updatedEntry = displayed.get(node.employeeId);
+        if (screenX === null || !updatedEntry) return;
+        viewport.scrollLeft = updatedEntry.x * scale + leftInset - screenX;
+        const actualScreenX = updatedEntry.x * scale + leftInset - viewport.scrollLeft;
+        const remainingOffset = screenX - actualScreenX;
+        if (Math.abs(remainingOffset) < .5) return;
+        layoutOffsetX += remainingOffset;
+        applyScale();
+        viewport.scrollLeft = updatedEntry.x * scale + leftInset - screenX;
+    }
+
+    // Each child group uses its own parent's center line. Canvas bounds grow around
+    // the positioned nodes, while scroll compensation keeps existing parents fixed.
     function render() {
         const focused = document.activeElement;
         const focusedId = focused && focused.dataset.id;
@@ -264,24 +322,25 @@
                 stack.push({ node: entry.children[index], depth: entry.depth + 1 });
             }
         }
-        for (let index = ordered.length - 1; index >= 0; index--) {
-            const entry = ordered[index];
-            entry.width = Math.max(CARD_WIDTH, entry.children.reduce((width, child) =>
-                width + displayed.get(child.employeeId).width, 0) + Math.max(0, entry.children.length - 1) * GAP_X);
-        }
-        ordered[0].start = PADDING;
+        ordered[0].x = 0;
         let maxDepth = 0;
+        for (const entry of ordered) {
+            entry.y = PADDING + entry.depth * (CARD_HEIGHT + GAP_Y);
+            maxDepth = Math.max(maxDepth, entry.depth);
+            const groupWidth = entry.children.length * CARD_WIDTH
+                + Math.max(0, entry.children.length - 1) * GAP_X;
+            const childStart = entry.x - groupWidth / 2 + CARD_WIDTH / 2;
+            entry.children.forEach((child, index) => {
+                displayed.get(child.employeeId).x = childStart + index * (CARD_WIDTH + GAP_X);
+            });
+        }
+        const minLeft = Math.min(...ordered.map(entry => entry.x - CARD_WIDTH / 2));
+        const maxRight = Math.max(...ordered.map(entry => entry.x + CARD_WIDTH / 2));
+        const horizontalOffset = PADDING - minLeft;
+        ordered.forEach(entry => { entry.x += horizontalOffset; });
+
         const fragment = document.createDocumentFragment();
         for (const entry of ordered) {
-            entry.x = entry.start + entry.width / 2;
-            entry.y = PADDING + entry.depth * (CARD_HEIGHT + GAP_Y);
-            let childStart = entry.start;
-            for (const child of entry.children) {
-                const childEntry = displayed.get(child.employeeId);
-                childEntry.start = childStart;
-                childStart += childEntry.width + GAP_X;
-            }
-            maxDepth = Math.max(maxDepth, entry.depth);
             fragment.append(card(entry.node, entry.x - CARD_WIDTH / 2, entry.y));
         }
         for (const entry of ordered) {
@@ -296,7 +355,7 @@
             lines.append(connector);
         }
         cards.append(fragment);
-        chartWidth = ordered[0].width + PADDING * 2;
+        chartWidth = maxRight - minLeft + PADDING * 2;
         chartHeight = (maxDepth + 1) * CARD_HEIGHT + maxDepth * GAP_Y + PADDING * 2;
         stage.style.width = `${chartWidth}px`;
         stage.style.height = `${chartHeight}px`;
@@ -313,10 +372,10 @@
     }
 
     function applyScale() {
-        leftInset = Math.max(0, (viewport.clientWidth - chartWidth * scale) / 2);
+        leftInset = Math.max(0, (viewport.clientWidth - chartWidth * scale) / 2) + layoutOffsetX;
         stage.style.left = `${leftInset}px`;
         stage.style.transform = `scale(${scale})`;
-        surface.style.width = `${Math.max(viewport.clientWidth, chartWidth * scale)}px`;
+        surface.style.width = `${Math.max(viewport.clientWidth, Math.max(0, leftInset) + chartWidth * scale)}px`;
         surface.style.height = `${Math.max(viewport.clientHeight, chartHeight * scale + CONTROL_SPACE)}px`;
         $('ehZoom').value = `${Math.round(scale * 100)}%`;
     }
@@ -334,6 +393,7 @@
 
     function fit() {
         if (!root) return;
+        layoutOffsetX = 0;
         scale = Math.min(1, Math.max(.001, Math.min((viewport.clientWidth - 20) / chartWidth,
             (viewport.clientHeight - CONTROL_SPACE) / chartHeight)));
         fitMode = true;
@@ -352,7 +412,7 @@
         }
     }
 
-    async function loadReports(node) {
+    async function loadReports(node, exclusiveExpansion = false, branchSelection = branchSelectionGeneration) {
         if (busy.has(node.employeeId)) return;
         const current = generation;
         const existingEntry = displayed.get(node.employeeId);
@@ -368,6 +428,8 @@
             node.totalChildren = branch.totalChildren;
             node.totalSubordinates = branch.totalSubordinates;
             node.nextOffset = branch.nextOffset;
+            if (exclusiveExpansion && branchSelection !== branchSelectionGeneration) return;
+            if (exclusiveExpansion) collapseCompetingBranches(node);
             node.expanded = true;
             fitMode = false;
             status(node.totalChildren ? `Showing ${node.children.length} of ${node.totalChildren} direct reports of ${node.employeeName}.`
@@ -378,8 +440,7 @@
             if (current === generation) {
                 busy.delete(node.employeeId);
                 render();
-                const updatedEntry = displayed.get(node.employeeId);
-                if (updatedEntry) viewport.scrollLeft = updatedEntry.x * scale + leftInset - screenX;
+                restoreNodeScreenPosition(node, screenX);
             }
         }
     }
@@ -389,12 +450,20 @@
         if (!control) return;
         const node = displayed.get(Number(control.dataset.id))?.node;
         if (!node || busy.has(node.employeeId)) return;
-        if (control.dataset.action === 'more' || (!node.expanded && !node.children.length)) {
+        if (control.dataset.action === 'more') {
             loadReports(node);
+        } else if (!node.expanded && !node.children.length) {
+            loadReports(node, true, ++branchSelectionGeneration);
         } else {
-            node.expanded = !node.expanded;
+            branchSelectionGeneration++;
+            if (node.expanded) {
+                collapseBranch(node);
+            } else {
+                collapseCompetingBranches(node);
+                node.expanded = true;
+            }
             fitMode = false;
-            render();
+            renderKeepingNodeFixed(node);
         }
     });
 
@@ -434,6 +503,8 @@
 
     function showMatch(match) {
         generation++; // Discard any branch response belonging to the previous view.
+        branchSelectionGeneration++;
+        layoutOffsetX = 0;
         busy = new Set();
         selectedId = match.employeeId;
         const path = match.path.map(decorate);
