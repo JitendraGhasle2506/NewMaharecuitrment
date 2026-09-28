@@ -3,25 +3,31 @@ package com.maharecruitment.gov.in.web.service.hr.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.LongStream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
@@ -50,6 +56,7 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMapping
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeListProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeCellAuthorityProjection;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
@@ -106,6 +113,7 @@ class HROnboardingPageServiceImplTest {
         when(projection.getRecruitmentType()).thenReturn("INTERNAL");
         when(projection.getAgencyName()).thenReturn("MAHAIT");
         when(projection.getCellName()).thenReturn("Application Cell");
+        when(projection.getReportingMappingId()).thenReturn(100L);
         when(projection.getReportingManagerName()).thenReturn("Ravi Shah");
         when(projection.getReportingHodName()).thenReturn("Meera Joshi");
         when(projection.getStatus()).thenReturn("ACTIVE");
@@ -121,6 +129,98 @@ class HROnboardingPageServiceImplTest {
             assertThat(employee.reportingManagerName()).isEqualTo("Ravi Shah");
             assertThat(employee.reportingHodName()).isEqualTo("Meera Joshi");
         });
+        verify(employeeRepository, never()).findCellAuthoritiesForEmployeeList(any());
+    }
+
+    @Test
+    void employeeListCombinesAllCellAuthoritiesInOneRowWithoutChangingTotals() {
+        var pageable = PageRequest.of(0, 10);
+        EmployeeListProjection projection = mock(EmployeeListProjection.class);
+        when(projection.getEmployeeId()).thenReturn(10L);
+        when(projection.getReportingMappingId()).thenReturn(null);
+        when(employeeRepository.findEmployeeListPageByStatusAndFilters(
+                "ACTIVE", "INTERNAL", null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(projection), pageable, 1));
+        when(employeeRepository.findCellAuthoritiesForEmployeeList(List.of(10L))).thenReturn(List.of(
+                authority(10L, 101L, "Level One"), authority(10L, 102L, "Level Two A"),
+                authority(10L, 103L, "Level Two B"), authority(10L, 101L, "Level One")));
+
+        var result = service.getEmployeesByStatus("INTERNAL", "ACTIVE", null, null, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).singleElement().satisfies(employee -> {
+            assertThat(employee.employeeId()).isEqualTo(10L);
+            assertThat(employee.reportingManagerName()).isEqualTo("Level One, Level Two A, Level Two B");
+            assertThat(employee.reportingHodName()).isEqualTo(employee.reportingManagerName());
+        });
+        verify(employeeRepository).findCellAuthoritiesForEmployeeList(List.of(10L));
+    }
+
+    @Test
+    void employeeListDoesNotReplaceAnUnresolvedExplicitAssignmentWithCellAuthorities() {
+        var pageable = PageRequest.of(0, 10);
+        EmployeeListProjection explicit = mock(EmployeeListProjection.class);
+        when(explicit.getEmployeeId()).thenReturn(10L);
+        when(explicit.getReportingMappingId()).thenReturn(100L);
+        EmployeeListProjection fallback = mock(EmployeeListProjection.class);
+        when(fallback.getEmployeeId()).thenReturn(11L);
+        when(fallback.getReportingMappingId()).thenReturn(null);
+        when(employeeRepository.findEmployeeListPageByStatusAndFilters(
+                "ACTIVE", "INTERNAL", null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(explicit, fallback), pageable, 2));
+        when(employeeRepository.findCellAuthoritiesForEmployeeList(List.of(11L)))
+                .thenReturn(List.of(authority(11L, 101L, "Only Level Two")));
+
+        var result = service.getEmployeesByStatus("INTERNAL", "ACTIVE", null, null, pageable);
+
+        assertThat(result.getContent().getFirst().reportingManagerName()).isEqualTo("-");
+        assertThat(result.getContent().getLast().reportingManagerName()).isEqualTo("Only Level Two");
+        verify(employeeRepository).findCellAuthoritiesForEmployeeList(List.of(11L));
+    }
+
+    @Test
+    void emptyEmployeePageDoesNotQueryCellAuthorities() {
+        var pageable = PageRequest.of(0, 10);
+        when(employeeRepository.findEmployeeListPageByStatusAndFilters(
+                "ACTIVE", "INTERNAL", null, null, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        assertThat(service.getEmployeesByStatus("INTERNAL", "ACTIVE", null, null, pageable)).isEmpty();
+
+        verify(employeeRepository, never()).findCellAuthoritiesForEmployeeList(any());
+    }
+
+    @Test
+    void employeeExportBatchesAuthorityLookupsAndKeepsEmployeesWithoutAuthorities() {
+        var pageable = Pageable.unpaged();
+        List<EmployeeListProjection> projections = LongStream.rangeClosed(1, 501).mapToObj(id -> {
+            EmployeeListProjection projection = mock(EmployeeListProjection.class);
+            when(projection.getEmployeeId()).thenReturn(id);
+            when(projection.getReportingMappingId()).thenReturn(null);
+            return projection;
+        }).toList();
+        when(employeeRepository.findEmployeeListPageByStatusAndFilters(
+                "ACTIVE", "INTERNAL", null, null, pageable)).thenReturn(new PageImpl<>(projections));
+        when(employeeRepository.findCellAuthoritiesForEmployeeList(anyList())).thenReturn(List.of());
+
+        var result = service.getEmployeesByStatus("INTERNAL", "ACTIVE", null, null, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(501);
+        assertThat(result.getContent()).allSatisfy(employee -> {
+            assertThat(employee.reportingManagerName()).isEqualTo("-");
+            assertThat(employee.reportingHodName()).isEqualTo("-");
+        });
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Collection<Long>> batches = ArgumentCaptor.forClass(Collection.class);
+        verify(employeeRepository, times(2)).findCellAuthoritiesForEmployeeList(batches.capture());
+        assertThat(batches.getAllValues()).extracting(Collection::size).containsExactly(500, 1);
+    }
+
+    private EmployeeCellAuthorityProjection authority(Long employeeId, Long userId, String name) {
+        return new EmployeeCellAuthorityProjection() {
+            @Override public Long getEmployeeId() { return employeeId; }
+            @Override public Long getAuthorityUserId() { return userId; }
+            @Override public String getAuthorityName() { return name; }
+        };
     }
 
     @Test

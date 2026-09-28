@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.service.hr.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.List;
@@ -66,6 +67,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private static final Logger log = LoggerFactory.getLogger(HROnboardingPageServiceImpl.class);
     private static final String EMPLOYEE_ROLE_NAME = "ROLE_EMPLOYEE";
     private static final String PHOTO_MODULE = "recruitment/agency-pre-onboarding/photo";
+    private static final int CELL_AUTHORITY_BATCH_SIZE = 500;
 
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
@@ -424,7 +426,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 normalizedAgencyId,
                 searchPattern,
                 pageable);
-        return employees.map(this::toEmployeeListView);
+        Map<Long, String> cellAuthorities = loadEmployeeListCellAuthorities(employees.getContent());
+        return employees.map(employee -> toEmployeeListView(employee, cellAuthorities.get(employee.getEmployeeId())));
     }
 
     @Override
@@ -722,7 +725,30 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         return "TMP-" + UUID.randomUUID().toString().replace("-", "");
     }
 
-    private EmployeeListView toEmployeeListView(EmployeeListProjection employee) {
+    private Map<Long, String> loadEmployeeListCellAuthorities(List<EmployeeListProjection> employees) {
+        List<Long> employeeIds = employees.stream()
+                .filter(employee -> employee.getReportingMappingId() == null)
+                .map(EmployeeListProjection::getEmployeeId)
+                .toList();
+        Map<Long, Map<Long, String>> namesByEmployee = new HashMap<>();
+        // One bulk lookup for a normal page; bounded batches also support unpaged Excel exports.
+        for (int start = 0; start < employeeIds.size(); start += CELL_AUTHORITY_BATCH_SIZE) {
+            List<Long> batch = employeeIds.subList(start, Math.min(start + CELL_AUTHORITY_BATCH_SIZE, employeeIds.size()));
+            for (var authority : employeeRepository.findCellAuthoritiesForEmployeeList(batch)) {
+                if (StringUtils.hasText(authority.getAuthorityName())) {
+                    // A user mapped at both L1 and L2 is displayed once, without merging different users by name.
+                    namesByEmployee.computeIfAbsent(authority.getEmployeeId(), unused -> new LinkedHashMap<>())
+                            .putIfAbsent(authority.getAuthorityUserId(), authority.getAuthorityName().trim());
+                }
+            }
+        }
+        Map<Long, String> result = new HashMap<>();
+        namesByEmployee.forEach((employeeId, names) -> result.put(employeeId, String.join(", ", names.values())));
+        return result;
+    }
+
+    private EmployeeListView toEmployeeListView(EmployeeListProjection employee, String cellAuthorities) {
+        boolean useCellAuthorities = employee.getReportingMappingId() == null;
         return new EmployeeListView(
                 employee.getEmployeeId(),
                 employee.getEmployeeCode(),
@@ -733,8 +759,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                employee.getRecruitmentType(),
                displayValue(employee.getAgencyName()),
                displayValue(employee.getCellName()),
-               displayValue(employee.getReportingManagerName()),
-               displayValue(employee.getReportingHodName()),
+               displayValue(useCellAuthorities ? cellAuthorities : employee.getReportingManagerName()),
+               displayValue(useCellAuthorities ? cellAuthorities : employee.getReportingHodName()),
                employee.getStatus());
     }
 

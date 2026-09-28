@@ -25,7 +25,9 @@ class EmployeeRepositoryEmployeeListQueryTest {
         assertThat(query.value())
                 .contains("upper(coalesce(cell.cellName, '')) like :searchPattern")
                 .contains("when manager.employeeId is not null then manager.fullName")
-                .contains("else reportingAuthority.name end");
+                .contains("else reportingAuthority.name end")
+                .contains("reporting.mappingId is null and exists")
+                .doesNotContain("left join CellReportingAuthorityMappingEntity");
         assertThat(query.countQuery())
                 .contains("searchCell.cellName")
                 .contains("searchManager.fullName")

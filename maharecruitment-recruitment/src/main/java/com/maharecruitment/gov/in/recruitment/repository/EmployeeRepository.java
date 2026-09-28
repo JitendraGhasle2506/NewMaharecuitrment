@@ -16,6 +16,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeAgencyFilterProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeBirthdayProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeListProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeCellAuthorityProjection;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
@@ -358,6 +359,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             @Param("recruitmentType") String recruitmentType,
             @Param("status") String status);
 
+    // Keep all outer joins to at most one row per employee; cell authorities are loaded after pagination.
     @Query(value = "select employee.employeeId as employeeId, "
             + "employee.employeeCode as employeeCode, "
             + "employee.fullName as fullName, "
@@ -367,11 +369,10 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "employee.recruitmentType as recruitmentType, "
             + "agency.agencyName as agencyName, "
             + "cell.cellName as cellName, "
-            + "case when reporting.mappingId is null then cellAuthority.name "
-            + "when manager.employeeId is not null then manager.fullName "
+            + "reporting.mappingId as reportingMappingId, "
+            + "case when manager.employeeId is not null then manager.fullName "
             + "else reportingAuthority.name end as reportingManagerName, "
-            + "case when reporting.mappingId is not null then reportingAuthority.name "
-            + "else cellAuthority.name end as reportingHodName, "
+            + "reportingAuthority.name as reportingHodName, "
             + "employee.status as status "
             + "from EmployeeEntity employee "
             + "left join employee.agency agency "
@@ -386,9 +387,6 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "where latestReporting.employeeId = employee.employeeId) "
             + "left join EmployeeEntity manager on manager.employeeId = reporting.managerEmployeeId "
             + "left join User reportingAuthority on reportingAuthority.id = reporting.hodUserId "
-            + "left join CellReportingAuthorityMappingEntity cellAuthorityMapping "
-            + "on cellAuthorityMapping.cell.cellId = cell.cellId "
-            + "left join User cellAuthority on cellAuthority.id = cellAuthorityMapping.authorityUserId "
             + "where upper(trim(coalesce(employee.status, ''))) = :status "
             + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
             + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
@@ -399,9 +397,13 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "or upper(coalesce(employee.fullName, '')) like :searchPattern "
             + "or upper(coalesce(employee.email, '')) like :searchPattern "
             + "or upper(coalesce(cell.cellName, '')) like :searchPattern "
-            + "or upper(coalesce(case when reporting.mappingId is null then cellAuthority.name "
-            + "when manager.employeeId is not null then manager.fullName "
-            + "else reportingAuthority.name end, '')) like :searchPattern)",
+            + "or upper(coalesce(case when manager.employeeId is not null then manager.fullName "
+            + "else reportingAuthority.name end, '')) like :searchPattern "
+            + "or (reporting.mappingId is null and exists (select cellAuthorityMapping.mappingId "
+            + "from CellReportingAuthorityMappingEntity cellAuthorityMapping "
+            + "join User cellAuthority on cellAuthority.id = cellAuthorityMapping.authorityUserId "
+            + "where cellAuthorityMapping.cell.cellId = cell.cellId "
+            + "and upper(coalesce(cellAuthority.name, '')) like :searchPattern)))",
             countQuery = "select count(employee) "
                     + "from EmployeeEntity employee "
                     + "where upper(trim(coalesce(employee.status, ''))) = :status "
@@ -449,6 +451,18 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             @Param("agencyId") Long agencyId,
             @Param("searchPattern") String searchPattern,
             Pageable pageable);
+
+    @Query("""
+            select cellMapping.employee.employeeId as employeeId,
+                   authority.id as authorityUserId, authority.name as authorityName
+            from EmployeeCellMappingEntity cellMapping
+            join CellReportingAuthorityMappingEntity mapping on mapping.cell.cellId = cellMapping.cell.cellId
+            join User authority on authority.id = mapping.authorityUserId
+            where cellMapping.employee.employeeId in :employeeIds
+            order by cellMapping.employee.employeeId, mapping.authorityLevel, lower(authority.name), authority.id
+            """)
+    List<EmployeeCellAuthorityProjection> findCellAuthoritiesForEmployeeList(
+            @Param("employeeIds") Collection<Long> employeeIds);
 
     @Query("select agency.agencyId as agencyId, agency.agencyName as agencyName "
             + "from EmployeeEntity employee "
