@@ -157,6 +157,9 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 (int) totalEmployees,
                 attendance.presentEmployees(),
                 attendance.absentEmployees(),
+                attendance.internalPresentEmployees(),
+                attendance.mahaitPresentEmployees(),
+                attendance.externalPresentEmployees(),
                 attendance.presentPercent(),
                 attendance.checkIns(),
                 (int) pendingApprovals,
@@ -747,8 +750,12 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                         EARLY_CHECK_IN_CUTOFF,
                         LATE_CHECK_IN_CUTOFF,
                         AFTER_ELEVEN_CUTOFF);
-        long rawPresentCount = projectionCount(projection == null ? null : projection.getPresentCount())
-                + countExternalPresentEmployees(attendanceDate);
+        long internalPresentCount = projectionCount(
+                projection == null ? null : projection.getInternalPresentCount());
+        long mahaitPresentCount = projectionCount(
+                projection == null ? null : projection.getMahaitPresentCount());
+        long externalPresentCount = countExternalPresentEmployees(attendanceDate);
+        long rawPresentCount = internalPresentCount + mahaitPresentCount + externalPresentCount;
         int totalEmployees = toInt(Math.max(totalEmployeeCount, 0));
         int presentEmployees = Math.min(totalEmployees, toInt(rawPresentCount));
         HRAttendanceSummaryView checkIns = new HRAttendanceSummaryView(
@@ -761,6 +768,9 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 totalEmployees,
                 presentEmployees,
                 totalEmployees - presentEmployees,
+                toInt(internalPresentCount),
+                toInt(mahaitPresentCount),
+                toInt(externalPresentCount),
                 percent(presentEmployees, totalEmployees),
                 checkIns);
     }
@@ -865,6 +875,9 @@ public class HRDashboardServiceImpl implements HRDashboardService {
             int totalEmployees,
             int presentEmployees,
             int absentEmployees,
+            int internalPresentEmployees,
+            int mahaitPresentEmployees,
+            int externalPresentEmployees,
             int presentPercent,
             HRAttendanceSummaryView checkIns) {
     }

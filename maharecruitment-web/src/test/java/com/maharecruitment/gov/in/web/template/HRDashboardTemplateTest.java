@@ -25,7 +25,7 @@ class HRDashboardTemplateTest {
     @Test
     void summaryCardsAndSectionsRenderDashboardValues() throws Exception {
         String rendered = render(new HRDashboardView(
-                9, 4, 5, 6, 30, 20, 50, 40, 10, 80,
+                9, 4, 5, 6, 30, 20, 50, 40, 10, 22, 8, 10, 80,
                 new HRAttendanceSummaryView(38, 10, 20, 6, 2),
                 3, 7, 12, 60, 40,
                 List.of(new DepartmentOnboardingView("Finance Department", 5, 10)),
@@ -43,6 +43,10 @@ class HRDashboardTemplateTest {
                 .contains("Wing Reports")
                 .contains("Team Hierarchy")
                 .contains("Attendance Today")
+                .contains("Internal Present")
+                .contains("MAHAIT Present")
+                .contains("External Present")
+                .contains("Absent")
                 .contains("Department Onboarding")
                 .contains("Employee Mix")
                 .contains("Finance Department")
@@ -54,7 +58,7 @@ class HRDashboardTemplateTest {
     @Test
     void emptySectionsShowNoDataAvailable() throws Exception {
         String rendered = render(new HRDashboardView(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 new HRAttendanceSummaryView(0, 0, 0, 0, 0),
                 0, 0, 0, 0, 0,
                 List.of(), List.of(), List.of()));

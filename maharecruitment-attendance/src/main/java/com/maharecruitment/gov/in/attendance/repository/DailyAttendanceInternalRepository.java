@@ -84,6 +84,7 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
     @Query(value = """
             with normalized_attendance as (
                 select attendance.employee_id,
+                       upper(trim(coalesce(employee.recruitment_type, ''))) as recruitment_type,
                        attendance.status,
                        attendance.check_in_time,
                        attendance.check_out_time,
@@ -103,26 +104,36 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
                 join employee_master employee on employee.employee_id = attendance.employee_id
                 where attendance.attendance_date = :attendanceDate
                   and upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
-                  and upper(trim(coalesce(employee.recruitment_type, ''))) = 'INTERNAL'
+                  and upper(trim(coalesce(employee.recruitment_type, ''))) in ('INTERNAL', 'MAHAIT')
                   and trim(coalesce(employee.employee_code, '')) <> ''
                   and upper(trim(coalesce(employee.employee_code, ''))) <> 'PENDING'
                   and upper(trim(coalesce(employee.employee_code, ''))) not like 'TMP-%'
             ), attendance_rows as (
                 select employee_id,
+                       recruitment_type,
                        upper(trim(coalesce(status, ''))) = 'PRESENT' as marked_present,
                        least(check_in_time, check_out_time, api_check_in_time, api_check_out_time)
                            as first_event_time
                 from normalized_attendance
             ), effective_attendance as (
                 select employee_id,
+                       recruitment_type,
                        bool_or(marked_present) as marked_present,
                        min(first_event_time) as effective_check_in_time
                 from attendance_rows
-                group by employee_id
+                group by employee_id, recruitment_type
             )
             select count(*) filter (
                        where marked_present or effective_check_in_time is not null
                    ) as presentCount,
+                   count(*) filter (
+                       where recruitment_type = 'INTERNAL'
+                         and (marked_present or effective_check_in_time is not null)
+                   ) as internalPresentCount,
+                   count(*) filter (
+                       where recruitment_type = 'MAHAIT'
+                         and (marked_present or effective_check_in_time is not null)
+                   ) as mahaitPresentCount,
                    count(*) filter (
                        where effective_check_in_time is not null
                    ) as checkedInCount,

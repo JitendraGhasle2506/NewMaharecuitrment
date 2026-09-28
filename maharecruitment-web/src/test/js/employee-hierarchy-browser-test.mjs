@@ -218,7 +218,6 @@ try {
         await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 600 });
         await evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`);
         assert.equal(await evaluate(`document.documentElement.scrollWidth <= window.innerWidth`), true, `${label}: no page-level horizontal overflow`);
-        assert.equal(await evaluate(`document.getElementById('ehFilterFields').hidden`), width < 768, `${label}: responsive filter disclosure`);
         assert.equal(await evaluate(`(() => {
             const tools = document.querySelector('.eh-controls').getBoundingClientRect();
             const frame = document.querySelector('.eh-chart-frame').getBoundingClientRect();
@@ -230,14 +229,6 @@ try {
             clip: { x: 0, y: 0, width: cssContentSize.width, height: cssContentSize.height, scale: 1 } });
         await writeFile(join(artifacts, `${label}.png`), Buffer.from(screenshot.data, 'base64'));
     }
-    await evaluate(`document.getElementById('ehFilterToggle').click()`);
-    assert.equal(await evaluate(`document.getElementById('ehFilterToggle').getAttribute('aria-expanded')`), 'true');
-    await evaluate(`document.getElementById('ehDepartment').value='10'; document.getElementById('ehDepartment').dispatchEvent(new Event('change', {bubbles:true}))`);
-    await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
-    assert.equal(await evaluate(`document.getElementById('ehFilterCount').textContent`), '1');
-    await evaluate(`document.getElementById('ehResetFilters').click()`);
-    await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
-    assert.equal(await evaluate(`document.getElementById('ehFilterCount').hidden`), true);
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 6`);
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
@@ -280,7 +271,6 @@ try {
     await send('Page.navigate', { url: `${origin}/?hodEmployeeId=1` });
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`document.getElementById('ehZoom').value`), '100%', 'Mobile opens at a readable scale');
-    assert.equal(await evaluate(`document.getElementById('ehFilterFields').hidden`), true);
     const { cssContentSize: mobileSize } = await send('Page.getLayoutMetrics');
     const readableMobile = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true,
         clip: { x: 0, y: 0, width: mobileSize.width, height: mobileSize.height, scale: 1 } });

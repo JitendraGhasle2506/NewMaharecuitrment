@@ -24,7 +24,7 @@
     let root = null, scale = 1, chartWidth = 0, chartHeight = 0, leftInset = 0, layoutOffsetX = 0;
     let selectedId = null, generation = 0, queryGeneration = 0, searchController = null;
     let filters = null, displayed = new Map(), busy = new Set(), fitMode = false;
-    let searchTimer = null, optionsReady = false, filtersManuallyToggled = false, hierarchyController = null;
+    let searchTimer = null, optionsReady = false, hierarchyController = null;
     let branchSelectionGeneration = 0;
 
     function status(message, error = false) {
@@ -49,25 +49,11 @@
         $('ehRetry').hidden = state !== 'error';
     }
 
-    function filterVisibility(open) {
-        $('ehFilterFields').hidden = !open;
-        $('ehFilterToggle').setAttribute('aria-expanded', String(open));
-    }
-
-    function filterSummary() {
-        const count = Number(Boolean($('ehDepartment').value)) + Number(Boolean($('ehDesignation').value))
-            + Number($('ehType').value !== 'PRIMARY');
-        $('ehFilterCount').textContent = count;
-        $('ehFilterCount').hidden = !count;
-        $('ehResetFilters').disabled = !count;
-        $('ehShow').disabled = !$('ehHod').value;
-    }
-
     function summary(visible = 0, levels = 0) {
         $('ehVisibleCount').textContent = root ? visible : '—';
         $('ehReportsCount').textContent = root ? root.totalChildren : '—';
         $('ehLevelsCount').textContent = root ? levels : '—';
-        $('ehScope').textContent = root ? `${root.employeeName} · ${$('ehType').selectedOptions[0].text} reporting`
+        $('ehScope').textContent = root ? `${root.employeeName} · Primary reporting`
             : 'Choose a HOD to explore their team';
         $('ehScope').title = $('ehScope').textContent;
         ['ehZoomIn', 'ehZoomOut', 'ehReset', 'ehFit', 'ehSearch', 'ehSearchButton'].forEach(id => { $(id).disabled = !root; });
@@ -126,10 +112,7 @@
         layoutOffsetX = 0;
         $('ehSearch').value = '';
         busy = new Set();
-        filters = { rootId: $('ehHod').value, reportingType: $('ehType').value };
-        if ($('ehDepartment').value) filters.departmentId = $('ehDepartment').value;
-        if ($('ehDesignation').value) filters.designationId = $('ehDesignation').value;
-        filterSummary();
+        filters = { rootId: $('ehHod').value, reportingType: 'PRIMARY' };
         root = null;
         render();
         viewport.setAttribute('aria-busy', 'false');
@@ -553,20 +536,6 @@
     document.addEventListener('click', event => {
         if (!$('ehSearchForm').contains(event.target)) results.hidden = true;
     });
-    $('ehFilterToggle').addEventListener('click', () => {
-        filtersManuallyToggled = true;
-        filterVisibility($('ehFilterFields').hidden);
-    });
-    filterVisibility(!compactScreen.matches);
-    compactScreen.addEventListener('change', () => {
-        if (!filtersManuallyToggled) filterVisibility(!compactScreen.matches);
-    });
-    $('ehResetFilters').addEventListener('click', () => {
-        $('ehDepartment').value = '';
-        $('ehDesignation').value = '';
-        $('ehType').value = 'PRIMARY';
-        load();
-    });
     $('ehRetry').addEventListener('click', () => optionsReady ? load() : initialize());
     $('ehFullscreen').hidden = !document.fullscreenEnabled;
     $('ehFullscreen').addEventListener('click', async () => {
@@ -613,10 +582,8 @@
         try {
             const data = await get(`${api}/options`);
             options('ehHod', data.hods, 'Select a HOD');
-            options('ehDepartment', data.departments, 'All departments');
-            options('ehDesignation', data.designations, 'All designations');
             optionsReady = true;
-            filterSummary();
+            $('ehShow').disabled = true;
             const initial = new URLSearchParams(window.location.search).get('hodEmployeeId');
             if (selfMode && data.hods.length) {
                 $('ehHod').value = String(data.hods[0].id);

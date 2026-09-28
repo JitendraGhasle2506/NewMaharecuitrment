@@ -1324,7 +1324,7 @@ button.kpi-card {
 
 .attendance-panel-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.7rem;
 }
 
@@ -1689,8 +1689,16 @@ button.hrd-chip:focus-visible,
     min-width: 0;
 }
 
-.hrd-stat-present strong {
+.hrd-stat-internal strong {
     color: #256f49;
+}
+
+.hrd-stat-mahait strong {
+    color: var(--hr-brand);
+}
+
+.hrd-stat-external strong {
+    color: var(--hr-external);
 }
 
 .hrd-stat-absent strong {
@@ -1779,6 +1787,10 @@ button.hrd-chip:focus-visible,
 
     .hrd-secondary {
         grid-template-columns: 1fr;
+    }
+
+    .attendance-panel-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 

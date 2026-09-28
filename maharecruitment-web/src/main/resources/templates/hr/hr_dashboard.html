@@ -46,11 +46,7 @@
                                 <span class="hrd-kpi-note">Across the organization</span>
                             </div>
                         </article>
-
-                        <a class="hrd-kpi hrd-kpi-success hrd-kpi-link"
-                            th:href="@{/hr/attendance-today}"
-                            aria-label="Open today's attendance details">
-                            <span class="hrd-kpi-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
+                         <article class="hrd-kpi hrd-kpi-warning">
                             <div class="hrd-kpi-body">
                                 <p class="hrd-kpi-label">
                                     Present Today
@@ -68,7 +64,29 @@
                                     <span th:style="'width:' + ${dashboard.presentPercent} + '%'"></span>
                                 </div>
                             </div>
-                        </a>
+                         </article>
+                        <!-- <a class="hrd-kpi hrd-kpi-success hrd-kpi-link"
+                            th:href="@{/hr/attendance-today}"
+                            aria-label="Open today's attendance details"> 
+                            <span class="hrd-kpi-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span> 
+                            <div class="hrd-kpi-body">
+                                <p class="hrd-kpi-label">
+                                    Present Today
+                                    <span class="hrd-status" title="Attendance status">
+                                        <span class="hrd-status-dot" aria-hidden="true"></span>Live
+                                    </span>
+                                </p>
+                                <strong class="hrd-kpi-value">
+                                    <span th:text="${dashboard.presentEmployees}">0</span>
+                                    <small th:text="'/ ' + ${dashboard.totalEmployees}">/ 0</small>
+                                </strong>
+                                <span class="hrd-kpi-note" th:text="${dashboard.presentPercent} + '% attendance'">0% attendance</span>
+                                <div class="hrd-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                                    th:attr="aria-valuenow=${dashboard.presentPercent},aria-label='Present employees out of total employees'">
+                                    <span th:style="'width:' + ${dashboard.presentPercent} + '%'"></span>
+                                </div>
+                            </div>
+                         </a> -->
                     </section>
 
                     <!-- Secondary figures -->
@@ -187,20 +205,28 @@
                                             0% of employees marked present
                                         </span>
                                     </div>
-                                    <a class="attendance-detail-button" th:href="@{/hr/attendance-today}">
+                                    <!-- <a class="attendance-detail-button" th:href="@{/hr/attendance-today}">
                                         <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
                                         View details
-                                    </a>
+                                    </a> -->
                                 </div>
                                 <th:block th:if="${dashboard.totalEmployees > 0}">
                                     <div class="attendance-panel-grid">
-                                        <div class="hrd-stat-present">
-                                            <strong th:text="${dashboard.presentEmployees}">0</strong>
-                                            <span>Present Employees</span>
+                                        <div class="hrd-stat-internal">
+                                            <strong th:text="${dashboard.internalPresentEmployees}">0</strong>
+                                            <span>Internal Present</span>
+                                        </div>
+                                        <div class="hrd-stat-mahait">
+                                            <strong th:text="${dashboard.mahaitPresentEmployees}">0</strong>
+                                            <span>MAHAIT Present</span>
+                                        </div>
+                                        <div class="hrd-stat-external">
+                                            <strong th:text="${dashboard.externalPresentEmployees}">0</strong>
+                                            <span>External Present</span>
                                         </div>
                                         <div class="hrd-stat-absent">
                                             <strong th:text="${dashboard.absentEmployees}">0</strong>
-                                            <span>Not Marked / Absent</span>
+                                            <span>Absent</span>
                                         </div>
                                     </div>
                                     <div class="attendance-track">

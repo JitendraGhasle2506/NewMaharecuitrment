@@ -33,7 +33,7 @@ class EmployeeHierarchyTemplateTest {
         assertThat(html).contains("data-api=\"/portal/api/employees/hierarchy\"", "data-context=\"/portal/\"",
                 "src=\"/portal/js/employee-hierarchy.js\"", "href=\"/portal/css/employee-hierarchy.css\"",
                 "id=\"ehHod\"", "id=\"ehViewport\"", "id=\"ehSearch\"",
-                "aria-controls=\"ehFilterFields\"", "id=\"ehVisibleCount\"", "id=\"ehFullscreen\"",
-                "id=\"ehRetry\"", "href=\"#eh-i-chart\"");
+                "id=\"ehVisibleCount\"", "id=\"ehFullscreen\"", "id=\"ehRetry\"", "href=\"#eh-i-chart\"")
+                .doesNotContain("Department</label>", "Designation</label>", "Reporting type</label>");
     }
 }

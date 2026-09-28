@@ -4,6 +4,10 @@ public interface AttendanceCheckInSummaryProjection {
 
     Long getPresentCount();
 
+    Long getInternalPresentCount();
+
+    Long getMahaitPresentCount();
+
     Long getCheckedInCount();
 
     Long getEarlyCount();
