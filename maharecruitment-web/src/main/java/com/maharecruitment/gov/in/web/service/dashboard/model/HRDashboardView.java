@@ -9,6 +9,7 @@ public record HRDashboardView(
         int onboardingThisMonth,
         int internalEmployees,
         int externalEmployees,
+        int mahaitEmployees,
         int totalEmployees,
         int presentEmployees,
         int absentEmployees,

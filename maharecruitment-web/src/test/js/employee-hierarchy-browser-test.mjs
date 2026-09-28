@@ -129,6 +129,9 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1080, deviceScaleFactor: 1, mobile: false });
     await send('Page.navigate', { url: `${origin}/?hodEmployeeId=1` });
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
+    assert.equal(await evaluate(`Array.from(document.querySelectorAll('label')).some(label =>
+        ['Department', 'Designation', 'Reporting type'].includes(label.textContent.trim()))`), false,
+    'Advanced hierarchy filters are not rendered');
     assert.equal(await evaluate(`document.querySelector('.eh-root .eh-name-value').textContent`), names[0]);
     assert.equal(await evaluate(`document.querySelector('.eh-root .eh-designation-value').textContent`), 'Head of Department');
     await assertSubordinates(1, 6, 'HOD total includes indirect, unloaded subordinates');
@@ -297,7 +300,7 @@ try {
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`document.getElementById('ehViewport').getAttribute('aria-busy')`), 'false');
     assert.deepEqual(exceptions, [], 'No browser JavaScript exceptions');
-    console.log(`PASS: minimal transparent nodes, total subordinate counts (including unloaded branches), photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, filters, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
+    console.log(`PASS: HOD-only selection, minimal transparent nodes, total subordinate counts (including unloaded branches), photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
 } finally {
     if (cdp && socket?.readyState === WebSocket.OPEN) await cdp('Browser.close').catch(() => {});
     socket?.close();

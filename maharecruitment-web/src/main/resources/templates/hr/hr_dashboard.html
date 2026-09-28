@@ -13,21 +13,23 @@
     <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'HR Dashboard', ~{::section})}">
         <section>
             <div class="card add-emp-card">
-                <div class="header">
+                <!-- <div class="header">
                     <h2>HR Command Center</h2>
-                </div>
+                </div> -->
                 <div class="card-body hrd-page">
 
                     <!-- Primary summary cards -->
                     <section class="hrd-kpi-grid" aria-label="Key workforce figures">
-                        <article class="hrd-kpi hrd-kpi-brand">
+                        <button type="button" id="hrEmployeeBreakdownToggle"
+                            class="hrd-kpi hrd-kpi-brand hrd-kpi-toggle"
+                            aria-controls="hrEmployeeBreakdown" aria-expanded="false">
                             <span class="hrd-kpi-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
                             <div class="hrd-kpi-body">
                                 <p class="hrd-kpi-label">Total Employees</p>
                                 <strong class="hrd-kpi-value" th:text="${dashboard.totalEmployees}">0</strong>
-                                <span class="hrd-kpi-note">Active employees</span>
+                                <span class="hrd-kpi-note">View employee breakdown <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
                             </div>
-                        </article>
+                        </button>
 
                         <article class="hrd-kpi hrd-kpi-accent">
                             <span class="hrd-kpi-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span>
@@ -87,6 +89,34 @@
                                 </div>
                             </div>
                          </a> -->
+                    </section>
+
+                    <section id="hrEmployeeBreakdown" class="hrd-employee-breakdown" hidden
+                        aria-label="Employee type breakdown">
+                        <div class="hrd-breakdown-heading">
+                            <div>
+                                <h4>Employee Breakdown</h4>
+                                <span>Employees by recruitment type</span>
+                            </div>
+                            <strong th:text="${dashboard.totalEmployees}">0</strong>
+                        </div>
+                        <div class="hrd-breakdown-grid">
+                            <div class="hrd-breakdown-item is-internal">
+                                <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+                                <span>Internal Employees</span>
+                                <strong th:text="${dashboard.internalEmployees}">0</strong>
+                            </div>
+                            <div class="hrd-breakdown-item is-external">
+                                <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+                                <span>External Employees</span>
+                                <strong th:text="${dashboard.externalEmployees}">0</strong>
+                            </div>
+                            <div class="hrd-breakdown-item is-mahait">
+                                <i class="fa-solid fa-building-user" aria-hidden="true"></i>
+                                <span>MAHAIT Employees</span>
+                                <strong th:text="${dashboard.mahaitEmployees}">0</strong>
+                            </div>
+                        </div>
                     </section>
 
                     <!-- Secondary figures -->
@@ -166,7 +196,7 @@
                     </section>
 
                     <!-- Wing Reports -->
-                    <section class="panel wing-report-panel">
+                    <!-- <section class="panel wing-report-panel">
                         <div class="panel-title">
                             <div>
                                 <h4>Wing Reports</h4>
@@ -192,7 +222,7 @@
                         <p class="hrd-empty" th:unless="${dashboard.totalWings > 0 or dashboard.totalCells > 0}">
                             <i class="fa-regular fa-folder-open" aria-hidden="true"></i>No data available
                         </p>
-                    </section>
+                    </section> -->
 
                     <!-- Attendance, employee mix and onboarding -->
                     <div class="hrd-main-grid">
@@ -244,7 +274,7 @@
                                 </p>
                             </section>
 
-                            <section class="panel">
+                            <!-- <section class="panel">
                                 <div class="panel-title">
                                     <h4>Employee Mix</h4>
                                     <span th:text="${dashboard.totalEmployees} + ' employees'">0 employees</span>
@@ -264,10 +294,10 @@
                                 <p class="hrd-empty" th:unless="${dashboard.totalEmployees > 0}">
                                     <i class="fa-regular fa-folder-open" aria-hidden="true"></i>No data available
                                 </p>
-                            </section>
+                            </section> -->
                         </div>
 
-                        <section class="panel">
+                        <!-- <section class="panel">
                             <div class="panel-title">
                                 <h4>Department Onboarding</h4>
                             </div>
@@ -288,7 +318,7 @@
                             <p class="hrd-empty" th:if="${#lists.isEmpty(dashboard.departmentOnboarding)}">
                                 <i class="fa-regular fa-folder-open" aria-hidden="true"></i>No data available
                             </p>
-                        </section>
+                        </section> -->
                     </div>
                 </div>
             </div>
@@ -302,6 +332,17 @@
             const count = document.getElementById('hrProjectScopeCount');
             const close = document.getElementById('hrProjectScopeClose');
             const lists = Array.from(document.querySelectorAll('[data-project-list]'));
+            const employeeBreakdownToggle = document.getElementById('hrEmployeeBreakdownToggle');
+            const employeeBreakdown = document.getElementById('hrEmployeeBreakdown');
+
+            if (employeeBreakdownToggle && employeeBreakdown) {
+                employeeBreakdownToggle.addEventListener('click', () => {
+                    const expanded = employeeBreakdownToggle.getAttribute('aria-expanded') !== 'true';
+                    employeeBreakdownToggle.setAttribute('aria-expanded', String(expanded));
+                    employeeBreakdownToggle.classList.toggle('is-active', expanded);
+                    employeeBreakdown.hidden = !expanded;
+                });
+            }
 
             function pluralizeProjects(value) {
                 return value === '1' ? '1 project' : `${value} projects`;

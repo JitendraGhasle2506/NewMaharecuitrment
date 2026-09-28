@@ -79,6 +79,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     private static final String ACTIVE_EMPLOYEE_STATUS = "ACTIVE";
     private static final String INTERNAL = "INTERNAL";
     private static final String EXTERNAL = "EXTERNAL";
+    private static final String MAHAIT = "MAHAIT";
     private static final LocalTime EARLY_CHECK_IN_CUTOFF = LocalTime.of(9, 45);
     private static final LocalTime LATE_CHECK_IN_CUTOFF = LocalTime.of(10, 15);
     private static final LocalTime AFTER_ELEVEN_CUTOFF = LocalTime.of(11, 0);
@@ -114,6 +115,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 .countByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase(ACTIVE_FLAG, ACTIVE_FLAG));
         long internalEmployees = employeeRepository.countByRecruitmentType(INTERNAL);
         long externalEmployees = employeeRepository.countByRecruitmentType(EXTERNAL);
+        long mahaitEmployees = employeeRepository.countByRecruitmentType(MAHAIT);
         long totalEmployees = employeeRepository.count();
 
         LocalDate today = LocalDate.now();
@@ -154,6 +156,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 (int) onboardingThisMonth,
                 (int) internalEmployees,
                 (int) externalEmployees,
+                (int) mahaitEmployees,
                 (int) totalEmployees,
                 attendance.presentEmployees(),
                 attendance.absentEmployees(),
@@ -755,7 +758,8 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         long mahaitPresentCount = projectionCount(
                 projection == null ? null : projection.getMahaitPresentCount());
         long externalPresentCount = countExternalPresentEmployees(attendanceDate);
-        long rawPresentCount = internalPresentCount + mahaitPresentCount + externalPresentCount;
+        long rawPresentCount = projectionCount(projection == null ? null : projection.getPresentCount())
+                + externalPresentCount;
         int totalEmployees = toInt(Math.max(totalEmployeeCount, 0));
         int presentEmployees = Math.min(totalEmployees, toInt(rawPresentCount));
         HRAttendanceSummaryView checkIns = new HRAttendanceSummaryView(

@@ -1489,6 +1489,36 @@ button.kpi-card {
     outline-offset: 3px;
 }
 
+.hrd-kpi-toggle {
+    appearance: none;
+    width: 100%;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.hrd-kpi-toggle:hover,
+.hrd-kpi-toggle.is-active {
+    transform: translateY(-2px);
+    border-color: rgba(31, 79, 120, 0.55);
+    box-shadow: 0 14px 28px rgba(18, 39, 67, 0.14);
+}
+
+.hrd-kpi-toggle:focus-visible {
+    outline: 3px solid rgba(31, 79, 120, 0.28);
+    outline-offset: 3px;
+}
+
+.hrd-kpi-toggle .hrd-kpi-note i {
+    margin-left: 0.25rem;
+    font-size: 0.7rem;
+    transition: transform 150ms ease;
+}
+
+.hrd-kpi-toggle[aria-expanded="true"] .hrd-kpi-note i {
+    transform: rotate(180deg);
+}
+
 .hrd-kpi-icon {
     display: inline-flex;
     align-items: center;
@@ -1646,6 +1676,87 @@ button.hrd-chip {
     cursor: pointer;
 }
 
+.hrd-employee-breakdown {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--hr-line);
+    border-radius: 12px;
+    background: var(--hr-panel);
+    box-shadow: var(--hr-shadow);
+}
+
+.hrd-breakdown-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+}
+
+.hrd-breakdown-heading h4 {
+    margin: 0;
+    color: var(--hr-ink);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.hrd-breakdown-heading span {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--hr-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.hrd-breakdown-heading > strong {
+    color: var(--hr-brand-strong);
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.hrd-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.hrd-breakdown-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    padding: 0.8rem;
+    border: 1px solid #e2eaf2;
+    border-radius: 10px;
+    background: #f8fbfd;
+}
+
+.hrd-breakdown-item i {
+    color: var(--hr-brand);
+}
+
+.hrd-breakdown-item span {
+    min-width: 0;
+    color: var(--hr-muted);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.hrd-breakdown-item strong {
+    color: var(--hr-ink);
+    font-size: 1.2rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.hrd-breakdown-item.is-external i {
+    color: var(--hr-external);
+}
+
+.hrd-breakdown-item.is-mahait i {
+    color: var(--hr-warning);
+}
+
 .hrd-chip-link {
     cursor: pointer;
     text-decoration: none;
@@ -1776,6 +1887,10 @@ button.hrd-chip:focus-visible,
     }
 
     .hrd-main-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hrd-breakdown-grid {
         grid-template-columns: 1fr;
     }
 }

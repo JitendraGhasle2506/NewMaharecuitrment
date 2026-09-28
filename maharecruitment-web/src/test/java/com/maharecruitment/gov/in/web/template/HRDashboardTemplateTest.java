@@ -25,7 +25,7 @@ class HRDashboardTemplateTest {
     @Test
     void summaryCardsAndSectionsRenderDashboardValues() throws Exception {
         String rendered = render(new HRDashboardView(
-                9, 4, 5, 6, 30, 20, 50, 40, 10, 22, 8, 10, 80,
+                9, 4, 5, 6, 30, 15, 5, 50, 40, 10, 22, 8, 10, 80,
                 new HRAttendanceSummaryView(38, 10, 20, 6, 2),
                 3, 7, 12, 60, 40,
                 List.of(new DepartmentOnboardingView("Finance Department", 5, 10)),
@@ -34,6 +34,9 @@ class HRDashboardTemplateTest {
 
         assertThat(rendered)
                 .contains("Total Employees")
+                .contains("Internal Employees")
+                .contains("External Employees")
+                .contains("MAHAIT Employees")
                 .contains("Onboarded This Month")
                 .contains("Total Cells")
                 .contains("Present Today")
@@ -58,7 +61,7 @@ class HRDashboardTemplateTest {
     @Test
     void emptySectionsShowNoDataAvailable() throws Exception {
         String rendered = render(new HRDashboardView(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 new HRAttendanceSummaryView(0, 0, 0, 0, 0),
                 0, 0, 0, 0, 0,
                 List.of(), List.of(), List.of()));
@@ -75,6 +78,9 @@ class HRDashboardTemplateTest {
                 .contains("th:href=\"@{/hr/attendance-today}\"")
                 .contains("th:href=\"@{/hr/wing-reports}\"")
                 .contains("th:href=\"@{/hr/employee-hierarchy}\"")
+                .contains("id=\"hrEmployeeBreakdownToggle\"")
+                .contains("aria-controls=\"hrEmployeeBreakdown\"")
+                .contains("id=\"hrEmployeeBreakdown\"")
                 .contains("id=\"hrProjectScopePanel\"")
                 .contains("data-project-scope=\"internal\"")
                 .contains("data-project-scope=\"external\"");

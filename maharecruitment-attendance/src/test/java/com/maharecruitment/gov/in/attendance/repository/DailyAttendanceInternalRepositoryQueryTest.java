@@ -11,6 +11,16 @@ import org.springframework.data.jpa.repository.Query;
 class DailyAttendanceInternalRepositoryQueryTest {
 
     @Test
+    void dailySummarySeparatesInternalAndMahaitPresentEmployees() {
+        String sql = queryFor("summarizeAttendanceByDate");
+
+        assertThat(sql)
+                .contains("in ('INTERNAL', 'MAHAIT')")
+                .contains("as internalPresentCount")
+                .contains("as mahaitPresentCount");
+    }
+
+    @Test
     void cellSummaryDefinesEveryAttendanceCteThatItJoins() {
         String sql = queryFor("summarizeAttendanceByCell");
 

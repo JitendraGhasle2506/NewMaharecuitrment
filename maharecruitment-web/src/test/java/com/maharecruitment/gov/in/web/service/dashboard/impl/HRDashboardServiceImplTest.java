@@ -112,6 +112,9 @@ class HRDashboardServiceImplTest {
         when(cellMasterRepository.countByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase("Y", "Y"))
                 .thenReturn(12L);
         when(employeeRepository.summarizeEmployeeCountsByDepartment()).thenReturn(List.of());
+        when(employeeRepository.countByRecruitmentType("INTERNAL")).thenReturn(10L);
+        when(employeeRepository.countByRecruitmentType("EXTERNAL")).thenReturn(6L);
+        when(employeeRepository.countByRecruitmentType("MAHAIT")).thenReturn(4L);
         when(employeeRepository.count()).thenReturn(20L);
         when(dailyAttendanceInternalRepository.summarizeAttendanceByDate(
                 any(LocalDate.class),
@@ -120,6 +123,8 @@ class HRDashboardServiceImplTest {
                 eq(LocalTime.of(11, 0))))
                 .thenReturn(attendanceSummary);
         when(attendanceSummary.getPresentCount()).thenReturn(9L);
+        when(attendanceSummary.getInternalPresentCount()).thenReturn(7L);
+        when(attendanceSummary.getMahaitPresentCount()).thenReturn(2L);
         when(attendanceSummary.getCheckedInCount()).thenReturn(8L);
         when(attendanceSummary.getEarlyCount()).thenReturn(3L);
         when(attendanceSummary.getStandardCount()).thenReturn(3L);
@@ -129,6 +134,12 @@ class HRDashboardServiceImplTest {
         HRDashboardView result = service().getDashboard();
 
         assertThat(result.presentEmployees()).isEqualTo(11);
+        assertThat(result.internalEmployees()).isEqualTo(10);
+        assertThat(result.externalEmployees()).isEqualTo(6);
+        assertThat(result.mahaitEmployees()).isEqualTo(4);
+        assertThat(result.internalPresentEmployees()).isEqualTo(7);
+        assertThat(result.mahaitPresentEmployees()).isEqualTo(2);
+        assertThat(result.externalPresentEmployees()).isEqualTo(2);
         assertThat(result.attendanceSummary().checkedInEmployees()).isEqualTo(8);
         assertThat(result.attendanceSummary().earlyCheckIns()).isEqualTo(3);
         assertThat(result.attendanceSummary().standardCheckIns()).isEqualTo(3);
