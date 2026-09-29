@@ -31,7 +31,8 @@ class NoHardcodedHttpUrlTest {
     }
 
     private boolean isAllowedNamespaceReference(String line) {
-        return line.contains("http://www.thymeleaf.org");
+        return line.contains("http://www.thymeleaf.org")
+                || line.contains("http://www.w3.org/2000/svg");
     }
 
     private List<Path> filesToScan() throws IOException {

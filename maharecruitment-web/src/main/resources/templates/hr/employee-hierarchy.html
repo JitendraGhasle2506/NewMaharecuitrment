@@ -29,7 +29,7 @@
             </div>
             <a class="eh-manage" th:if="${!hierarchySelfMode}" th:href="@{/hr/reportingManager}">Manage reporting <svg class="eh-icon" aria-hidden="true"><use href="#eh-i-arrow"/></svg></a>
         </header>
-        <form id="ehFilters" class="eh-filters" th:hidden="${hierarchySelfMode}">
+        <form id="ehFilters" class="eh-filters" autocomplete="off" th:hidden="${hierarchySelfMode}">
             <div class="eh-filter-main">
                 <span class="eh-selection-icon" aria-hidden="true"><svg class="eh-icon"><use href="#eh-i-chart"/></svg></span>
                 <div class="eh-field eh-hod-field"><label for="ehHod">Head of department</label>
@@ -53,7 +53,7 @@
                 </button>
             </div>
             <div class="eh-toolbar">
-                <form id="ehSearchForm" class="eh-search" role="search">
+                <form id="ehSearchForm" class="eh-search" role="search" autocomplete="off">
                     <div class="eh-search-input"><svg class="eh-icon" aria-hidden="true"><use href="#eh-i-search"/></svg>
                         <label for="ehSearch" class="eh-sr-only">Employee name or employee code</label>
                         <input id="ehSearch" type="search" placeholder="Search a name or employee code…" minlength="2" maxlength="100" autocomplete="off" aria-controls="ehResults" aria-describedby="ehSearchHelp">

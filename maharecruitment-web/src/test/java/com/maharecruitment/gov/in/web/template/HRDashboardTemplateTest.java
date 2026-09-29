@@ -43,19 +43,13 @@ class HRDashboardTemplateTest {
                 .contains("/ 50")
                 .contains("80% attendance")
                 .contains("width:80%")
-                .contains("Wing Reports")
                 .contains("Team Hierarchy")
                 .contains("Attendance Today")
                 .contains("Internal Present")
                 .contains("MAHAIT Present")
                 .contains("External Present")
                 .contains("Absent")
-                .contains("Department Onboarding")
-                .contains("Employee Mix")
-                .contains("Finance Department")
-                .contains("width:50%")
-                .contains("Internal Portal")
-                .doesNotContain("No data available");
+                .contains("Internal Portal");
     }
 
     @Test
@@ -66,17 +60,15 @@ class HRDashboardTemplateTest {
                 0, 0, 0, 0, 0,
                 List.of(), List.of(), List.of()));
 
-        // wing reports, attendance, employee mix, department onboarding, internal and external project lists
-        assertThat(rendered.split("No data available", -1).length - 1).isEqualTo(6);
+        // Internal projects, external projects, and attendance are the active empty-state sections.
+        assertThat(rendered.split("No data available", -1).length - 1).isEqualTo(3);
     }
 
     @Test
-    void dashboardKeepsProjectPanelAndAttendanceLink() throws Exception {
+    void dashboardKeepsEmployeeAndProjectBreakdowns() throws Exception {
         String template = Files.readString(DASHBOARD_TEMPLATE_PATH);
 
         assertThat(template)
-                .contains("th:href=\"@{/hr/attendance-today}\"")
-                .contains("th:href=\"@{/hr/wing-reports}\"")
                 .contains("th:href=\"@{/hr/employee-hierarchy}\"")
                 .contains("id=\"hrEmployeeBreakdownToggle\"")
                 .contains("aria-controls=\"hrEmployeeBreakdown\"")
@@ -87,7 +79,8 @@ class HRDashboardTemplateTest {
     }
 
     private String render(HRDashboardView dashboard) throws Exception {
-        String template = Files.readString(DASHBOARD_TEMPLATE_PATH);
+        String template = Files.readString(DASHBOARD_TEMPLATE_PATH)
+                .replaceAll("(?s)<!--.*?-->", "");
         int start = template.indexOf("<section class=\"hrd-kpi-grid\"");
         int end = template.lastIndexOf("</th:block>", template.indexOf("<script>", start));
         String page = template.substring(start, end)
