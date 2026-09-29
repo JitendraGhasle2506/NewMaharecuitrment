@@ -38,6 +38,22 @@ public class EmployeeHierarchyService {
     public record Options(List<Option> hods, List<Option> departments, List<Option> designations) { }
     public record SearchMatch(Long employeeId, String employeeName, String employeeCode,
                               List<EmployeeHierarchyNode> path) { }
+    public record ReportingChainMember(Long employeeId, String employeeName, String designation,
+                                       boolean currentEmployee) { }
+
+    /** Only the employee's own manager chain is returned, never the managers' other teams. */
+    public List<ReportingChainMember> reportingChain(Long employeeId, EmployeeReportingType type) {
+        Graph graph = graph(employeeId, type, null, null);
+        List<ReportingChainMember> chain = new ArrayList<>();
+        Set<Long> visited = new HashSet<>();
+        for (Long id = employeeId; id != null && visited.add(id); id = graph.reportingParents.get(id)) {
+            EmployeeRow employee = graph.employees.get(id);
+            chain.add(new ReportingChainMember(id, employee.getEmployeeName(), employee.getDesignation(),
+                    id.equals(employeeId)));
+        }
+        Collections.reverse(chain);
+        return chain;
+    }
 
     public Options options() {
         List<EmployeeRow> employees = repository.findActiveEmployees();
@@ -131,6 +147,7 @@ public class EmployeeHierarchyService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Selected employee is unavailable, inactive or relieved.");
         }
         Map<Long, List<Long>> edges = new HashMap<>();
+        Map<Long, Long> reportingParents = new HashMap<>();
         Set<Long> assigned = new HashSet<>();
         // Legacy data can contain historical duplicates. The newest mapping wins for each reporting type.
         for (var mapping : repository.findReportingRelationships(type.name())) {
@@ -140,6 +157,7 @@ public class EmployeeHierarchyService {
             if (parentId != null && !parentId.equals(mapping.getEmployeeId())
                     && employees.containsKey(parentId) && employees.containsKey(mapping.getEmployeeId())) {
                 edges.computeIfAbsent(parentId, unused -> new ArrayList<>()).add(mapping.getEmployeeId());
+                reportingParents.put(mapping.getEmployeeId(), parentId);
             }
         }
         Comparator<Long> order = Comparator.comparing((Long id) -> employees.get(id).getEmployeeName(),
@@ -192,7 +210,7 @@ public class EmployeeHierarchyService {
         }
         // Preserve deterministic breadth-first order for search results.
         visited.retainAll(included);
-        return new Graph(employees, children, parents, visited, matches, subordinateCounts);
+        return new Graph(employees, children, parents, visited, matches, subordinateCounts, reportingParents);
     }
 
     private EmployeeHierarchyNode node(Graph graph, Long id) {
@@ -218,5 +236,5 @@ public class EmployeeHierarchyService {
 
     private record Graph(Map<Long, EmployeeRow> employees, Map<Long, List<Long>> children,
                          Map<Long, Long> parent, Set<Long> included, Set<Long> matches,
-                         Map<Long, Integer> subordinateCounts) { }
+                         Map<Long, Integer> subordinateCounts, Map<Long, Long> reportingParents) { }
 }

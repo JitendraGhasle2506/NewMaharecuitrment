@@ -12,6 +12,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -109,6 +110,8 @@ import db.postmigration.V130__cto_cfo_roles;
 import db.postmigration.V131__cell_reporting_authority_levels;
 import db.postmigration.V132__multiple_level_two_cell_authorities;
 import db.postmigration.V133__employee_hierarchy_reporting_types;
+import db.postmigration.V134__employee_onboarding_schema_reconciliation;
+import db.postmigration.V135__pre_onboarding_schema_reconciliation;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -119,22 +122,38 @@ public class PostSchemaFlywayRunner {
 
     private final DataSource dataSource;
 
+    @Value("${app.post-schema-flyway.before-hibernate:false}")
+    private boolean beforeHibernate;
+
+    @Value("${app.post-schema-flyway.repair-on-validation-error:true}")
+    private boolean repairOnValidationError;
+
     public PostSchemaFlywayRunner(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void migrate() {
-        LOGGER.info("Running post-schema Flyway migrations");
-        Flyway flyway = Flyway.configure()
-                .dataSource(dataSource)
+    public void onApplicationReady() {
+        if (!beforeHibernate) migrate(createFlyway());
+    }
+
+    Flyway createFlyway() {
+        return Flyway.configure()
+                .dataSource(new MigrationLockTimeoutDataSource(dataSource))
                 .baselineOnMigrate(true)
                 .table("flyway_post_schema_history")
                 .ignoreMigrationPatterns("*:missing")
                 .javaMigrations(migrations().toArray(JavaMigration[]::new))
                 .load();
+    }
+
+    void migrate(Flyway flyway) {
+        LOGGER.info("Running controlled Flyway migrations with a 5-second lock timeout");
 
         if (hasFailedPostSchemaMigration()) {
+            if (!repairOnValidationError) {
+                throw new IllegalStateException("Failed migration history requires review before schema validation.");
+            }
             LOGGER.warn(
                     "Detected failed entries in flyway_post_schema_history. Repairing the post-schema history before retrying.");
             flyway.repair();
@@ -143,6 +162,7 @@ public class PostSchemaFlywayRunner {
         try {
             flyway.migrate();
         } catch (org.flywaydb.core.api.exception.FlywayValidateException ex) {
+            if (!repairOnValidationError) throw ex;
             LOGGER.warn(
                     "Flyway validation failed (possibly due to deleted or modified migrations). Attempting repair and retrying migrate: {}",
                     ex.getMessage());
@@ -244,11 +264,13 @@ public class PostSchemaFlywayRunner {
                 new V131__cell_reporting_authority_levels(),
                 new V132__multiple_level_two_cell_authorities(),
                 new V133__employee_hierarchy_reporting_types(),
+                new V134__employee_onboarding_schema_reconciliation(),
+                new V135__pre_onboarding_schema_reconciliation(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 
     private boolean hasFailedPostSchemaMigration() {
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = new MigrationLockTimeoutDataSource(dataSource).getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet rs = statement.executeQuery(
                         "select 1 from flyway_post_schema_history where success = false limit 1")) {

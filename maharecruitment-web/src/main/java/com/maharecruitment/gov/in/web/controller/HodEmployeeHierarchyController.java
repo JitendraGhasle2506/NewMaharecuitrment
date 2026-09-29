@@ -33,6 +33,12 @@ public class HodEmployeeHierarchyController {
         }
     }
 
+    @GetMapping("/employee/api/employee-hierarchy/reporting-chain")
+    public Result<List<EmployeeHierarchyService.ReportingChainMember>> reportingChain(HttpSession session) {
+        return Result.of(hierarchyService.reportingChain(currentHod(session).getEmployeeId(),
+                EmployeeReportingType.PRIMARY));
+    }
+
     @GetMapping({"/hod1/api/employee-hierarchy/options", "/employee/api/employee-hierarchy/options"})
     public Result<EmployeeHierarchyService.Options> options(HttpSession session) {
         EmployeeEntity hod = currentHod(session);

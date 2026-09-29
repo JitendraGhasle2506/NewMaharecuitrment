@@ -37,7 +37,9 @@ public class EmployeeMasterSchemaGuardCustomizer implements HibernatePropertiesC
             boolean changed = EmployeeMasterOnboardingDateSchemaSupport.apply(connection);
             if (changed) {
                 LOGGER.info(
-                        "Employee master schema guard ensured employee_master.mahait_onboarding_date is available before Hibernate schema update.");
+                        "Employee master onboarding schema repaired transactionally before Hibernate schema update.");
+            } else {
+                LOGGER.debug("Employee master onboarding schema needs no alteration.");
             }
         } catch (Exception ex) {
             LOGGER.warn("Employee master schema guard failed: {}", ex.getMessage(), ex);

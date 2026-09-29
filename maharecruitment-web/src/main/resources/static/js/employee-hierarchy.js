@@ -155,6 +155,33 @@
         return node;
     }
 
+    const reportingChain = $('employeeReportingChain');
+    async function loadReportingChain() {
+        const retry = $('ehChainRetry');
+        retry.hidden = true;
+        reportingChain.setAttribute('aria-busy', 'true');
+        $('ehChainStatus').hidden = false;
+        $('ehChainStatus').textContent = 'Loading your reporting chain...';
+        try {
+            const chain = await get(reportingChain.dataset.api);
+            const members = chain.map(member => {
+                const item = element('li', member.currentEmployee ? 'is-current' : '');
+                item.append(element('strong', '', member.employeeName),
+                    element('span', '', member.designation || 'Designation not available'));
+                if (member.currentEmployee) item.append(element('small', '', 'You'));
+                return item;
+            });
+            $('ehChainMembers').replaceChildren(...members);
+            $('ehChainStatus').hidden = chain.length > 1;
+            $('ehChainStatus').textContent = 'No reporting manager is assigned above you.';
+        } catch (error) {
+            $('ehChainStatus').textContent = error.message;
+            retry.hidden = false;
+        } finally {
+            reportingChain.setAttribute('aria-busy', 'false');
+        }
+    }
+
     function button(text, action, id, label) {
         const control = element('button', '', text);
         control.type = 'button';
@@ -603,5 +630,9 @@
         } catch (error) { emptyState('error', error.message); status(error.message, true); }
     }
     summary();
+    if (reportingChain) {
+        $('ehChainRetry').addEventListener('click', loadReportingChain);
+        loadReportingChain();
+    }
     initialize();
 })();

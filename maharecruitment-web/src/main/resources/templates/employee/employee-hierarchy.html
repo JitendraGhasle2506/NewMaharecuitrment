@@ -13,6 +13,14 @@
         <a class="eh-secondary" th:href="@{/employee/dashboard}">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
         </a>
+        <div id="employeeReportingChain" class="eh-reporting-chain"
+             th:attr="data-api=@{/employee/api/employee-hierarchy/reporting-chain}">
+            <h2>My reporting chain</h2>
+            <p>Managers above you in your primary reporting hierarchy.</p>
+            <p id="ehChainStatus" role="status">Loading your reporting chain...</p>
+            <ol id="ehChainMembers" aria-label="Reporting chain from highest manager to you"></ol>
+            <button id="ehChainRetry" class="eh-secondary" type="button" hidden>Retry</button>
+        </div>
         <th:block th:replace="~{hr/employee-hierarchy :: employee-hierarchy-content}"></th:block>
     </section>
 </th:block>

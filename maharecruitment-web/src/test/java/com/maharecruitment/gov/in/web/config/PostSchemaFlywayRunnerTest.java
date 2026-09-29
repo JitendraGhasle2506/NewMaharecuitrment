@@ -27,6 +27,8 @@ import db.postmigration.V123__manpower_designation_type;
 import db.postmigration.V131__cell_reporting_authority_levels;
 import db.postmigration.V132__multiple_level_two_cell_authorities;
 import db.postmigration.V133__employee_hierarchy_reporting_types;
+import db.postmigration.V134__employee_onboarding_schema_reconciliation;
+import db.postmigration.V135__pre_onboarding_schema_reconciliation;
 
 class PostSchemaFlywayRunnerTest {
 
@@ -93,6 +95,10 @@ class PostSchemaFlywayRunnerTest {
         assertThat(multipleLevelTwoMigrationIndex).isGreaterThan(authorityLevelsMigrationIndex);
         assertThat(indexOf(migrations, V133__employee_hierarchy_reporting_types.class))
                 .isGreaterThan(multipleLevelTwoMigrationIndex);
+        assertThat(indexOf(migrations, V134__employee_onboarding_schema_reconciliation.class))
+                .isGreaterThan(indexOf(migrations, V133__employee_hierarchy_reporting_types.class));
+        assertThat(indexOf(migrations, V135__pre_onboarding_schema_reconciliation.class))
+                .isGreaterThan(indexOf(migrations, V134__employee_onboarding_schema_reconciliation.class));
     }
 
     private int indexOf(List<?> migrations, Class<?> migrationType) {

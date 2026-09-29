@@ -41,9 +41,11 @@ const dashboardPage = dashboard.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
 const teamTemplate = await readFile(join(base, 'templates/employee/employee-hierarchy.html'), 'utf8');
 const backLink = teamTemplate.match(/<a class="eh-secondary"[\s\S]*?<\/a>/)[0]
     .replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
+const reportingChain = teamTemplate.match(/<div id="employeeReportingChain"[\s\S]*?<\/div>/)[0]
+    .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy/reporting-chain"');
 const teamPage = page.replace('data-api="/api/employees/hierarchy"',
     'data-self-mode="true" data-api="/api/employees/hierarchy"')
-    .replace('<section id="employeeHierarchy"', `${backLink}<section id="employeeHierarchy"`);
+    .replace('<section id="employeeHierarchy"', `${backLink}${reportingChain}<section id="employeeHierarchy"`);
 const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
     try {
@@ -59,6 +61,11 @@ const server = createServer(async (request, response) => {
                 hods: [{ id: 1, label: names[0] }], departments: [{ id: 10, label: 'Technology' }],
                 designations: [{ id: 20, label: 'Software Engineer' }]
             };
+            else if (url.pathname.endsWith('/reporting-chain')) data = [
+                { employeeId: 9, employeeName: 'Senior Director', designation: 'Director', currentEmployee: false },
+                { employeeId: 8, employeeName: 'Reporting Manager', designation: 'Manager', currentEmployee: false },
+                { employeeId: 1, employeeName: names[0], designation: 'Head of Department', currentEmployee: true }
+            ];
             else if (url.pathname.endsWith('/search')) data = url.searchParams.get('q') === 'missing' ? [] : [
                 { employeeId: 6, employeeName: names[5], employeeCode: 'EMP006', path: [node(1), node(2), node(6)] }
             ];
@@ -322,6 +329,14 @@ try {
     await evaluate(`document.querySelector('a[href="/employee/employee-hierarchy"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`location.pathname`), '/employee/employee-hierarchy');
+    await waitFor(`document.querySelectorAll('#ehChainMembers li').length === 3`);
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('#ehChainMembers strong')].map(item => item.textContent)`),
+        ['Senior Director', 'Reporting Manager', names[0]], 'Upper chain runs from highest manager to employee');
+    assert.equal(await evaluate(`document.querySelector('#ehChainMembers .is-current small').textContent`), 'You');
+    assert.equal(await evaluate(`(() => {
+        const members = [...document.querySelectorAll('#ehChainMembers li')].map(item => item.getBoundingClientRect());
+        return members.every((box, index) => !index || box.top > members[index - 1].bottom);
+    })()`), true, 'Reporting managers are connected vertically');
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 6`);
     assert.equal(await evaluate(`document.documentElement.scrollWidth <= window.innerWidth`), true,

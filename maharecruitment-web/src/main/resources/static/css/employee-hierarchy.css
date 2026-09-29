@@ -9,6 +9,17 @@
 .eh-page *, .eh-page *::before, .eh-page *::after { box-sizing: border-box; }
 .eh-page [hidden] { display: none !important; }
 .employee-team-page > .eh-secondary { margin-bottom: 20px; text-decoration: none; }
+.eh-reporting-chain { margin-bottom: 24px; padding: 20px; background: #fff; border: 1px solid var(--eh-border); border-radius: var(--eh-radius); }
+.eh-reporting-chain h2 { margin: 0 0 6px; font-size: 18px; }
+.eh-reporting-chain p { margin: 0 0 16px; font-size: 12px; color: var(--eh-muted); }
+.eh-reporting-chain ol { display: grid; justify-items: center; margin: 0; padding: 0; list-style: none; }
+.eh-reporting-chain li { position: relative; display: grid; gap: 6px; width: min(100%, 320px); padding: 14px; text-align: center; border: 1px solid var(--eh-border); border-radius: 10px; overflow-wrap: anywhere; }
+.eh-reporting-chain li + li { margin-top: 28px; }
+.eh-reporting-chain li + li::before { content: ''; position: absolute; height: 28px; width: 2px; background: var(--eh-line); bottom: 100%; left: calc(50% - 1px); }
+.eh-reporting-chain li strong { font-size: 13px; }
+.eh-reporting-chain li span { font-size: 12px; color: var(--eh-muted); }
+.eh-reporting-chain li.is-current { background: #edf8f7; border-color: var(--eh-teal); }
+.eh-reporting-chain li small { color: var(--eh-teal); font-weight: 700; }
 .hod-hierarchy-panel .eh-page { width: 100%; padding: 20px; overflow: hidden; }
 .eh-page[data-self-mode="true"] .eh-heading { margin-bottom: 16px; }
 .eh-icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }

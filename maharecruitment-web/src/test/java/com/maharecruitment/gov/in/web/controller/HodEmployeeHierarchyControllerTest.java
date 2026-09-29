@@ -52,6 +52,23 @@ class HodEmployeeHierarchyControllerTest {
     }
 
     @Test
+    void reportingChainUsesTheSessionEmployeeAndRejectsMissingSessions() throws Exception {
+        when(hierarchyService.reportingChain(100L, EmployeeReportingType.PRIMARY)).thenReturn(List.of(
+                new EmployeeHierarchyService.ReportingChainMember(1L, "Upper Manager", "Director", false),
+                new EmployeeHierarchyService.ReportingChainMember(100L, "Employee", "Manager", true)));
+        var mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mvc.perform(get("/employee/api/employee-hierarchy/reporting-chain").session(session)
+                .param("employeeId", "999"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].employeeName").value("Upper Manager"))
+                .andExpect(jsonPath("$.data[1].employeeId").value(100))
+                .andExpect(jsonPath("$.data[1].currentEmployee").value(true));
+        verify(hierarchyService).reportingChain(100L, EmployeeReportingType.PRIMARY);
+        mvc.perform(get("/employee/api/employee-hierarchy/reporting-chain"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void exposesOnlyTheLoggedInHodAsAnOption() {
         var options = controller.options(session).data();
 

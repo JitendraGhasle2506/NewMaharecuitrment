@@ -37,7 +37,7 @@ public class RecruitmentInterviewSchemaGuardRunner {
 
     @EventListener(ApplicationReadyEvent.class)
     public void ensureRecruitmentInterviewIndexes() {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = new MigrationLockTimeoutDataSource(dataSource).getConnection()) {
             if (!isPostgreSql(connection) || !tableExists(connection, TABLE_NAME)) {
                 return;
             }

@@ -23,6 +23,34 @@ class EmployeeHierarchyServiceTest {
     private final EmployeeHierarchyService service = new EmployeeHierarchyService(repository);
 
     @Test
+    void reportingChainRunsFromTopManagerToEmployeeWithoutIncludingPeersOrSubordinates() {
+        setup(List.of(employee(1, "HOD", 10), employee(2, "Manager", 10), employee(3, "Employee", 10),
+                        employee(4, "Peer", 10), employee(5, "Subordinate", 10)),
+                List.of(mapping(2, null), mapping(3, 2L), mapping(4, 2L), mapping(5, 3L)));
+        var chain = service.reportingChain(3L, EmployeeReportingType.PRIMARY);
+        assertThat(chain).extracting(EmployeeHierarchyService.ReportingChainMember::employeeId)
+                .containsExactly(1L, 2L, 3L);
+        assertThat(chain).extracting(EmployeeHierarchyService.ReportingChainMember::currentEmployee)
+                .containsExactly(false, false, true);
+        verify(repository).findActiveEmployees();
+        verify(repository).findReportingRelationships("PRIMARY");
+    }
+
+    @Test
+    void reportingChainCutsCyclesAndDoesNotUseHistoricalOrUnavailableManagers() {
+        setup(List.of(employee(1, "HOD", 10), employee(2, "Manager", 10), employee(3, "Employee", 10)),
+                List.of(mapping(1, 3L), mapping(2, 1L), mapping(3, 2L)));
+        assertThat(service.reportingChain(3L, EmployeeReportingType.PRIMARY))
+                .extracting(EmployeeHierarchyService.ReportingChainMember::employeeId).containsExactly(1L, 2L, 3L);
+        setup(List.of(employee(1, "HOD", 10), employee(3, "Employee", 10)),
+                List.of(mapping(3, 999L), mapping(3, 1L)));
+        assertThat(service.reportingChain(3L, EmployeeReportingType.PRIMARY))
+                .extracting(EmployeeHierarchyService.ReportingChainMember::employeeId).containsExactly(3L);
+        assertThatThrownBy(() -> service.reportingChain(999L, EmployeeReportingType.PRIMARY))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
     void resolvesHodUserIdAndEmployeeManagerIdIntoRecursiveTree() {
         setup(List.of(employee(1, "HOD", 10), employee(2, "Manager", 10), employee(3, "Developer", 10)),
                 List.of(mapping(3, 2L), mapping(2, null)));
