@@ -1853,6 +1853,42 @@
             opacity: 0.9;
         }
 
+        .attendance-calendar-content {
+            position: relative;
+        }
+
+        .attendance-calendar-content.is-loading {
+            pointer-events: none;
+        }
+
+        .attendance-calendar-content.is-loading::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            background: rgba(255, 255, 255, 0.62);
+            backdrop-filter: blur(1px);
+        }
+
+        .attendance-calendar-content.is-loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            z-index: 4;
+            width: 28px;
+            height: 28px;
+            margin: -14px 0 0 -14px;
+            border: 3px solid #cbd5e1;
+            border-top-color: #126e73;
+            border-radius: 50%;
+            animation: attendance-calendar-spin 0.7s linear infinite;
+        }
+
+        @keyframes attendance-calendar-spin {
+            to { transform: rotate(360deg); }
+        }
+
         .attendance-calendar-month {
             display: flex;
             align-items: center;
@@ -2853,22 +2889,27 @@
                                 </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <div class="attendance-calendar-month">
-                                <a class="attendance-calendar-nav"
-                                   th:href="@{/employee/intAttendance(dateRange=${previousAttendanceMonth},openCalendar=true)}"
-                                   aria-label="View previous month"
-                                   title="Previous month">
-                                    <i class="fa fa-chevron-left" aria-hidden="true"></i>
-                                </a>
-                                <span class="attendance-calendar-month-label" th:text="${attendanceMonthLabel}">September 2026</span>
-                                <a class="attendance-calendar-nav"
-                                   th:href="@{/employee/intAttendance(dateRange=${nextAttendanceMonth},openCalendar=true)}"
-                                   aria-label="View next month"
-                                   title="Next month">
-                                    <i class="fa fa-chevron-right" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                            <div class="modal-body">
+                            <div class="attendance-calendar-content"
+                                 th:fragment="attendanceCalendarContent"
+                                 aria-live="polite">
+                                <div class="attendance-calendar-month">
+                                    <a class="attendance-calendar-nav"
+                                       th:href="@{/employee/intAttendance(dateRange=${previousAttendanceMonth},openCalendar=true)}"
+                                       th:attr="data-calendar-url=@{/employee/intAttendance/calendar(dateRange=${previousAttendanceMonth})}"
+                                       aria-label="View previous month"
+                                       title="Previous month">
+                                        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                                    </a>
+                                    <span class="attendance-calendar-month-label" th:text="${attendanceMonthLabel}">September 2026</span>
+                                    <a class="attendance-calendar-nav"
+                                       th:href="@{/employee/intAttendance(dateRange=${nextAttendanceMonth},openCalendar=true)}"
+                                       th:attr="data-calendar-url=@{/employee/intAttendance/calendar(dateRange=${nextAttendanceMonth})}"
+                                       aria-label="View next month"
+                                       title="Next month">
+                                        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                                    </a>
+                                </div>
+                                <div class="modal-body">
                                 <div class="attendance-calendar-weekdays" aria-hidden="true">
                                     <span class="attendance-calendar-weekday">Mon</span>
                                     <span class="attendance-calendar-weekday">Tue</span>
@@ -2905,12 +2946,13 @@
                                     </th:block>
                                 </div>
 
-                                <div class="attendance-calendar-key" aria-label="Calendar status legend">
-                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-present"></span>Present</span>
-                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-absent"></span>Absent</span>
-                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-holiday"></span>Holiday</span>
-                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-week-off"></span>Weekly Off</span>
-                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-leave"></span>Approved Leave</span>
+                                    <div class="attendance-calendar-key" aria-label="Calendar status legend">
+                                        <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-present"></span>Present</span>
+                                        <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-absent"></span>Absent</span>
+                                        <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-holiday"></span>Holiday</span>
+                                        <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-week-off"></span>Weekly Off</span>
+                                        <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-leave"></span>Approved Leave</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2929,6 +2971,61 @@
                 bootstrap.Modal.getOrCreateInstance(calendarElement).show();
             }
         });
+    </script>
+    <script>
+        (function () {
+            const calendarModal = document.getElementById('attendanceCalendarModal');
+            if (!calendarModal) {
+                return;
+            }
+
+            let calendarRequest = null;
+
+            calendarModal.addEventListener('click', async function (event) {
+                const navigationLink = event.target.closest('.attendance-calendar-nav[data-calendar-url]');
+                if (!navigationLink) {
+                    return;
+                }
+
+                event.preventDefault();
+                const currentContent = calendarModal.querySelector('.attendance-calendar-content');
+                if (!currentContent) {
+                    return;
+                }
+
+                if (calendarRequest) {
+                    calendarRequest.abort();
+                }
+                calendarRequest = new AbortController();
+                currentContent.classList.add('is-loading');
+                currentContent.setAttribute('aria-busy', 'true');
+
+                try {
+                    const response = await fetch(navigationLink.dataset.calendarUrl, {
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        signal: calendarRequest.signal
+                    });
+                    if (!response.ok) {
+                        throw new Error('Unable to load attendance calendar.');
+                    }
+
+                    const documentFragment = new DOMParser().parseFromString(await response.text(), 'text/html');
+                    const updatedContent = documentFragment.querySelector('.attendance-calendar-content');
+                    if (!updatedContent) {
+                        throw new Error('Attendance calendar response was invalid.');
+                    }
+                    currentContent.replaceWith(updatedContent);
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        currentContent.classList.remove('is-loading');
+                        currentContent.removeAttribute('aria-busy');
+                    }
+                } finally {
+                    calendarRequest = null;
+                }
+            });
+        }());
     </script>
     
     <script>

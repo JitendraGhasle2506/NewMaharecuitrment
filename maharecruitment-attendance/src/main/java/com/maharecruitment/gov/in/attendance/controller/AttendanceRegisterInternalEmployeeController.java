@@ -117,6 +117,23 @@ public class AttendanceRegisterInternalEmployeeController {
         return "attendance/employee-attendance-calendar";
     }
 
+    @GetMapping("/intAttendance/calendar")
+    public String attendanceCalendarFragment(
+            @RequestParam(required = false) String dateRange,
+            Model model,
+            HttpSession session) {
+        EmployeeEntity employee = resolveCurrentEmployee(session);
+        if (employee.getEmployeeId() == null) {
+            model.addAttribute("error", "Employee mapping not found in user account.");
+            return "attendance/attendance-register-internal :: attendanceCalendarContent";
+        }
+
+        LocalDate today = LocalDate.now();
+        YearMonth selectedMonth = resolveSelectedMonth(dateRange, today);
+        populateAttendanceCalendarView(model, employee, selectedMonth, today);
+        return "attendance/attendance-register-internal :: attendanceCalendarContent";
+    }
+
     @PostMapping("/fetchMyAttendance")
     public String fetchMyAttendance(@RequestParam(required = false) String dateRange,
             Model model, HttpSession session) {
@@ -332,6 +349,8 @@ public class AttendanceRegisterInternalEmployeeController {
         model.addAttribute("today", today);
         model.addAttribute("daysInMonth", selectedMonth.lengthOfMonth());
         model.addAttribute("attendanceMonthLabel", formatMonthLabel(selectedMonth));
+        model.addAttribute("previousAttendanceMonth", formatDateRange(selectedMonth.minusMonths(1)));
+        model.addAttribute("nextAttendanceMonth", formatDateRange(selectedMonth.plusMonths(1)));
         model.addAttribute("attendanceCalendarWeeks", buildCalendarWeeks(selectedMonth, today, attendance));
     }
 
