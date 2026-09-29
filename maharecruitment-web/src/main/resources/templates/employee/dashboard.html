@@ -98,6 +98,15 @@
                         </span>
                         <i class="fa-solid fa-arrow-right quick-action-arrow"></i>
                     </a>
+                    <a class="quick-action" th:href="@{/employee/employee-hierarchy}"
+                        th:if="${profile.profileAvailable}">
+                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                        <span class="quick-action-copy">
+                            <strong>View My Team Hierarchy</strong>
+                            <small>Show your team and reporting structure</small>
+                        </span>
+                        <i class="fa-solid fa-arrow-right quick-action-arrow" aria-hidden="true"></i>
+                    </a>
                 </div>
             </div>
 

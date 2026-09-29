@@ -8,6 +8,7 @@
 }
 .eh-page *, .eh-page *::before, .eh-page *::after { box-sizing: border-box; }
 .eh-page [hidden] { display: none !important; }
+.employee-team-page > .eh-secondary { margin-bottom: 20px; text-decoration: none; }
 .hod-hierarchy-panel .eh-page { width: 100%; padding: 20px; overflow: hidden; }
 .eh-page[data-self-mode="true"] .eh-heading { margin-bottom: 16px; }
 .eh-icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }

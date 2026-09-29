@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Team Hierarchy</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-hierarchy.css}">
+</head>
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header('Employee', 'My Team Hierarchy', ~{::section})}">
+    <section class="eh-page employee-team-page">
+        <a class="eh-secondary" th:href="@{/employee/dashboard}">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
+        </a>
+        <th:block th:replace="~{hr/employee-hierarchy :: employee-hierarchy-content}"></th:block>
+    </section>
+</th:block>
+</body>
+</html>

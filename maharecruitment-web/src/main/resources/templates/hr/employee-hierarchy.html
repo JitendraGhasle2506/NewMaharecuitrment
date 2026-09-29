@@ -63,7 +63,7 @@
                     <div id="ehResults" class="eh-results" aria-label="Search results" hidden></div>
                     <span id="ehSearchHelp" class="eh-sr-only">Type at least two characters. Use arrow keys to move through results and Enter to select.</span>
                 </form>
-                <div class="eh-legend" aria-label="Card legend"><span><i class="eh-dot eh-dot-root"></i> Selected HOD</span><span><i class="eh-dot eh-dot-match"></i> Search match</span></div>
+                <div class="eh-legend" aria-label="Card legend"><span><i class="eh-dot eh-dot-root"></i> <span th:text="${hierarchySelfMode ? 'You' : 'Selected HOD'}">Selected HOD</span></span><span><i class="eh-dot eh-dot-match"></i> Search match</span></div>
             </div>
             <div class="eh-chart-frame">
                 <div id="ehViewport" class="eh-viewport" tabindex="0" aria-label="Employee hierarchy. Scroll or drag empty space to explore the chart.">

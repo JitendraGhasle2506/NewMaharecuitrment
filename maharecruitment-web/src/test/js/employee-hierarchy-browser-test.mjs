@@ -20,6 +20,7 @@ const names = ['Ananya Deshmukh', 'Rohan Patil', 'Sara Shah', 'Dev Mehta', 'Mira
 const children = new Map([[1, [2, 3, 4]], [2, [5, 6]], [3, [7]]]);
 const totalSubordinates = new Map([[1, 6], [2, 2], [3, 1]]);
 let failNextTree = false;
+let apiRequests = 0;
 function node(id, expanded = false) {
     const reports = children.get(id) || [];
     return { employeeId: id, employeeName: names[id - 1], employeeCode: `EMP00${id}`,
@@ -35,6 +36,14 @@ page = page.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"')
     .replace(/th:src="@\{([^}]+)\}"/g, 'src="$1"')
     .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy" data-context="/" data-photo-api="/api/employees/hierarchy/photo"')
     .replace('</head>', '<style>body{font-family:system-ui,sans-serif;margin:24px;background:#f4f7fb}.btn{color:#087ba4;text-decoration:none;font-size:13px}</style></head>');
+const dashboard = await readFile(join(base, 'templates/employee/dashboard.html'), 'utf8');
+const dashboardPage = dashboard.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
+const teamTemplate = await readFile(join(base, 'templates/employee/employee-hierarchy.html'), 'utf8');
+const backLink = teamTemplate.match(/<a class="eh-secondary"[\s\S]*?<\/a>/)[0]
+    .replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
+const teamPage = page.replace('data-api="/api/employees/hierarchy"',
+    'data-self-mode="true" data-api="/api/employees/hierarchy"')
+    .replace('<section id="employeeHierarchy"', `${backLink}<section id="employeeHierarchy"`);
 const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
     try {
@@ -44,6 +53,7 @@ const server = createServer(async (request, response) => {
         } else if (url.pathname === '/api/employees/hierarchy/photo/4') {
             response.statusCode = 404; response.end();
         } else if (url.pathname.startsWith('/api/')) {
+            apiRequests++;
             let data;
             if (url.pathname.endsWith('/options')) data = {
                 hods: [{ id: 1, label: names[0] }], departments: [{ id: 10, label: 'Technology' }],
@@ -65,6 +75,10 @@ const server = createServer(async (request, response) => {
             response.end(JSON.stringify({ success: true, data }));
         } else if (url.pathname === '/') {
             response.setHeader('Content-Type', 'text/html'); response.end(page);
+        } else if (url.pathname === '/employee/dashboard') {
+            response.setHeader('Content-Type', 'text/html'); response.end(dashboardPage);
+        } else if (url.pathname === '/employee/employee-hierarchy') {
+            response.setHeader('Content-Type', 'text/html'); response.end(teamPage);
         } else if (['/js/employee-hierarchy.js', '/css/employee-hierarchy.css', '/img/employee-default-avatar.svg'].includes(url.pathname)) {
             response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'text/javascript'
                 : url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css');
@@ -299,7 +313,23 @@ try {
     await evaluate(`document.getElementById('ehRetry').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`document.getElementById('ehViewport').getAttribute('aria-busy')`), 'false');
+    const requestsBeforeDashboard = apiRequests;
+    await send('Page.navigate', { url: `${origin}/employee/dashboard` });
+    await waitFor(`document.readyState === 'complete' && document.querySelector('a[href="/employee/employee-hierarchy"]')`);
+    assert.equal(await evaluate(`document.getElementById('employeeHierarchy')`), null,
+        'Dashboard does not contain the hierarchy');
+    assert.equal(apiRequests, requestsBeforeDashboard, 'Dashboard makes no hierarchy API requests');
+    await evaluate(`document.querySelector('a[href="/employee/employee-hierarchy"]').click()`);
+    await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
+    assert.equal(await evaluate(`location.pathname`), '/employee/employee-hierarchy');
+    await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
+    await waitFor(`document.querySelectorAll('.eh-card').length === 6`);
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= window.innerWidth`), true,
+        'Team hierarchy fits the mobile page');
+    await evaluate(`document.querySelector('a[href="/employee/dashboard"]').click()`);
+    await waitFor(`location.pathname === '/employee/dashboard' && document.querySelector('.quick-actions')`);
     assert.deepEqual(exceptions, [], 'No browser JavaScript exceptions');
+    console.log('PASS: Dashboard link opens the team hierarchy on a separate page; branches expand and Back to Dashboard returns correctly.');
     console.log(`PASS: HOD-only selection, minimal transparent nodes, total subordinate counts (including unloaded branches), photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
 } finally {
     if (cdp && socket?.readyState === WebSocket.OPEN) await cdp('Browser.close').catch(() => {});

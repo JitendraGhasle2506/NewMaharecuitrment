@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
@@ -74,5 +79,49 @@ class HodEmployeeHierarchyControllerTest {
                 999L, EmployeeReportingType.PRIMARY, null, 0, 25, 1, session))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void employeeRoutesAutomaticallyOfferOnlyTheSignedInEmployeeAndLoadTheirTree() throws Exception {
+        session.setAttribute("SESSION_USER", new SessionUserDTO(
+                10L, "Employee", "employee@example.test", List.of("ROLE_EMPLOYEE"), null, null, null,
+                LocalDateTime.now(), LocalDateTime.now()));
+        EmployeeHierarchyNode root = new EmployeeHierarchyNode(
+                100L, "Employee", "EMP100", "Manager", "IT", null, 0, 0, true);
+        when(hierarchyService.tree(100L, null, EmployeeReportingType.PRIMARY, null, null, 0, 25, 1))
+                .thenReturn(root);
+        var mvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        mvc.perform(get("/employee/api/employee-hierarchy/options").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.hods.length()").value(1))
+                .andExpect(jsonPath("$.data.hods[0].id").value(100));
+        mvc.perform(get("/employee/api/employee-hierarchy/100").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.employeeId").value(100));
+    }
+
+    @Test
+    void employeeTreeAndSearchRejectOtherRootsAndMissingSessions() throws Exception {
+        var mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mvc.perform(get("/employee/api/employee-hierarchy/999").session(session))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/employee/api/employee-hierarchy/999/search").param("q", "name").session(session))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/employee/api/employee-hierarchy/options"))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(hierarchyService);
+    }
+
+    @Test
+    void employeeSearchAndPaginationStayWithinTheirOwnRoot() throws Exception {
+        var mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mvc.perform(get("/employee/api/employee-hierarchy/100/search").param("q", "team").session(session))
+                .andExpect(status().isOk());
+        verify(hierarchyService).search(100L, EmployeeReportingType.PRIMARY, null, null, "team");
+        mvc.perform(get("/employee/api/employee-hierarchy/100")
+                .param("nodeId", "101").param("offset", "25").session(session))
+                .andExpect(status().isOk());
+        verify(hierarchyService).tree(100L, 101L, EmployeeReportingType.PRIMARY, null, null, 25, 25, 1);
     }
 }

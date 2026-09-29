@@ -570,7 +570,9 @@
     viewport.addEventListener('pointerup', endDrag);
     viewport.addEventListener('pointercancel', endDrag);
     viewport.addEventListener('lostpointercapture', endDrag);
-    new ResizeObserver(() => { if (root) { if (fitMode) fit(); else applyScale(); } }).observe(viewport);
+    new ResizeObserver(() => {
+        if (root && viewport.clientWidth) { if (fitMode) fit(); else applyScale(); }
+    }).observe(viewport);
 
     function options(id, values, placeholder) {
         const select = $(id);

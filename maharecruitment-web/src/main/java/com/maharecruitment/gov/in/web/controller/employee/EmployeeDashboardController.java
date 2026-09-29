@@ -67,6 +67,14 @@ public class EmployeeDashboardController {
         return "employee/dashboard";
     }
 
+    @GetMapping("/employee-hierarchy")
+    public String employeeHierarchy(Model model) {
+        model.addAttribute("hierarchyApi", "/employee/api/employee-hierarchy");
+        model.addAttribute("hierarchyPhotoApi", "");
+        model.addAttribute("hierarchySelfMode", true);
+        return "employee/employee-hierarchy";
+    }
+
     @GetMapping("/profile/update")
     public String profileUpdatePage(Principal principal, HttpSession session, Model model) {
         EmployeeProfileDTO profile = addProfileAttributes(principal, session, model);

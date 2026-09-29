@@ -16,6 +16,25 @@ import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 class EmployeeHierarchyTemplateTest {
     @Test
+    void employeeViewUsesOwnApiAndHidesHrNavigation() throws Exception {
+        String template = Files.readString(Path.of("src/main/resources/templates/hr/employee-hierarchy.html"))
+                .replaceAll("th:replace=\"[^\"]*\"", "");
+        var request = new MockHttpServletRequest("GET", "/portal/employee/dashboard");
+        request.setContextPath("/portal");
+        var application = JakartaServletWebApplication.buildApplication(new MockServletContext());
+        var context = new WebContext(application.buildExchange(request, new MockHttpServletResponse()));
+        context.setVariable("hierarchyApi", "/employee/api/employee-hierarchy");
+        context.setVariable("hierarchyPhotoApi", "");
+        context.setVariable("hierarchySelfMode", true);
+        var engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(new StringTemplateResolver());
+        String html = engine.process(template, context);
+        assertThat(html).contains("data-api=\"/portal/employee/api/employee-hierarchy\"",
+                "data-self-mode=\"true\"", "My team hierarchy", ">You</span>", "hidden=\"hidden\"")
+                .doesNotContain("Manage reporting", "href=\"/portal/hr/reportingManager\"");
+    }
+
+    @Test
     void rendersChartSectionWithContextRelativeUrls() throws Exception {
         String template = Files.readString(Path.of("src/main/resources/templates/hr/employee-hierarchy.html"));
         // Render this page's expressions independently from the session-dependent shared application shell.
