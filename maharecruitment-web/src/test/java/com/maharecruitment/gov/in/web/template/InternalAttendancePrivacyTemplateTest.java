@@ -91,6 +91,25 @@ class InternalAttendancePrivacyTemplateTest {
                 .contains("window.setInterval(updateHoursCompleted, 1000)");
     }
 
+    @Test
+    void dayWiseRegisterUsesReadableResponsivePresentation() throws IOException {
+        assertThat(template())
+                .contains("Monthly overview")
+                .contains("Review your day-wise attendance status for the selected month.")
+                .contains("class=\"register-panel-period\"")
+                .contains("th:text=\"${attendanceMonthLabel}\"")
+                .contains("aria-label=\"Monthly attendance totals\"")
+                .contains("aria-label=\"Attendance status legend\"")
+                .contains("Swipe horizontally to view every day")
+                .contains("aria-label=\"Day-wise attendance status\"")
+                .contains("font-family: \"Public Sans\"")
+                .contains("@media (max-width: 767.98px)")
+                .contains("-webkit-overflow-scrolling: touch")
+                .contains("min-width: 148px")
+                .contains("font-size: 12px")
+                .contains("min-width: 112px");
+    }
+
     private String template() throws IOException {
         ClassPathResource resource =
                 new ClassPathResource("templates/attendance/attendance-register-internal.html");

@@ -1127,6 +1127,7 @@
         }
 
         .register-panel {
+            font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
             border: 1px solid #dbe7f4;
             border-radius: 20px;
             overflow: hidden;
@@ -1146,7 +1147,17 @@
             align-items: flex-start;
             gap: 14px;
             flex-wrap: wrap;
-            margin-bottom: 14px;
+            margin-bottom: 18px;
+        }
+
+        .register-panel-eyebrow {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
         }
 
         .register-panel-title {
@@ -1158,12 +1169,47 @@
         }
 
         .register-panel-subtitle {
-            margin: 8px 0 0;
+            margin: 6px 0 0;
             color: var(--text-muted);
             font-size: 13px;
             font-weight: 600;
             max-width: 720px;
             line-height: 1.6;
+        }
+
+        .register-panel-period {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 8px 13px;
+            border: 1px solid #d8e6f3;
+            border-radius: 12px;
+            color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 10px 24px -22px rgba(15, 23, 42, 0.5);
+        }
+
+        .register-panel-period > i {
+            font-size: 18px;
+        }
+
+        .register-panel-period strong,
+        .register-panel-period span {
+            display: block;
+        }
+
+        .register-panel-period strong {
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .register-panel-period span {
+            margin-top: 2px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
         }
 
         .register-panel-badge-row {
@@ -1206,8 +1252,8 @@
         }
 
         .register-meta-card {
-            min-height: 42px;
-            padding: 7px 9px;
+            min-height: 58px;
+            padding: 10px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1221,10 +1267,10 @@
         .register-meta-label {
             display: block;
             color: var(--text-muted);
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 800;
             letter-spacing: 0;
-            line-height: 1.15;
+            line-height: 1.3;
             text-transform: uppercase;
         }
 
@@ -1233,7 +1279,7 @@
             flex: 0 0 auto;
             margin-top: 0;
             color: var(--text-main);
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 800;
             line-height: 1;
         }
@@ -1517,6 +1563,20 @@
             overflow: auto;
             background: rgba(255, 255, 255, 0.96);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+            overscroll-behavior-inline: contain;
+            scrollbar-color: #9fb4c8 #edf3f8;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .register-scroll-hint {
+            display: none;
+            align-items: center;
+            gap: 7px;
+            margin: 0 0 8px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
         }
 
         .register-table-wrap .table-responsive {
@@ -1533,7 +1593,7 @@
 
         .attendance-table th,
         .attendance-table td {
-            min-width: 68px;
+            min-width: 34px;
         }
 
         .attendance-table th {
@@ -1541,11 +1601,11 @@
             top: 0;
             z-index: 2;
             background: #f4f8fc;
-            padding: 12px 6px;
+            padding: 10px 2px;
         }
 
         .attendance-table td {
-            padding: 8px 4px;
+            padding: 7px 2px;
             background: rgba(255, 255, 255, 0.98);
         }
 
@@ -1554,8 +1614,8 @@
             position: sticky;
             left: 0;
             z-index: 1;
-            min-width: 200px;
-            max-width: 200px;
+            min-width: 148px;
+            max-width: 148px;
             text-align: left;
             background: #ffffff;
             box-shadow: 14px 0 18px -20px rgba(15, 23, 42, 0.38);
@@ -1567,15 +1627,17 @@
         }
 
         .attendance-row-name {
-            padding-left: 14px !important;
-            padding-right: 14px !important;
+            padding-left: 8px !important;
+            padding-right: 8px !important;
         }
 
         .attendance-row-employee {
             display: block;
             color: var(--text-main);
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 800;
+            line-height: 1.3;
+            overflow-wrap: anywhere;
         }
 
         .attendance-row-caption {
@@ -1596,15 +1658,19 @@
             line-height: 1;
         }
 
+        .register-label-head {
+            align-items: flex-start;
+        }
+
         .day-head-date {
             color: var(--text-main);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 800;
         }
 
         .day-head-name {
             color: var(--text-muted);
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -1619,8 +1685,8 @@
         }
 
         .attendance-day-cell {
-            min-width: 60px;
-            gap: 4px;
+            min-width: 30px;
+            gap: 2px;
         }
 
         .attendance-status-frame {
@@ -1674,11 +1740,11 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 40px;
-            height: 32px;
-            border-radius: 10px;
+            min-width: 28px;
+            height: 28px;
+            border-radius: 8px;
             border: 1px solid transparent;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             line-height: 1;
         }
@@ -1749,13 +1815,79 @@
             }
 
             .register-panel-title {
-                font-size: 22px;
+                font-size: 21px;
+            }
+
+            .register-panel .body {
+                padding: 14px;
+            }
+
+            .register-panel-period {
+                width: 100%;
+            }
+
+            .attendance-legend {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                margin: 14px 0;
+                padding: 10px;
+                scrollbar-width: thin;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .legend-item {
+                flex: 0 0 auto;
+            }
+
+            .register-scroll-hint {
+                display: flex;
             }
 
             .attendance-table th:first-child,
             .attendance-table td:first-child {
-                min-width: 170px;
-                max-width: 170px;
+                min-width: 112px;
+                max-width: 112px;
+            }
+
+            .attendance-table th,
+            .attendance-table td {
+                min-width: 32px;
+            }
+
+            .attendance-row-name {
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+            }
+
+            .attendance-row-employee {
+                font-size: 11px;
+            }
+
+            .attendance-readonly-badge {
+                min-width: 26px;
+                height: 26px;
+            }
+
+            .day-head-date {
+                font-size: 11px;
+            }
+
+            .day-head-name {
+                font-size: 8px;
+            }
+        }
+
+        @media (max-width: 419.98px) {
+            .register-panel {
+                border-radius: 14px;
+            }
+
+            .register-meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .register-meta-card {
+                min-height: 52px;
             }
         }
     </style>
@@ -2168,11 +2300,20 @@
                             <div class="body">
                                 <div class="register-panel-header">
                                     <div>
+                                        <span class="register-panel-eyebrow">Monthly overview</span>
                                         <h4 class="register-panel-title">Attendance Register</h4>
+                                        <p class="register-panel-subtitle">Review your day-wise attendance status for the selected month.</p>
+                                    </div>
+                                    <div class="register-panel-period" aria-label="Selected attendance period">
+                                        <i class="fa fa-calendar" aria-hidden="true"></i>
+                                        <div>
+                                            <strong th:text="${attendanceMonthLabel}">September 2026</strong>
+                                            <span th:text="${(attendance.daysInMonth ?: daysInMonth) + ' calendar days'}">30 calendar days</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="register-meta-grid">
+                                <div class="register-meta-grid" aria-label="Monthly attendance totals">
                                     <div class="register-meta-card">
                                         <span class="register-meta-label">Present</span>
                                         <span class="register-meta-value status-present" th:text="${attendance.totalPresent}">0</span>
@@ -2195,7 +2336,7 @@
                                     </div>
                                 </div>
 
-                                <div class="attendance-legend">
+                                <div class="attendance-legend" aria-label="Attendance status legend">
 									<div class="legend-item"><div class="legend-circle circle-present">P</div><span>Present</span></div>
 									<div class="legend-item"><div class="legend-circle circle-absent">A</div><span>Absent</span></div>
 									<div class="legend-item"><div class="legend-circle status-weekoff" style="color:#fff; background: #94a3b8;">W</div><span>Week OFF</span></div>
@@ -2206,18 +2347,21 @@
 									<div class="legend-item"><div class="legend-circle circle-pending">P</div><span>Pending Approval</span></div>
 									<div class="legend-item"><div class="legend-circle circle-future">-</div><span>Invalid Date</span></div>
 								</div>
-								
+                                <p class="register-scroll-hint">
+                                    <i class="fa fa-arrows-left-right" aria-hidden="true"></i>
+                                    Swipe horizontally to view every day
+                                </p>
                                 <div class="register-table-wrap">
-                                    <table class="attendance-table" id="attendanceTable">
+                                    <table class="attendance-table" id="attendanceTable" aria-label="Day-wise attendance status">
                                         <thead>
                                             <tr>
-                                                <th>
-                                                    <div class="day-head" style="align-items:flex-start;">
+                                                <th scope="col">
+                                                    <div class="day-head register-label-head">
                                                         <span class="day-head-date">Register</span>
                                                         <span class="day-head-name">Day-wise status</span>
                                                     </div>
                                                 </th>
-                                                <th th:each="day : ${attendance.attendanceDays}"
+                                                <th scope="col" th:each="day : ${attendance.attendanceDays}"
                                                     th:classappend="${day.date.dayOfWeek.name() == 'SATURDAY' or day.date.dayOfWeek.name() == 'SUNDAY'} ? 'weekend-head'">
                                                     <div class="day-head">
                                                         <span class="day-head-date" th:text="${#temporals.format(day.date, 'dd')}">01</span>

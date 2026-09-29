@@ -163,6 +163,7 @@ class AttendanceRegisterInternalEmployeeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("attendance/attendance-register-internal"))
                 .andExpect(model().attribute("externalEmployee", false))
+                .andExpect(model().attributeExists("attendanceMonthLabel"))
                 .andExpect(model().attribute(
                         "attendance",
                         org.hamcrest.Matchers.allOf(
@@ -184,6 +185,7 @@ class AttendanceRegisterInternalEmployeeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("attendance/attendance-register-internal"))
                 .andExpect(model().attribute("externalEmployee", false))
+                .andExpect(model().attribute("attendanceMonthLabel", "June 2026"))
                 .andExpect(model().attribute(
                         "attendance",
                         org.hamcrest.Matchers.allOf(

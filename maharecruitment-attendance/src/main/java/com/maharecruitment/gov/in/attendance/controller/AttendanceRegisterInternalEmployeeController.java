@@ -181,6 +181,7 @@ public class AttendanceRegisterInternalEmployeeController {
 
         YearMonth yearMonth = YearMonth.of(year, month);
         model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
+        model.addAttribute("attendanceMonthLabel", formatMonthLabel(yearMonth));
 
         populateEmployeeRequests(model, employee.getEmployeeId());
     }
@@ -318,12 +319,14 @@ public class AttendanceRegisterInternalEmployeeController {
         model.addAttribute("monthNames", getMonthNames());
         model.addAttribute("today", today);
         model.addAttribute("daysInMonth", selectedMonth.lengthOfMonth());
-        model.addAttribute(
-                "attendanceMonthLabel",
-                selectedMonth.getMonth().getDisplayName(TextStyle.FULL, java.util.Locale.ENGLISH)
-                        + " "
-                        + selectedMonth.getYear());
+        model.addAttribute("attendanceMonthLabel", formatMonthLabel(selectedMonth));
         model.addAttribute("attendanceCalendarWeeks", buildCalendarWeeks(selectedMonth, today));
+    }
+
+    private String formatMonthLabel(YearMonth month) {
+        return month.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+                + " "
+                + month.getYear();
     }
 
     private List<AttendanceDayDTO> extractAttendanceTimeRows(AttendanceRegisterDTO attendance) {
