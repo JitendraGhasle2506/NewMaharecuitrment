@@ -110,6 +110,26 @@ class InternalAttendancePrivacyTemplateTest {
                 .contains("min-width: 112px");
     }
 
+    @Test
+    void attendanceCalendarOpensInResponsiveModalWithStatusLegend() throws IOException {
+        assertThat(template())
+                .contains("data-bs-target=\"#attendanceCalendarModal\"")
+                .contains("aria-label=\"View attendance calendar\"")
+                .contains("id=\"attendanceCalendarModal\"")
+                .contains("class=\"attendance-calendar-month-grid\"")
+                .contains("th:each=\"week : ${attendanceCalendarWeeks}\"")
+                .contains("th:each=\"day : ${week}\"")
+                .contains("dateRange=${previousAttendanceMonth},openCalendar=true")
+                .contains("dateRange=${nextAttendanceMonth},openCalendar=true")
+                .contains("bootstrap.Modal.getOrCreateInstance(calendarElement).show()")
+                .contains("Present</span>")
+                .contains("Absent</span>")
+                .contains("Holiday</span>")
+                .contains("Weekly Off</span>")
+                .contains("Approved Leave</span>")
+                .contains("@media (max-width: 767.98px)");
+    }
+
     private String template() throws IOException {
         ClassPathResource resource =
                 new ClassPathResource("templates/attendance/attendance-register-internal.html");

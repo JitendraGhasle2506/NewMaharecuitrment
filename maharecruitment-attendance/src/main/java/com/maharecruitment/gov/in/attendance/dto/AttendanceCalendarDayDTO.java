@@ -16,4 +16,5 @@ public class AttendanceCalendarDayDTO {
     private final boolean weekOff;
     private final boolean workingDay;
     private final String holidayRemark;
+    private final String status;
 }

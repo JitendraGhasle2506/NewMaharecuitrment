@@ -73,7 +73,11 @@ public class AttendanceRegisterInternalEmployeeController {
     private TourApplicationService tourApplicationService;
 
     @GetMapping("/intAttendance")
-    public String myAttendance(Model model, HttpSession session) {
+    public String myAttendance(
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(defaultValue = "false") boolean openCalendar,
+            Model model,
+            HttpSession session) {
         EmployeeEntity employee = resolveCurrentEmployee(session);
 
         Long employeeId = employee.getEmployeeId();
@@ -83,9 +87,14 @@ public class AttendanceRegisterInternalEmployeeController {
         }
 
         LocalDate today = LocalDate.now();
-        int month = today.getMonthValue();
-        int year = today.getYear();
-        populateAttendanceView(model, employee, month, year, today);
+        YearMonth selectedMonth = resolveSelectedMonth(dateRange, today);
+        populateAttendanceView(
+                model,
+                employee,
+                selectedMonth.getMonthValue(),
+                selectedMonth.getYear(),
+                today);
+        model.addAttribute("openAttendanceCalendar", openCalendar);
 
         return "attendance/attendance-register-internal";
     }
@@ -182,6 +191,9 @@ public class AttendanceRegisterInternalEmployeeController {
         YearMonth yearMonth = YearMonth.of(year, month);
         model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
         model.addAttribute("attendanceMonthLabel", formatMonthLabel(yearMonth));
+        model.addAttribute("previousAttendanceMonth", formatDateRange(yearMonth.minusMonths(1)));
+        model.addAttribute("nextAttendanceMonth", formatDateRange(yearMonth.plusMonths(1)));
+        model.addAttribute("attendanceCalendarWeeks", buildCalendarWeeks(yearMonth, today, attendance));
 
         populateEmployeeRequests(model, employee.getEmployeeId());
     }
@@ -320,13 +332,17 @@ public class AttendanceRegisterInternalEmployeeController {
         model.addAttribute("today", today);
         model.addAttribute("daysInMonth", selectedMonth.lengthOfMonth());
         model.addAttribute("attendanceMonthLabel", formatMonthLabel(selectedMonth));
-        model.addAttribute("attendanceCalendarWeeks", buildCalendarWeeks(selectedMonth, today));
+        model.addAttribute("attendanceCalendarWeeks", buildCalendarWeeks(selectedMonth, today, attendance));
     }
 
     private String formatMonthLabel(YearMonth month) {
         return month.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH)
                 + " "
                 + month.getYear();
+    }
+
+    private String formatDateRange(YearMonth month) {
+        return String.format("%02d-%d", month.getMonthValue(), month.getYear());
     }
 
     private List<AttendanceDayDTO> extractAttendanceTimeRows(AttendanceRegisterDTO attendance) {
@@ -368,7 +384,10 @@ public class AttendanceRegisterInternalEmployeeController {
         return monthMap;
     }
 
-    private List<List<AttendanceCalendarDayDTO>> buildCalendarWeeks(YearMonth selectedMonth, LocalDate today) {
+    private List<List<AttendanceCalendarDayDTO>> buildCalendarWeeks(
+            YearMonth selectedMonth,
+            LocalDate today,
+            AttendanceRegisterDTO attendance) {
         LocalDate monthStart = selectedMonth.atDay(1);
         LocalDate monthEnd = selectedMonth.atEndOfMonth();
         Map<LocalDate, String> holidayRemarksByDate = holidayService.getHolidaysBetween(monthStart, monthEnd).stream()
@@ -378,6 +397,14 @@ public class AttendanceRegisterInternalEmployeeController {
                         (first, second) -> first));
         Set<LocalDate> holidayDates = holidayRemarksByDate.keySet();
         Set<LocalDate> workingDayOverrideDates = weekOffWorkingDayService.getWorkingDayDatesBetween(monthStart, monthEnd);
+        Map<LocalDate, String> attendanceStatusByDate = attendance == null || attendance.getAttendanceDays() == null
+                ? Map.of()
+                : attendance.getAttendanceDays().stream()
+                        .filter(day -> day != null && day.getDate() != null)
+                        .collect(Collectors.toMap(
+                                AttendanceDayDTO::getDate,
+                                day -> StringUtils.hasText(day.getStatus()) ? day.getStatus() : "FUTURE",
+                                (first, second) -> first));
 
         List<List<AttendanceCalendarDayDTO>> weeks = new ArrayList<>();
         LocalDate cursor = monthStart;
@@ -404,7 +431,8 @@ public class AttendanceRegisterInternalEmployeeController {
                         holiday,
                         weekOff,
                         workingDay,
-                        holidayRemark));
+                        holidayRemark,
+                        attendanceStatusByDate.get(cursor)));
                 cursor = cursor.plusDays(1);
             }
             weeks.add(week);

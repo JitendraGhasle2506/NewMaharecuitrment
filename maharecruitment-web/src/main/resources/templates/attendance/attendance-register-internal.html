@@ -1795,6 +1795,232 @@
             color: #94a3b8;
         }
 
+        .calendar-modal-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border: 0;
+            border-radius: 10px;
+            background: var(--primary-color);
+            color: #fff;
+            font-size: 16px;
+            box-shadow: 0 12px 24px -16px rgba(31, 79, 120, 0.9);
+            transition: background-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .calendar-modal-button:hover {
+            background: #173e60;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .calendar-modal-button:focus-visible {
+            outline: 3px solid rgba(14, 165, 233, 0.28);
+            outline-offset: 2px;
+        }
+
+        .attendance-calendar-dialog {
+            max-width: 760px;
+        }
+
+        .attendance-calendar-modal {
+            overflow: hidden;
+            border: 0;
+            border-radius: 22px;
+            box-shadow: 0 30px 80px -35px rgba(15, 23, 42, 0.65);
+        }
+
+        .attendance-calendar-modal .modal-header {
+            padding: 17px 20px;
+            border: 0;
+            background: linear-gradient(135deg, #126e73, #0f8182);
+            color: #fff;
+        }
+
+        .attendance-calendar-modal .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .attendance-calendar-modal .btn-close {
+            filter: brightness(0) invert(1);
+            opacity: 0.9;
+        }
+
+        .attendance-calendar-month {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 18px;
+            background: linear-gradient(135deg, #f38b5d, #f67954);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .attendance-calendar-nav {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 12px;
+            text-decoration: none;
+            transition: background-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .attendance-calendar-nav:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            transform: scale(1.06);
+        }
+
+        .attendance-calendar-nav:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 1px;
+        }
+
+        .attendance-calendar-month-label {
+            min-width: 132px;
+            text-align: center;
+        }
+
+        .attendance-calendar-modal .modal-body {
+            padding: 18px 20px 20px;
+            background: #fff;
+        }
+
+        .attendance-calendar-weekdays,
+        .attendance-calendar-month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
+
+        .attendance-calendar-weekdays {
+            margin-bottom: 8px;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.07em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .attendance-calendar-weekday {
+            padding: 5px 2px;
+        }
+
+        .attendance-calendar-month-grid {
+            gap: 7px;
+        }
+
+        .attendance-calendar-date {
+            position: relative;
+            min-width: 0;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 6px 3px;
+            border: 1px solid #e5edf5;
+            border-radius: 13px;
+            background: #f9fbfd;
+            color: #334155;
+        }
+
+        .attendance-calendar-date.is-outside-month {
+            opacity: 0.34;
+        }
+
+        .attendance-calendar-date.is-today {
+            border-color: #1f4f78;
+            box-shadow: inset 0 0 0 1px #1f4f78;
+        }
+
+        .attendance-calendar-day-number {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #fff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .attendance-calendar-status {
+            max-width: 100%;
+            overflow: hidden;
+            color: #64748b;
+            font-size: 8px;
+            font-weight: 800;
+            line-height: 1.1;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .attendance-calendar-date.status-present { background: #effcf5; border-color: #bbebd0; }
+        .attendance-calendar-date.status-present .attendance-calendar-day-number { background: #22c55e; color: #fff; }
+        .attendance-calendar-date.status-absent { background: #fff1f2; border-color: #fecdd3; }
+        .attendance-calendar-date.status-absent .attendance-calendar-day-number { background: #dc2626; color: #fff; }
+        .attendance-calendar-date.status-holiday { background: #fdf2f8; border-color: #fbcfe8; }
+        .attendance-calendar-date.status-holiday .attendance-calendar-day-number { background: #ec4899; color: #fff; }
+        .attendance-calendar-date.status-week-off { background: #f1f5f9; border-color: #cbd5e1; }
+        .attendance-calendar-date.status-week-off .attendance-calendar-day-number { background: #64748b; color: #fff; }
+        .attendance-calendar-date.status-leave { background: #fff7ed; border-color: #fed7aa; }
+        .attendance-calendar-date.status-leave .attendance-calendar-day-number { background: #f59e0b; color: #fff; }
+        .attendance-calendar-date.status-comp-off { background: #f0fdfa; border-color: #99f6e4; }
+        .attendance-calendar-date.status-comp-off .attendance-calendar-day-number { background: #0f766e; color: #fff; }
+        .attendance-calendar-date.status-tour { background: #eff6ff; border-color: #bfdbfe; }
+        .attendance-calendar-date.status-tour .attendance-calendar-day-number { background: #2563eb; color: #fff; }
+        .attendance-calendar-date.status-pending { background: #fffbeb; border-color: #fde68a; }
+        .attendance-calendar-date.status-pending .attendance-calendar-day-number { background: #d97706; color: #fff; }
+
+        .attendance-calendar-key {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 9px 15px;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid #e5edf5;
+        }
+
+        .attendance-calendar-key-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .attendance-calendar-key-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .key-present { background: #22c55e; }
+        .key-absent { background: #dc2626; }
+        .key-holiday { background: #ec4899; }
+        .key-week-off { background: #64748b; }
+        .key-leave { background: #f59e0b; }
+
         @media (max-width: 991.98px) {
             .attendance-tabs .nav-item {
                 flex: 1 1 calc(50% - 10px);
@@ -1874,6 +2100,34 @@
 
             .day-head-name {
                 font-size: 8px;
+            }
+
+            .attendance-calendar-dialog {
+                margin: 10px;
+            }
+
+            .attendance-calendar-modal .modal-body {
+                padding: 14px 10px 16px;
+            }
+
+            .attendance-calendar-month-grid {
+                gap: 4px;
+            }
+
+            .attendance-calendar-date {
+                min-height: 58px;
+                padding: 4px 1px;
+                border-radius: 10px;
+            }
+
+            .attendance-calendar-day-number {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            .attendance-calendar-status {
+                font-size: 7px;
             }
         }
 
@@ -2304,11 +2558,22 @@
                                         <h4 class="register-panel-title">Attendance Register</h4>
                                         <p class="register-panel-subtitle">Review your day-wise attendance status for the selected month.</p>
                                     </div>
-                                    <div class="register-panel-period" aria-label="Selected attendance period">
-                                        <i class="fa fa-calendar" aria-hidden="true"></i>
-                                        <div>
-                                            <strong th:text="${attendanceMonthLabel}">September 2026</strong>
-                                            <span th:text="${(attendance.daysInMonth ?: daysInMonth) + ' calendar days'}">30 calendar days</span>
+                                    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+                                        <button type="button"
+                                                class="calendar-modal-button"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#attendanceCalendarModal"
+                                                aria-controls="attendanceCalendarModal"
+                                                aria-label="View attendance calendar"
+                                                title="View attendance calendar">
+                                            <i class="fa fa-calendar-days" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="register-panel-period" aria-label="Selected attendance period">
+                                            <i class="fa fa-calendar" aria-hidden="true"></i>
+                                            <div>
+                                                <strong th:text="${attendanceMonthLabel}">September 2026</strong>
+                                                <span th:text="${(attendance.daysInMonth ?: daysInMonth) + ' calendar days'}">30 calendar days</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2573,12 +2838,98 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="modal fade"
+                     id="attendanceCalendarModal"
+                     tabindex="-1"
+                     aria-labelledby="attendanceCalendarModalLabel"
+                     aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable attendance-calendar-dialog">
+                        <div class="modal-content attendance-calendar-modal">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="attendanceCalendarModalLabel">
+                                    <i class="fa fa-calendar-check" aria-hidden="true"></i>
+                                    Attendance Calendar
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="attendance-calendar-month">
+                                <a class="attendance-calendar-nav"
+                                   th:href="@{/employee/intAttendance(dateRange=${previousAttendanceMonth},openCalendar=true)}"
+                                   aria-label="View previous month"
+                                   title="Previous month">
+                                    <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                                </a>
+                                <span class="attendance-calendar-month-label" th:text="${attendanceMonthLabel}">September 2026</span>
+                                <a class="attendance-calendar-nav"
+                                   th:href="@{/employee/intAttendance(dateRange=${nextAttendanceMonth},openCalendar=true)}"
+                                   aria-label="View next month"
+                                   title="Next month">
+                                    <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                            <div class="modal-body">
+                                <div class="attendance-calendar-weekdays" aria-hidden="true">
+                                    <span class="attendance-calendar-weekday">Mon</span>
+                                    <span class="attendance-calendar-weekday">Tue</span>
+                                    <span class="attendance-calendar-weekday">Wed</span>
+                                    <span class="attendance-calendar-weekday">Thu</span>
+                                    <span class="attendance-calendar-weekday">Fri</span>
+                                    <span class="attendance-calendar-weekday">Sat</span>
+                                    <span class="attendance-calendar-weekday">Sun</span>
+                                </div>
+                                <div class="attendance-calendar-month-grid"
+                                     role="grid"
+                                     th:attr="aria-label=|Attendance calendar for ${attendanceMonthLabel}|">
+                                    <th:block th:each="week : ${attendanceCalendarWeeks}">
+                                        <div th:each="day : ${week}"
+                                             class="attendance-calendar-date"
+                                             role="gridcell"
+                                             th:classappend="${(!day.currentMonth ? ' is-outside-month' : '')
+                                                 + (day.today ? ' is-today' : '')
+                                                 + (day.currentMonth and day.status != null ? ' status-' + #strings.toLowerCase(#strings.replace(day.status, '_', '-')) : '')}"
+                                             th:attr="aria-label=${#temporals.format(day.date, 'dd MMMM yyyy') + (day.currentMonth and day.status != null ? ', ' + day.status : '')}">
+                                            <span class="attendance-calendar-day-number" th:text="${day.date.dayOfMonth}">1</span>
+                                            <span class="attendance-calendar-status" th:if="${day.currentMonth}" th:switch="${day.status}">
+                                                <span th:case="'PRESENT'">Present</span>
+                                                <span th:case="'ABSENT'">Absent</span>
+                                                <span th:case="'HOLIDAY'">Holiday</span>
+                                                <span th:case="'WEEK_OFF'">Week Off</span>
+                                                <span th:case="'LEAVE'">Approved Leave</span>
+                                                <span th:case="'COMP_OFF'">Comp Off</span>
+                                                <span th:case="'TOUR'">Tour</span>
+                                                <span th:case="'PENDING'">Pending</span>
+                                                <span th:case="*">-</span>
+                                            </span>
+                                        </div>
+                                    </th:block>
+                                </div>
+
+                                <div class="attendance-calendar-key" aria-label="Calendar status legend">
+                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-present"></span>Present</span>
+                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-absent"></span>Absent</span>
+                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-holiday"></span>Holiday</span>
+                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-week-off"></span>Weekly Off</span>
+                                    <span class="attendance-calendar-key-item"><span class="attendance-calendar-key-dot key-leave"></span>Approved Leave</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </th:block>
 
     <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
     <script th:src="@{/assets/vendor/bootstrap-datepicker/bootstrap-datepicker.min.js}"></script>
+    <script th:if="${openAttendanceCalendar}">
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarElement = document.getElementById('attendanceCalendarModal');
+            if (calendarElement && window.bootstrap) {
+                bootstrap.Modal.getOrCreateInstance(calendarElement).show();
+            }
+        });
+    </script>
     
     <script>
         $(document).ready(function(){
