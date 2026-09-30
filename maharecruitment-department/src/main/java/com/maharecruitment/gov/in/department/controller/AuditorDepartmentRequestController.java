@@ -181,7 +181,9 @@ public class AuditorDepartmentRequestController {
                                         resolveActorEmail(principal));
 
                         redirectAttributes.addFlashAttribute("successMessage",
-                                        "Auditor decision applied successfully.");
+                                        reviewForm.getDecision() == AuditorReviewDecision.APPROVE
+                                                        ? "Application approved and completed. This approval is final and cannot be changed. Proforma invoice generated."
+                                                        : "Application sent back successfully.");
                         return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
                                         + subDepartmentId
                                         + "/applications/" + applicationId;
@@ -195,6 +197,12 @@ public class AuditorDepartmentRequestController {
                         return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
                                         + subDepartmentId
                                         + "/applications/" + applicationId;
+                } catch (RuntimeException ex) {
+                        log.error("Unable to submit auditor review. applicationId={}", applicationId, ex);
+                        redirectAttributes.addFlashAttribute("errorMessage",
+                                        "Unable to submit the review and generate the proforma invoice. No changes were saved. Please try again.");
+                        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
+                                        + subDepartmentId + "/applications/" + applicationId;
                 }
         }
 

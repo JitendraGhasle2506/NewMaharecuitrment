@@ -9,6 +9,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -100,6 +104,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
     private final RateMasterRepository rateMasterRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public DepartmentManpowerApplicationServiceImpl(
             DepartmentProjectApplicationRepository applicationRepository,
@@ -394,6 +401,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         ensureActorHasRole(actorContext.getActorEmail(), ROLE_AUDITOR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
+        // Refresh under a database lock: the caller may already have loaded a stale status.
+        entityManager.refresh(application, LockModeType.PESSIMISTIC_WRITE);
         DepartmentApplicationStatus currentStatus = application.getApplicationStatus();
 
         if (currentStatus == DepartmentApplicationStatus.HR_APPROVED) {
@@ -423,9 +432,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 "Auditor decision " + decision + " applied. (" + nextStatus.getDisplayName() + ")");
         notifyDepartmentAfterAuditorReview(saved, decision, remarks);
 
-        if (currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED
-                && nextStatus == DepartmentApplicationStatus.AUDITOR_SENT_BACK) {
-            cleanUpApprovedArtifacts(saved, actorContext);
+        if (decision == AuditorReviewDecision.APPROVE) {
+            return completeApprovedApplication(saved, remarks, actorContext);
         }
 
         log.info("Auditor reviewed application. applicationId={}, decision={}, status={} actor={}",
@@ -447,10 +455,18 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         ensureActorHasRole(actorContext.getActorEmail(), ROLE_AUDITOR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
+        entityManager.refresh(application, LockModeType.PESSIMISTIC_WRITE);
         if (application.getApplicationStatus() != DepartmentApplicationStatus.AUDITOR_APPROVED) {
             throw new DepartmentApplicationException("Only auditor-approved applications can be marked completed.");
         }
 
+        return completeApprovedApplication(application, remarks, actorContext);
+    }
+
+    private DepartmentApplicationStatus completeApprovedApplication(
+            DepartmentProjectApplicationEntity application,
+            String remarks,
+            DepartmentActorContext actorContext) {
         DepartmentApplicationStatus previousStatus = application.getApplicationStatus();
         application.setApplicationStatus(DepartmentApplicationStatus.COMPLETED);
         applyAudit(application, actorContext, false);
@@ -470,7 +486,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         generateProformaInvoice(saved);
         publishTaxInvoiceGenerationRequestedEvent(saved, actorContext);
 
-        log.info("Application marked completed. applicationId={}, actor={}", applicationId,
+        log.info("Application marked completed. applicationId={}, actor={}", application.getDepartmentProjectApplicationId(),
                 actorContext.getActorEmail());
         return DepartmentApplicationStatus.COMPLETED;
     }
@@ -857,17 +873,17 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             throw new DepartmentApplicationException("Auditor decision is required.");
         }
 
-        if (currentStatus != DepartmentApplicationStatus.AUDITOR_REVIEW
-                && currentStatus != DepartmentApplicationStatus.AUDITOR_APPROVED) {
+        if (currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED
+                || currentStatus == DepartmentApplicationStatus.COMPLETED) {
+            throw new DepartmentApplicationException("This application is already approved. Approval is final and cannot be changed or submitted again.");
+        }
+        if (currentStatus != DepartmentApplicationStatus.AUDITOR_REVIEW) {
             throw new DepartmentApplicationException(
                     "Auditor review is not allowed in current state: " + currentStatus);
         }
 
         switch (decision) {
             case APPROVE:
-                if (currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED) {
-                    throw new DepartmentApplicationException("Application is already approved by auditor.");
-                }
                 return DepartmentApplicationStatus.AUDITOR_APPROVED;
             case SEND_BACK:
                 return DepartmentApplicationStatus.AUDITOR_SENT_BACK;
@@ -936,8 +952,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         } catch (Exception e) {
             log.error("Failed to generate Proforma Invoice for application {}. Reason: {}",
                     application.getDepartmentProjectApplicationId(), e.getMessage(), e);
-            // We don't throw exception here to avoid rolling back the approval,
-            // but in a real system we might want to ensure PI is generated.
+            throw new DepartmentApplicationException("Unable to generate the proforma invoice. No approval changes were saved.");
         }
     }
 

@@ -6,6 +6,8 @@
     <title>Audit Review | Auditor Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/hr-department-requests.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/sweetalert2/sweetalert2.min.css}">
+    <script th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
     <style>
         .page-header { gap: 1rem; }
         .dept-info { display: flex; align-items: center; gap: 1rem; }
@@ -294,19 +296,18 @@
                         </div>
                     </div>
 
+                    <div class="alert alert-success border-0"
+                         th:if="${applicationReviewDetail.applicationStatus.name() == 'COMPLETED' or applicationReviewDetail.applicationStatus.name() == 'AUDITOR_APPROVED'}">
+                        This application has been approved. Approval is final; the review cannot be changed or submitted again.
+                    </div>
+
                     <!-- Actions Card -->
                     <div class="card section-card shadow-sm mb-4 overflow-hidden" 
-                         th:if="${applicationReviewDetail.approvalAllowed or applicationReviewDetail.sendBackAllowed or applicationReviewDetail.completionAllowed}">
+                         th:if="${applicationReviewDetail.approvalAllowed or applicationReviewDetail.sendBackAllowed}">
                         <div class="card-header bg-primary text-white py-3">
                             <h5 class="mb-0 fw-bold"><i class="fa fa-gavel me-2"></i>Auditor Action</h5>
                         </div>
                         <div class="card-body p-4">
-                            <div class="alert alert-info border-0 small mb-4"
-                                 th:if="${applicationReviewDetail.applicationStatus.name() == 'AUDITOR_APPROVED'}">
-                                This request is approved but not completed yet. You can still send it back for
-                                corrections or complete it after reviewing the final proforma invoice draft.
-                            </div>
-
                             <!-- Auditor Review Form -->
                             <form th:if="${applicationReviewDetail.approvalAllowed or applicationReviewDetail.sendBackAllowed}" id="auditorReviewForm" class="action-form"
                                 th:action="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review(
@@ -321,12 +322,19 @@
                                     <div class="text-danger small mt-1" th:errors="*{remarks}"></div>
                                 </div>
 
+                                <p class="form-section-note small text-muted">
+                                    Approval is final. The request will be completed and the proforma invoice generated.
+                                    You cannot change or submit the review again after approval.
+                                </p>
+                                <a th:if="${applicationReviewDetail.approvalAllowed}"
+                                    class="btn btn-outline-primary w-100 mb-3" target="_blank" rel="noopener"
+                                    th:href="@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
+                                    <i class="fa fa-eye me-1"></i> Preview Proforma Invoice
+                                </a>
                                 <div class="d-grid gap-2">
                                     <button th:if="${applicationReviewDetail.approvalAllowed}"
-                                        type="button"
-                                        class="btn btn-success fw-bold py-2 shadow-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#approvalInvoicePreviewModal">
+                                        type="submit" name="decision" value="APPROVE"
+                                        class="btn btn-success fw-bold py-2 shadow-sm">
                                         <i class="fa-solid fa-check-circle me-1"></i> Approve Request
                                     </button>
                                     <button th:if="${applicationReviewDetail.sendBackAllowed}"
@@ -337,31 +345,6 @@
                                 <div class="text-danger small mt-2" th:errors="*{decision}"></div>
                             </form>
 
-                            <!-- Completion Action Form -->
-                            <form th:if="${applicationReviewDetail.completionAllowed}" id="completionForm" class="action-form"
-                                th:action="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/complete(
-                                                departmentId=${applicationReviewDetail.departmentId},
-                                                subDepartmentId=${applicationReviewDetail.subDepartmentId},
-                                                applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
-                                method="post">
-                                <p class="form-section-note small text-muted mb-4">
-                                    Review the final proforma invoice draft before completing this request. The final proforma invoice
-                                    will be generated and opened immediately after completion.
-                                </p>
-                                <div class="mb-4">
-                                    <label class="form-label small fw-bold">Completion Notes</label>
-                                    <textarea class="form-control border-0 bg-light" rows="2" name="completionRemarks"
-                                        placeholder="Optional completion notes..."></textarea>
-                                </div>
-                                <div class="d-grid">
-                                    <button type="button"
-                                        class="btn btn-primary fw-bold py-2 shadow-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#taxInvoiceConfirmModal">
-                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Final proforma Invoice Draft, Generate & Complete
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     </div>
 
@@ -399,159 +382,11 @@
                 </div>
             </div>
 
-            <div th:if="${applicationReviewDetail.approvalAllowed}" class="modal fade"
-                id="approvalInvoicePreviewModal"
-                tabindex="-1" aria-labelledby="approvalInvoicePreviewModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-                    <div class="modal-content border-0 shadow">
-                        <div class="modal-header">
-                            <div>
-                                <h5 class="modal-title fw-bold mb-1" id="approvalInvoicePreviewModalLabel">
-                                    Proforma Invoice Preview Before Approval
-                                </h5>
-                                <div class="small text-muted">
-                                    Review the draft Proforma invoice before approving this request.
-                                </div>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="alert alert-warning border-0 small mb-3">
-                                This preview shows the draft Proforma invoice for
-                                request <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
-                                The final invoice will be created only after completion.
-                            </div>
-                            <div class="preview-frame-shell border rounded overflow-hidden bg-white">
-                                <iframe id="approvalInvoicePreviewFrame"
-                                    class="w-100 h-100 border-0"
-                                    title="Proforma Invoice Preview Before Approval"
-                                    src="about:blank"
-                                    th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
-                                </iframe>
-                            </div>
-                            <div class="form-check mt-3">
-                                <input class="form-check-input"
-                                    type="checkbox"
-                                    id="approvalPreviewConfirmed"
-                                    form="auditorReviewForm">
-                                <label class="form-check-label small fw-semibold" for="approvalPreviewConfirmed">
-                                    I have reviewed the Proforma invoice preview and want to approve this request.
-                                </label>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                Cancel
-                            </button>
-                            <button type="submit"
-                                id="approvalPreviewConfirmBtn"
-                                class="btn btn-success fw-bold"
-                                form="auditorReviewForm"
-                                name="decision"
-                                value="APPROVE">
-                                <i class="fa-solid fa-check me-1"></i> Confirm & Approve
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div th:if="${applicationReviewDetail.completionAllowed}" class="modal fade" id="taxInvoiceConfirmModal"
-                tabindex="-1" aria-labelledby="taxInvoiceConfirmModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-                    <div class="modal-content border-0 shadow">
-                        <div class="modal-header">
-                            <div>
-                                <h5 class="modal-title fw-bold mb-1" id="taxInvoiceConfirmModalLabel">
-                                    Proforma Invoice Preview
-                                </h5>
-                                <div class="small text-muted">
-                                    Review the invoice before completing this application and generating the final proforma invoice.
-                                </div>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="alert alert-info border-0 small mb-3">
-                                This preview shows the final Proforma invoice draft for request
-                                <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
-                                When you confirm completion, the actual Proforma invoice will be generated and opened automatically.
-                                If generation fails, the completion will be rolled back and the status will remain unchanged.
-                            </div>
-                            <div class="preview-frame-shell border rounded overflow-hidden bg-white">
-                                <iframe id="taxInvoicePreviewFrame"
-                                    class="w-100 h-100 border-0"
-                                    title="Proforma Invoice Preview"
-                                    src="about:blank"
-                                    th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
-                                </iframe>
-                            </div>
-                            <div class="form-check mt-3">
-                                <input class="form-check-input"
-                                    type="checkbox"
-                                    id="completionVerificationConfirmed"
-                                    name="verificationConfirmed"
-                                    value="true"
-                                    form="completionForm">
-                                <label class="form-check-label small fw-semibold"
-                                    for="completionVerificationConfirmed">
-                                    I have reviewed the final Proforma invoice draft and want to generate the final Proforma invoice and complete this request.
-                                </label>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                Cancel
-                            </button>
-                            <button type="submit" id="completionConfirmBtn" class="btn btn-primary fw-bold" form="completionForm">
-                                <i class="fa-solid fa-check me-1"></i> Confirm, Generate Proforma Invoice & Complete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </section>
     </th:block>
+    <script th:src="@{/js/auditor-application-review.js}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            function initializePreviewModal(modalId, frameId, checkboxId, confirmButtonId) {
-                var modal = document.getElementById(modalId);
-                var frame = document.getElementById(frameId);
-                var checkbox = document.getElementById(checkboxId);
-                var confirmButton = document.getElementById(confirmButtonId);
-
-                if (!modal || !frame) {
-                    return;
-                }
-
-                function syncConfirmState() {
-                    if (confirmButton && checkbox) {
-                        confirmButton.disabled = !checkbox.checked;
-                    }
-                }
-
-                if (checkbox) {
-                    checkbox.addEventListener('change', syncConfirmState);
-                    syncConfirmState();
-                }
-
-                modal.addEventListener('shown.bs.modal', function () {
-                    var previewUrl = frame.getAttribute('data-preview-url');
-                    if (previewUrl && frame.getAttribute('src') !== previewUrl) {
-                        frame.setAttribute('src', previewUrl);
-                    }
-                    syncConfirmState();
-                });
-
-                modal.addEventListener('hidden.bs.modal', function () {
-                    frame.setAttribute('src', 'about:blank');
-                    if (checkbox) {
-                        checkbox.checked = false;
-                    }
-                    syncConfirmState();
-                });
-            }
-
             function initializeTimelineToggle() {
                 var toggleButton = document.getElementById('timelineToggleBtn');
                 var hiddenItems = document.querySelectorAll('#activityTimeline .timeline-item-collapsible');
@@ -576,18 +411,6 @@
 
                 syncTimelineState();
             }
-
-            initializePreviewModal(
-                'approvalInvoicePreviewModal',
-                'approvalInvoicePreviewFrame',
-                'approvalPreviewConfirmed',
-                'approvalPreviewConfirmBtn');
-
-            initializePreviewModal(
-                'taxInvoiceConfirmModal',
-                'taxInvoicePreviewFrame',
-                'completionVerificationConfirmed',
-                'completionConfirmBtn');
 
             initializeTimelineToggle();
         });

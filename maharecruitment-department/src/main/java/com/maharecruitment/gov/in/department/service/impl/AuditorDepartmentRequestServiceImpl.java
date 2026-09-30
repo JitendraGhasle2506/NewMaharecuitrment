@@ -413,7 +413,7 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .auditorActionAllowed(approvalAllowed || sendBackAllowed)
                 .approvalAllowed(approvalAllowed)
                 .sendBackAllowed(sendBackAllowed)
-                .completionAllowed(isCompletionAllowed(application.getApplicationStatus()))
+                .completionAllowed(false)
                 .taxApplicableDate(taxApplicableDate)
                 .taxableSubTotal(taxableSubTotal)
                 .totalTaxAmount(totalTaxAmount)
@@ -599,13 +599,7 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
     }
 
     private boolean isSendBackAllowed(DepartmentApplicationStatus currentStatus) {
-        return currentStatus == DepartmentApplicationStatus.HR_APPROVED
-                || currentStatus == DepartmentApplicationStatus.AUDITOR_REVIEW
-                || currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED;
-    }
-
-    private boolean isCompletionAllowed(DepartmentApplicationStatus currentStatus) {
-        return currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED;
+        return isApprovalAllowed(currentStatus);
     }
 
     private boolean isRemarksMandatory(AuditorReviewDecision decision) {
