@@ -415,10 +415,16 @@
                                                     required>
                                             </div>
                                             <div class="mb-1">
-                                                <input autocomplete="off" type="text" class="form-control form-control-sm"
-                                                    name="interviewTimeSlot"
-                                                    th:value="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : ''}"
-                                                    placeholder="Time slot (e.g. 10:00 AM - 10:30 AM)" required>
+                                                <select autocomplete="off" class="form-select form-select-sm"
+                                                    name="interviewTimeSlot" required>
+                                                    <option value="">Select Time Slot</option>
+                                                    <option th:each="timeSlot : ${interviewTimeSlots}"
+                                                        th:value="${timeSlot.displayValue}"
+                                                        th:text="${timeSlot.displayValue}"
+                                                        th:selected="${candidate.interviewTimeSlot == timeSlot.displayValue}">
+                                                        10:00 AM - 11:30 AM
+                                                    </option>
+                                                </select>
                                             </div>
                                             <div class="mb-1">
                                                 <input autocomplete="off" type="url" class="form-control form-control-sm" name="interviewLink"

@@ -24,6 +24,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotific
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateRowForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
+import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewTimeSlot;
 import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificationPageService;
 
 import jakarta.validation.Valid;
@@ -235,6 +236,11 @@ public class AgencyRecruitmentNotificationPageController {
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
         return principal.getName().trim();
+    }
+
+    @ModelAttribute("interviewTimeSlots")
+    public AgencyInterviewTimeSlot[] interviewTimeSlots() {
+        return AgencyInterviewTimeSlot.values();
     }
 
     private Page<AgencyVisibleNotificationView> loadNotificationPage(

@@ -27,6 +27,11 @@ class AgencyRecruitmentNotificationCandidateTemplateTest {
                 .contains("Min Exp: ")
                 .contains("+ yrs")
                 .contains("agency-notification-candidates.js(v=6)")
+                .contains("name=\"interviewTimeSlot\" required")
+                .contains("Select Time Slot")
+                .contains("th:each=\"timeSlot : ${interviewTimeSlots}\"")
+                .contains("th:value=\"${timeSlot.displayValue}\"")
+                .doesNotContain("placeholder=\"Time slot")
                 .doesNotContain("data-max-exp");
         assertThat(script)
                 .contains("name=\"candidates[' + index + '].currentCtc\"")

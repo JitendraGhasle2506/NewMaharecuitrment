@@ -29,6 +29,7 @@ import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateRowForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
+import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewTimeSlot;
 import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificationPageService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
@@ -202,15 +203,15 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
             Long recruitmentInterviewDetailId,
             AgencyInterviewScheduleForm interviewScheduleForm) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        ResolvedInterviewSchedule schedule = resolveInterviewSchedule(interviewScheduleForm);
         candidateService.scheduleInterview(
                 recruitmentNotificationId,
                 recruitmentInterviewDetailId,
                 context.agencyId(),
                 context.userId(),
                 AgencyCandidateInterviewScheduleInput.builder()
-                        .interviewDateTime(resolveInterviewDateTime(interviewScheduleForm))
-                        .interviewTimeSlot(
-                                interviewScheduleForm != null ? interviewScheduleForm.getInterviewTimeSlot() : null)
+                        .interviewDateTime(schedule.interviewDateTime())
+                        .interviewTimeSlot(schedule.timeSlot())
                         .interviewLink(interviewScheduleForm != null ? interviewScheduleForm.getInterviewLink() : null)
                         .interviewRemarks(
                                 interviewScheduleForm != null ? interviewScheduleForm.getInterviewRemarks() : null)
@@ -319,15 +320,23 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
         return value == null ? null : value.trim();
     }
 
-    private java.time.LocalDateTime resolveInterviewDateTime(AgencyInterviewScheduleForm interviewScheduleForm) {
-        if (interviewScheduleForm == null) {
-            return null;
+    private ResolvedInterviewSchedule resolveInterviewSchedule(AgencyInterviewScheduleForm form) {
+        if (form == null) {
+            throw new RecruitmentNotificationException("Interview schedule details are required.");
         }
-        if (interviewScheduleForm.getInterviewDateTime() != null) {
-            return interviewScheduleForm.getInterviewDateTime();
+        AgencyInterviewTimeSlot timeSlot = AgencyInterviewTimeSlot
+                .fromDisplayValue(form.getInterviewTimeSlot())
+                .orElseThrow(() -> new RecruitmentNotificationException(
+                        "Please select a valid interview time slot."));
+        java.time.LocalDateTime interviewDateTime = form.getInterviewDateTime();
+        if (interviewDateTime == null && form.getInterviewDate() != null) {
+            interviewDateTime = form.getInterviewDate().atTime(timeSlot.getStartTime());
         }
-        return interviewScheduleForm.getInterviewDate() != null
-                ? interviewScheduleForm.getInterviewDate().atStartOfDay()
-                : null;
+        return new ResolvedInterviewSchedule(interviewDateTime, timeSlot.getDisplayValue());
+    }
+
+    private record ResolvedInterviewSchedule(
+            java.time.LocalDateTime interviewDateTime,
+            String timeSlot) {
     }
 }
