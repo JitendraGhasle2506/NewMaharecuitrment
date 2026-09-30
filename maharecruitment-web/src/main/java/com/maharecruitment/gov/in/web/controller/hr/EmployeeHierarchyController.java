@@ -57,7 +57,11 @@ public class EmployeeHierarchyController {
     public String executivePage(Model model) {
         model.addAttribute("canManageReporting", false);
         model.addAttribute("showExecutiveBack", true);
-        return hierarchyPage(model);
+        model.addAttribute("sidebarActive", "Employee Hierarchy");
+        model.addAttribute("hierarchyApi", "/coo/api/employee-hierarchy");
+        model.addAttribute("hierarchyPhotoApi", "");
+        model.addAttribute("hierarchySelfMode", true);
+        return "hr/employee-hierarchy";
     }
 
     private String hierarchyPage(Model model) {
@@ -69,12 +73,14 @@ public class EmployeeHierarchyController {
     }
 
     @GetMapping("/api/employees/hierarchy/options")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @ResponseBody
     public Result<EmployeeHierarchyService.Options> options() {
         return Result.of(hierarchy.options());
     }
 
     @GetMapping("/api/employees/hierarchy/{hodEmployeeId}")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @ResponseBody
     public Result<EmployeeHierarchyNode> tree(@PathVariable Long hodEmployeeId,
             @RequestParam(defaultValue = "PRIMARY") EmployeeReportingType reportingType,
@@ -89,6 +95,7 @@ public class EmployeeHierarchyController {
     }
 
     @GetMapping("/api/employees/hierarchy/{hodEmployeeId}/search")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @ResponseBody
     public Result<List<EmployeeHierarchyService.SearchMatch>> search(@PathVariable Long hodEmployeeId,
             @RequestParam(defaultValue = "PRIMARY") EmployeeReportingType reportingType,
@@ -100,6 +107,7 @@ public class EmployeeHierarchyController {
 
     /** HR-only proxy; never expose local filesystem paths or serve arbitrary uploaded documents. */
     @GetMapping("/api/employees/hierarchy/photo/{employeeId}")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @ResponseBody
     public ResponseEntity<Resource> photo(@PathVariable Long employeeId) {
         Optional<Path> photo = repository.findPhotoSources(employeeId).stream()

@@ -83,7 +83,8 @@ class EmployeeHierarchyControllerTest {
 
         assertThat(controller.executivePage(model)).isEqualTo("hr/employee-hierarchy");
         assertThat(model.get("canManageReporting")).isEqualTo(false);
-        assertThat(model.get("hierarchyApi")).isEqualTo("/api/employees/hierarchy");
+        assertThat(model.get("hierarchyApi")).isEqualTo("/coo/api/employee-hierarchy");
+        assertThat(model.get("hierarchySelfMode")).isEqualTo(true);
     }
 
     @Test

@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyAuthority('ROLE_HOD', 'ROLE_STM', 'ROLE_EMPLOYEE')")
+@PreAuthorize("hasAnyAuthority('ROLE_HOD', 'ROLE_STM', 'ROLE_EMPLOYEE', 'ROLE_COO', 'ROLE_CTO', 'ROLE_CFO')")
 public class HodEmployeeHierarchyController {
     private final EmployeeHierarchyService hierarchyService;
     private final EmployeeRepository employeeRepository;
@@ -39,7 +39,8 @@ public class HodEmployeeHierarchyController {
                 EmployeeReportingType.PRIMARY));
     }
 
-    @GetMapping({"/hod1/api/employee-hierarchy/options", "/employee/api/employee-hierarchy/options"})
+    @GetMapping({"/hod1/api/employee-hierarchy/options", "/employee/api/employee-hierarchy/options",
+            "/coo/api/employee-hierarchy/options"})
     public Result<EmployeeHierarchyService.Options> options(HttpSession session) {
         EmployeeEntity hod = currentHod(session);
         String code = hod.getEmployeeCode();
@@ -49,7 +50,8 @@ public class HodEmployeeHierarchyController {
         return Result.of(new EmployeeHierarchyService.Options(List.of(option), List.of(), List.of()));
     }
 
-    @GetMapping({"/hod1/api/employee-hierarchy/{rootEmployeeId}", "/employee/api/employee-hierarchy/{rootEmployeeId}"})
+    @GetMapping({"/hod1/api/employee-hierarchy/{rootEmployeeId}", "/employee/api/employee-hierarchy/{rootEmployeeId}",
+            "/coo/api/employee-hierarchy/{rootEmployeeId}"})
     public Result<EmployeeHierarchyNode> tree(
             @PathVariable Long rootEmployeeId,
             @RequestParam(defaultValue = "PRIMARY") EmployeeReportingType reportingType,
@@ -63,7 +65,8 @@ public class HodEmployeeHierarchyController {
                 hodEmployeeId, nodeId, reportingType, null, null, offset, limit, depth));
     }
 
-    @GetMapping({"/hod1/api/employee-hierarchy/{rootEmployeeId}/search", "/employee/api/employee-hierarchy/{rootEmployeeId}/search"})
+    @GetMapping({"/hod1/api/employee-hierarchy/{rootEmployeeId}/search", "/employee/api/employee-hierarchy/{rootEmployeeId}/search",
+            "/coo/api/employee-hierarchy/{rootEmployeeId}/search"})
     public Result<List<EmployeeHierarchyService.SearchMatch>> search(
             @PathVariable Long rootEmployeeId,
             @RequestParam(defaultValue = "PRIMARY") EmployeeReportingType reportingType,

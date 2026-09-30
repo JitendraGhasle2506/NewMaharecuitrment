@@ -119,6 +119,27 @@ class HodEmployeeHierarchyControllerTest {
     }
 
     @Test
+    void executiveRouteLoadsOnlyTheSignedInExecutivesTree() throws Exception {
+        session.setAttribute("SESSION_USER", new SessionUserDTO(
+                10L, "COO User", "coo@example.test", List.of("ROLE_COO"), null, null, null,
+                LocalDateTime.now(), LocalDateTime.now()));
+        EmployeeHierarchyNode root = new EmployeeHierarchyNode(
+                100L, "COO User", "COO100", "COO", "Executive", null, 0, 0, true);
+        when(hierarchyService.tree(100L, null, EmployeeReportingType.PRIMARY, null, null, 0, 25, 1))
+                .thenReturn(root);
+        var mvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        mvc.perform(get("/coo/api/employee-hierarchy/options").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.hods[0].id").value(100));
+        mvc.perform(get("/coo/api/employee-hierarchy/100").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.employeeId").value(100));
+        mvc.perform(get("/coo/api/employee-hierarchy/999").session(session))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void employeeTreeAndSearchRejectOtherRootsAndMissingSessions() throws Exception {
         var mvc = MockMvcBuilders.standaloneSetup(controller).build();
         mvc.perform(get("/employee/api/employee-hierarchy/999").session(session))

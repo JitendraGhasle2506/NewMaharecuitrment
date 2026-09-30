@@ -232,8 +232,7 @@ public class SecurityConfig {
 
                 .requestMatchers("/home", "/common/**").authenticated()
                 .requestMatchers("/reporting-manager/attendance/**").authenticated()
-                .requestMatchers("/api/employees/hierarchy/**")
-                    .hasAnyAuthority("ROLE_HR", "ROLE_COO", "ROLE_CTO", "ROLE_CFO")
+                .requestMatchers("/api/employees/hierarchy/**").hasAuthority("ROLE_HR")
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 
                 .requestMatchers("/hr/department/payment/**")
