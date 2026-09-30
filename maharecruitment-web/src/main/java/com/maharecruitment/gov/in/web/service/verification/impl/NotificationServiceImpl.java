@@ -17,6 +17,7 @@ import org.springframework.web.client.RestClient;
 
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
+import com.maharecruitment.gov.in.web.service.notification.SmtpCredentialService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
@@ -35,18 +36,21 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     private final Environment environment;
     private final NotificationChannelProperties notificationChannelProperties;
     private final ApplicationUrlService applicationUrlService;
+    private final SmtpCredentialService smtpCredentialService;
 
     public NotificationServiceImpl(
             JavaMailSender mailSender,
             RestClient restClient,
             Environment environment,
             NotificationChannelProperties notificationChannelProperties,
-            ApplicationUrlService applicationUrlService) {
+            ApplicationUrlService applicationUrlService,
+            SmtpCredentialService smtpCredentialService) {
         this.mailSender = mailSender;
         this.restClient = restClient;
         this.environment = environment;
         this.notificationChannelProperties = notificationChannelProperties;
         this.applicationUrlService = applicationUrlService;
+        this.smtpCredentialService = smtpCredentialService;
     }
 
     @PostConstruct
@@ -59,8 +63,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         List<String> missingProperties = missingEmailProperties();
         if (!missingProperties.isEmpty()) {
             log.error(
-                    "Email dispatch is enabled but SMTP configuration is incomplete. Missing properties: {}. "
-                            + "Set the corresponding SMTP_* environment variables before starting the application.",
+                    "Email dispatch is enabled but SMTP transport configuration is incomplete. Missing properties: {}.",
                     String.join(", ", missingProperties));
             return;
         }
@@ -72,6 +75,9 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 getFromAddress(),
                 smtpSecurityMode(),
                 isSmtpAuthenticationEnabled());
+        if (isSmtpAuthenticationEnabled()) {
+            log.info("SMTP authentication credentials will be loaded from the database when email is sent.");
+        }
     }
 
     @Override
@@ -544,11 +550,6 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
             return fromAddress;
         }
 
-        String username = getProperty("spring.mail.username");
-        if (StringUtils.hasText(username) && username.contains("@")) {
-            return username;
-        }
-
         throw new IllegalStateException(
                 "Email sender address is not configured. Set spring.mail.from.email or SMTP_FROM_EMAIL to a verified sender address.");
     }
@@ -557,9 +558,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         List<String> missingProperties = missingEmailProperties();
         if (!missingProperties.isEmpty()) {
             throw new IllegalStateException(
-                    "Email SMTP configuration is incomplete. Missing properties: "
-                            + String.join(", ", missingProperties)
-                            + ". Set the corresponding SMTP_* environment variables on the application server.");
+                    "Email SMTP transport configuration is incomplete. Missing properties: "
+                            + String.join(", ", missingProperties) + ".");
+        }
+        if (isSmtpAuthenticationEnabled()) {
+            smtpCredentialService.getRequiredCredentials();
         }
     }
 
@@ -567,10 +570,6 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         List<String> missingProperties = new ArrayList<>(4);
         addIfMissing(missingProperties, "spring.mail.host");
         addIfMissing(missingProperties, "spring.mail.from.email");
-        if (isSmtpAuthenticationEnabled()) {
-            addIfMissing(missingProperties, "spring.mail.username");
-            addIfMissing(missingProperties, "spring.mail.password");
-        }
         return missingProperties;
     }
 

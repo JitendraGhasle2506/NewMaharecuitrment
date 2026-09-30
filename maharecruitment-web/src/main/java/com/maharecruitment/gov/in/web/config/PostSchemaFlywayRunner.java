@@ -112,6 +112,7 @@ import db.postmigration.V132__multiple_level_two_cell_authorities;
 import db.postmigration.V133__employee_hierarchy_reporting_types;
 import db.postmigration.V134__employee_onboarding_schema_reconciliation;
 import db.postmigration.V135__pre_onboarding_schema_reconciliation;
+import db.postmigration.V136__smtp_configuration;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -266,6 +267,7 @@ public class PostSchemaFlywayRunner {
                 new V133__employee_hierarchy_reporting_types(),
                 new V134__employee_onboarding_schema_reconciliation(),
                 new V135__pre_onboarding_schema_reconciliation(),
+                new V136__smtp_configuration(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

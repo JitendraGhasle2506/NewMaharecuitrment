@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -14,6 +15,8 @@ import org.springframework.web.client.RestClient;
 
 import com.maharecruitment.gov.in.web.properties.ApplicationUrlProperties;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
+import com.maharecruitment.gov.in.web.service.notification.SmtpCredentialService;
+import com.maharecruitment.gov.in.web.service.notification.SmtpCredentialService.SmtpCredentials;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 import com.maharecruitment.gov.in.web.util.ApplicationUrlService;
@@ -29,7 +32,8 @@ class NotificationServiceImplTest {
                 smtpEnvironment()
                         .withProperty("otp.expiry-minutes", "5"),
                 new NotificationChannelProperties(),
-                applicationUrlService());
+                applicationUrlService(),
+                smtpCredentialService());
 
         service.sendEmailOtp(
                 "user@example.com",
@@ -56,7 +60,8 @@ class NotificationServiceImplTest {
                 mock(RestClient.class),
                 smtpEnvironment(),
                 new NotificationChannelProperties(),
-                applicationUrlService());
+                applicationUrlService(),
+                smtpCredentialService());
 
         service.sendAgencyCredentials(
                 "agency@example.com",
@@ -74,7 +79,10 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void emailOtpFailsWithActionableErrorWhenSmtpCredentialsAreMissing() {
+    void emailOtpFailsWithActionableErrorWhenDatabaseSmtpCredentialsAreMissing() {
+        SmtpCredentialService credentialService = mock(SmtpCredentialService.class);
+        when(credentialService.getRequiredCredentials()).thenThrow(
+                new IllegalStateException("Active SMTP credentials are not configured in the smtp_configuration database table."));
         NotificationServiceImpl service = new NotificationServiceImpl(
                 mock(JavaMailSender.class),
                 mock(RestClient.class),
@@ -83,12 +91,12 @@ class NotificationServiceImplTest {
                         .withProperty("spring.mail.from.email", "noreply@example.com")
                         .withProperty("spring.mail.properties.mail.smtp.auth", "true"),
                 new NotificationChannelProperties(),
-                applicationUrlService());
+                applicationUrlService(),
+                credentialService);
 
         assertThatThrownBy(() -> service.sendEmailOtp("user@example.com", "209552"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasStackTraceContaining("spring.mail.username")
-                .hasStackTraceContaining("spring.mail.password");
+                .hasStackTraceContaining("smtp_configuration database table");
     }
 
     @Test
@@ -100,7 +108,8 @@ class NotificationServiceImplTest {
                 mock(RestClient.class),
                 smtpEnvironment(),
                 channelProperties,
-                applicationUrlService());
+                applicationUrlService(),
+                smtpCredentialService());
 
         assertThatThrownBy(() -> service.sendEmailOtp("user@example.com", "209552"))
                 .isInstanceOf(OtpDeliveryException.class)
@@ -118,5 +127,11 @@ class NotificationServiceImplTest {
         ApplicationUrlProperties properties = new ApplicationUrlProperties();
         properties.setBaseUrl("https://portal.example.gov.in/maharecruitment");
         return new ApplicationUrlService(properties);
+    }
+
+    private SmtpCredentialService smtpCredentialService() {
+        SmtpCredentialService service = mock(SmtpCredentialService.class);
+        when(service.getRequiredCredentials()).thenReturn(new SmtpCredentials("smtp-user", "smtp-password"));
+        return service;
     }
 }

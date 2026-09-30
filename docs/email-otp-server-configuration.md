@@ -1,8 +1,22 @@
 # Email OTP server configuration
 
-Email OTP uses the common Spring Mail configuration packaged in the WAR. Local, UAT and production inherit the same AWS SES SMTP host, port, credentials, sender and TLS settings from `application.properties`; each profile keeps email enabled by default.
+Email OTP uses Spring Mail. The SMTP host, port, sender, and TLS settings come from deployment configuration. The SMTP username and password are loaded from the `smtp_configuration` database table for every send and are not packaged in the WAR.
 
-The AWS SES SMTP username and password are deliberately packaged as fixed values for this deployment. The same credentials are used by local, UAT and production; runtime `SMTP_USERNAME` and `SMTP_PASSWORD` variables do not override them.
+Migration `V136__smtp_configuration` creates the table. Configure its singleton row after deploying the application:
+
+```sql
+insert into smtp_configuration
+    (configuration_id, username, password, enabled, updated_at)
+values
+    (1, '<SMTP_USERNAME>', '<SMTP_PASSWORD>', true, current_timestamp)
+on conflict (configuration_id) do update
+set username = excluded.username,
+    password = excluded.password,
+    enabled = excluded.enabled,
+    updated_at = current_timestamp;
+```
+
+Run this SQL through the restricted database administration path. Do not commit real credentials to source control or migration files.
 
 ## Required server environment
 
@@ -23,7 +37,7 @@ SMTP_TEST_CONNECTION=true
 
 `SMTP_TEST_CONNECTION=true` makes deployment fail at startup when the SMTP server cannot be reached or authenticated. This is recommended while diagnosing a deployment; it can be set to `false` afterward if email availability should not prevent application startup.
 
-The variables above configure the profile, connection and sender. SMTP credentials come from the packaged application configuration.
+The variables above configure the profile, connection and sender. SMTP authentication credentials come only from the database row.
 
 ## Connectivity check
 
@@ -38,10 +52,10 @@ openssl s_client -crlf -quiet -starttls smtp -connect email-smtp.ap-south-1.amaz
 Windows Server:
 
 ```powershell
-Test-NetConnection email-smtp.ap-south-1.amazonaws.com -Port 2587
+Test-NetConnection email-smtp.ap-south-1.amazonaws.com -Port 587
 ```
 
-If port 2587 is blocked but port 465 is permitted, use the TLS-wrapper settings below:
+If port 587 is blocked but port 465 is permitted, use the TLS-wrapper settings below:
 
 ```text
 SMTP_PORT=465
@@ -50,7 +64,7 @@ SMTP_STARTTLS_REQUIRED=false
 SMTP_SSL_ENABLED=true
 ```
 
-Do not use the port 465 settings with STARTTLS enabled. If neither port connects, allow outbound TCP 2587 or 465 in the host firewall, network firewall, security group, and proxy policy.
+Do not use the port 465 settings with STARTTLS enabled. If neither port connects, allow outbound TCP 587 or 465 in the host firewall, network firewall, security group, and proxy policy.
 
 ## Reading the failure
 
@@ -63,4 +77,4 @@ Common failure meanings:
 - SMTP `550`/`554`: sender alias, recipient, account policy, quota, or reputation rejection.
 - `SSLHandshakeException`: server trust store, TLS interception, or an incorrect STARTTLS/TLS-wrapper combination.
 
-Because the fixed credentials can be extracted from a WAR, restrict access to the artifact and rotate the AWS SES SMTP credentials whenever the WAR is shared outside the authorized deployment path.
+Restrict direct read access to `smtp_configuration` to the application account and authorized database administrators. Rotate SMTP credentials immediately if they are disclosed in chat, logs, source code, or deployment artifacts.

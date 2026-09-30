@@ -17,6 +17,9 @@ class SecurityTransportConfigurationTest {
     void baseConfigurationUsesWildFlyHttpSafeDefaults() throws Exception {
         Properties properties = loadProperties("application.properties");
 
+        assertThat(properties.getProperty("spring.mail.username")).isNull();
+        assertThat(properties.getProperty("spring.mail.password")).isNull();
+
         // assertThat(properties.getProperty("app.security.cookie.secure"))
         //         .isEqualTo("${APP_SECURITY_COOKIE_SECURE:true}");
         // assertThat(properties.getProperty("app.security.cookie.http-only")).isEqualTo("true");
@@ -62,12 +65,6 @@ class SecurityTransportConfigurationTest {
         //         .isEqualTo("${SMTP_HOST:email-smtp.ap-south-1.amazonaws.com}");
         // assertThat(properties.getProperty("spring.mail.port"))
         //         .isEqualTo("${SMTP_PORT:587}");
-        // assertThat(properties.getProperty("spring.mail.username"))
-        //         .isNotBlank()
-        //         .doesNotContain("${");
-        // assertThat(properties.getProperty("spring.mail.password"))
-        //         .isNotBlank()
-        //         .doesNotContain("${");
         // assertThat(properties.getProperty("spring.profiles.active")).isNull();
         // assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("local");
         // assertThat(properties.getProperty("server.servlet.context-path"))
