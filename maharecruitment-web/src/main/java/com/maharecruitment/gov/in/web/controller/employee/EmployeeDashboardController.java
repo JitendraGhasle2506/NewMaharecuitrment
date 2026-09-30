@@ -120,25 +120,37 @@ public class EmployeeDashboardController {
                     false,
                     "Please correct the highlighted fields.",
                     null,
-                    fieldErrors(bindingResult)));
+                    fieldErrors(bindingResult),
+                    false));
         }
 
         try {
+            String currentEmail = resolveLoginEmail(principal);
             EmployeeProfileDTO savedProfile = employeeProfileService.updateCurrentEmployeeProfile(
-                    resolveLoginEmail(principal),
+                    currentEmail,
                     profileDTO);
-            refreshSessionUser(session, savedProfile);
+            boolean emailChanged = currentEmail != null
+                    && !currentEmail.equalsIgnoreCase(savedProfile.getEmail());
+            if (emailChanged) {
+                session.invalidate();
+            } else {
+                refreshSessionUser(session, savedProfile);
+            }
             return ResponseEntity.ok(new EmployeeProfileUpdateResponse(
                     true,
-                    "Profile updated successfully",
+                    emailChanged
+                            ? "Profile and email updated successfully. Please sign in with your new email address."
+                            : "Profile updated successfully",
                     savedProfile,
-                    Map.of()));
+                    Map.of(),
+                    emailChanged));
         } catch (RecruitmentNotificationException ex) {
             return ResponseEntity.badRequest().body(new EmployeeProfileUpdateResponse(
                     false,
                     ex.getMessage(),
                     null,
-                    Map.of()));
+                    Map.of(),
+                    false));
         }
     }
 
@@ -157,20 +169,23 @@ public class EmployeeDashboardController {
                     true,
                     "Photo uploaded successfully.",
                     savedProfile,
-                    Map.of()));
+                    Map.of(),
+                    false));
         } catch (RecruitmentNotificationException ex) {
             return ResponseEntity.badRequest().body(new EmployeeProfileUpdateResponse(
                     false,
                     ex.getMessage(),
                     null,
-                    Map.of()));
+                    Map.of(),
+                    false));
         } catch (RuntimeException ex) {
             log.error("Employee profile photo upload failed for login={}", resolveLoginEmail(principal), ex);
             return ResponseEntity.internalServerError().body(new EmployeeProfileUpdateResponse(
                     false,
                     "Unable to upload photo. Please try again after some time.",
                     null,
-                    Map.of()));
+                    Map.of(),
+                    false));
         }
     }
 

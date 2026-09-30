@@ -1209,6 +1209,24 @@
     gap: 14px;
 }
 
+.employee-profile-update-page .sensitive-value-toggle {
+    display: inline-grid;
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+    place-items: center;
+    border-color: #b8c8d4;
+    color: #24597a;
+    background: #fff;
+}
+
+.employee-profile-update-page .sensitive-value-toggle:hover,
+.employee-profile-update-page .sensitive-value-toggle:focus-visible {
+    border-color: #24597a;
+    color: #fff;
+    background: #24597a;
+}
+
 .employee-dashboard .marriage-details {
     grid-column: 1 / -1;
     display: grid;

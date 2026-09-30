@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.web.dto.employee;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -24,6 +26,9 @@ public class EmployeeProfileDTO {
 
     private String alternateMobileNo;
 
+    @NotBlank(message = "Email address is required")
+    @Email(message = "Enter a valid email address")
+    @Size(max = 254, message = "Email address must not exceed 254 characters")
     private String email;
 
     private String aadhaarNo;

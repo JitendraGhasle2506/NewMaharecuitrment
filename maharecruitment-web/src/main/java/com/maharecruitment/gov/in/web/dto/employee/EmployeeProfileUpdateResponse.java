@@ -6,5 +6,6 @@ public record EmployeeProfileUpdateResponse(
         boolean success,
         String message,
         EmployeeProfileDTO profile,
-        Map<String, String> errors) {
+        Map<String, String> errors,
+        boolean reauthenticationRequired) {
 }

@@ -14,6 +14,7 @@
     <th:block th:replace="~{header/header :: var-sidebar-header('Employee', 'Update Profile', ~{::section})}">
         <section class="employee-dashboard"
             th:attr="data-save-url=@{/employee/profile/update},
+                     data-login-url=@{/login},
                      data-photo-upload-url=@{/employee/profile/photo/upload},
                      data-photo-url=@{/employee/profile/photo},
                      data-sensitive-view-url=@{/employee/profile/sensitive}">
@@ -57,7 +58,9 @@
                             </label>
                             <label>
                                 Email
-                                <input autocomplete="off" type="email" th:value="${profile.email}" readonly disabled>
+                                <input autocomplete="email" name="email" type="email" maxlength="254"
+                                    th:value="${profile.email}" required>
+                                <small class="field-error" data-error-for="email"></small>
                             </label>
                             <label>
                                 Aadhaar Number
@@ -66,9 +69,10 @@
                                     th:value="${#strings.isEmpty(profile.aadhaarNo) ? '-' : profile.aadhaarNo}"
                                     th:attr="data-masked-value=${#strings.isEmpty(profile.aadhaarNo) ? '-' : profile.aadhaarNo}"
                                     readonly aria-label="Masked Aadhaar number">
-                                <button type="button" class="btn btn-outline-secondary sensitive-value-toggle"
+                                <!-- <button type="button" class="btn btn-outline-secondary sensitive-value-toggle"
                                     data-identity-field="aadhaar" data-sensitive-target="aadhaarNo"
-                                    aria-pressed="false">View</button>
+                                    aria-label="Show Aadhaar number" title="Show Aadhaar number"
+                                    aria-pressed="false"><i class="fa-solid fa-eye" aria-hidden="true"></i></button> -->
                                 </span>
                                 <small>Only the last four digits are displayed.</small>
                             </label>
@@ -112,9 +116,10 @@
                                     data-sensitive-encrypted-name="panNoEncrypted" data-sensitive-field="panNo"
                                     th:attr="data-masked-value=${profile.panNo}"
                                     th:placeholder="${#strings.isEmpty(profile.panNo) ? 'ABCDE1234F' : profile.panNo + ' (leave blank to keep)'}">
-                                <button type="button" class="btn btn-outline-secondary sensitive-value-toggle"
+                                <!-- <button type="button" class="btn btn-outline-secondary sensitive-value-toggle"
                                     data-identity-field="pan" data-sensitive-target="panNo"
-                                    data-clear-on-hide="true" aria-pressed="false">View</button>
+                                    data-clear-on-hide="true" aria-label="Show PAN number" title="Show PAN number"
+                                    aria-pressed="false"><i class="fa-solid fa-eye" aria-hidden="true"></i></button> -->
                                 </span>
                                 <small class="field-error" data-error-for="panNo"></small>
                             </label>
@@ -233,7 +238,7 @@
         </section>
     </th:block>
     <script th:src="@{/js/sensitive-data-encryption.js}"></script>
-    <script th:src="@{/js/employee-dashboard.js(v='20260902')}"></script>
+    <script th:src="@{/js/employee-dashboard.js(v='20260930')}"></script>
 </body>
 
 </html>

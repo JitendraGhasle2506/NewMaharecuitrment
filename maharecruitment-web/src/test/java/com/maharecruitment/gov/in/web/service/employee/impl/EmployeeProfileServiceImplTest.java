@@ -19,12 +19,14 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeProfileRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileDTO;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
@@ -47,10 +49,20 @@ class EmployeeProfileServiceImplTest {
     @Mock
     private SensitivePayloadDecryptor sensitivePayloadDecryptor;
 
+    @Mock
+    private AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+
+    @Mock
+    private UserAffiliationService userAffiliationService;
+
     @Test
     void updateProfileSynchronizesChangedEmailToUserAndEmployeeMaster() {
         User user = user();
         EmployeeEntity employee = employee();
+        AgencyCandidatePreOnboardingEntity preOnboarding = new AgencyCandidatePreOnboardingEntity();
+        preOnboarding.setPreOnboardingId(501L);
+        preOnboarding.setCandidateEmail(user.getEmail());
+        employee.setPreOnboarding(preOnboarding);
         EmployeeProfileDTO dto = new EmployeeProfileDTO();
         dto.setEmail(" New.Employee@Example.COM ");
         dto.setMobileNo("9876543210");
@@ -70,8 +82,11 @@ class EmployeeProfileServiceImplTest {
 
         assertThat(user.getEmail()).isEqualTo("new.employee@example.com");
         assertThat(employee.getEmail()).isEqualTo("new.employee@example.com");
+        assertThat(preOnboarding.getCandidateEmail()).isEqualTo("new.employee@example.com");
         verify(userRepository).save(user);
         verify(employeeRepository).save(employee);
+        verify(preOnboardingRepository).save(preOnboarding);
+        verify(userAffiliationService).synchronizeUserProfile(user);
     }
 
     @Test
@@ -305,7 +320,9 @@ class EmployeeProfileServiceImplTest {
                 employeeRepository,
                 userRepository,
                 fileStorageService,
-                sensitivePayloadDecryptor);
+                sensitivePayloadDecryptor,
+                preOnboardingRepository,
+                userAffiliationService);
     }
 
     private User user() {

@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
 import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
 import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
@@ -26,6 +27,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeProfileRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileDTO;
 import com.maharecruitment.gov.in.web.exception.FileStorageException;
@@ -49,18 +51,24 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final SensitivePayloadDecryptor sensitivePayloadDecryptor;
+    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+    private final UserAffiliationService userAffiliationService;
 
     public EmployeeProfileServiceImpl(
             EmployeeProfileRepository employeeProfileRepository,
             EmployeeRepository employeeRepository,
             UserRepository userRepository,
             FileStorageService fileStorageService,
-            SensitivePayloadDecryptor sensitivePayloadDecryptor) {
+            SensitivePayloadDecryptor sensitivePayloadDecryptor,
+            AgencyCandidatePreOnboardingRepository preOnboardingRepository,
+            UserAffiliationService userAffiliationService) {
         this.employeeProfileRepository = employeeProfileRepository;
         this.employeeRepository = employeeRepository;
         this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
         this.sensitivePayloadDecryptor = sensitivePayloadDecryptor;
+        this.preOnboardingRepository = preOnboardingRepository;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @Override
@@ -105,11 +113,22 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
         EmployeeProfile savedProfile = employeeProfileRepository.save(profile);
         if (userEmailChanged) {
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
+            synchronizePreOnboardingEmail(employee, savedUser.getEmail());
+            userAffiliationService.synchronizeUserProfile(savedUser);
         }
         EmployeeEntity savedEmployee = employeeRepository.save(employee);
         log.info("Employee profile saved for employeeId={} userId={}", employee.getEmployeeId(), user.getId());
         return toDto(savedProfile, user, savedEmployee);
+    }
+
+    private void synchronizePreOnboardingEmail(EmployeeEntity employee, String email) {
+        if (employee.getPreOnboarding() == null
+                || employee.getPreOnboarding().getPreOnboardingId() == null) {
+            return;
+        }
+        employee.getPreOnboarding().setCandidateEmail(email);
+        preOnboardingRepository.save(employee.getPreOnboarding());
     }
 
     @Override

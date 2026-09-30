@@ -30,7 +30,7 @@
             target.value = button.dataset.clearOnHide === 'true'
                 ? ''
                 : (target.dataset.maskedValue || '-');
-            button.textContent = 'View';
+            setSensitiveToggleState(button, false);
             button.setAttribute('aria-pressed', 'false');
             return;
         }
@@ -50,12 +50,23 @@
                 throw new Error(payload.message || 'The requested value is not available.');
             }
             target.value = payload.value;
-            button.textContent = 'Hide';
+            setSensitiveToggleState(button, true);
             button.setAttribute('aria-pressed', 'true');
         } catch (error) {
             await showAlert('error', 'Unable to show value', error.message);
         } finally {
             button.disabled = false;
+        }
+    }
+
+    function setSensitiveToggleState(button, visible) {
+        const fieldName = button.dataset.identityField === 'aadhaar' ? 'Aadhaar' : 'PAN';
+        const label = `${visible ? 'Hide' : 'Show'} ${fieldName} number`;
+        button.setAttribute('aria-label', label);
+        button.title = label;
+        const icon = button.querySelector('i');
+        if (icon) {
+            icon.className = `fa-solid ${visible ? 'fa-eye-slash' : 'fa-eye'}`;
         }
     }
 
@@ -136,9 +147,15 @@
         const formData = new FormData(form);
         const dob = String(formData.get('dob') || '').trim();
         const marriageDate = String(formData.get('marriageDate') || '').trim();
+        const email = String(formData.get('email') || '').trim().toLowerCase();
         let gender = String(formData.get('gender') || '').trim();
         let panNo = String(field('panNo')?.value || '').trim().toUpperCase();
         let valid = true;
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setError('email', 'Enter a valid email address');
+            valid = false;
+        }
 
         if (dob === '1900-01-01') {
             setError('dob', 'Please select a valid date of birth');
@@ -315,7 +332,9 @@
             }
             updateDashboard(payload.profile);
             await showAlert('success', 'Success!', payload.message || 'Profile updated successfully.');
-            window.location.reload();
+            window.location.assign(payload.reauthenticationRequired
+                ? root.dataset.loginUrl
+                : window.location.href);
         } catch (error) {
             const message = error instanceof Error && error.message
                 ? error.message
