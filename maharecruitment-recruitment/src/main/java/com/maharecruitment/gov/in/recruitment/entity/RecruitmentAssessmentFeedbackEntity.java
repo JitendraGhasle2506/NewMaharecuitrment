@@ -112,10 +112,10 @@ public class RecruitmentAssessmentFeedbackEntity extends RecruitmentAuditable {
     @Column(name = "relevant_experience_marks")
     private Integer relevantExperienceMarks;
 
-    @Column(name = "interviewer_grade", length = 10, nullable = false)
+    @Column(name = "interviewer_grade", length = 10)
     private String interviewerGrade;
 
-    @Column(name = "recommendation_status", length = 30, nullable = false)
+    @Column(name = "recommendation_status", length = 30)
     private String recommendationStatus;
 
     @Column(name = "assessment_remarks", length = 1000)

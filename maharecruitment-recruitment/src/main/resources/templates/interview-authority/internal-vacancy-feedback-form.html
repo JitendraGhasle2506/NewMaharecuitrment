@@ -529,23 +529,6 @@
                                     </div>
 
                                     <div class="assessment-grid mt-3">
-                                        <div class="assessment-col-6">
-                                            <label class="form-label">Interviewer Grade</label>
-                                            <select class="form-control" th:field="*{interviewerGrade}" required>
-                                                <option value="">Select Grade</option>
-                                                <option value="A">A</option>
-                                                <option value="B">B</option>
-                                                <option value="C">C</option>
-                                            </select>
-                                        </div>
-                                        <div class="assessment-col-6">
-                                            <label class="form-label">Recommendation Status</label>
-                                            <select class="form-control" th:field="*{recommendationStatus}" required>
-                                                <option value="">Select Recommendation</option>
-                                                <option value="RECOMMENDED">Recommended</option>
-                                                <option value="NOT_RECOMMENDED">Not Recommended</option>
-                                            </select>
-                                        </div>
                                         <div class="assessment-col-12">
                                             <label class="form-label">Assessment Remarks</label>
                                             <textarea class="form-control" th:field="*{assessmentRemarks}" rows="2" maxlength="1000"
@@ -629,8 +612,6 @@
                                             <th class="text-center">Leader.</th>
                                             <th class="text-center">Exp.</th>
                                             <th class="text-center">Total</th>
-                                            <th class="text-center">Grade</th>
-                                            <th class="text-center">Recommend.</th>
                                             <th>Remarks</th>
                                         </tr>
                                     </thead>
@@ -645,13 +626,6 @@
                                             <td class="text-center" th:text="${item.leadershipScore}">0</td>
                                             <td class="text-center" th:text="${item.relevantExperienceScore}">0</td>
                                             <td class="text-center fw-bold" th:text="${item.totalScore}">0</td>
-                                            <td class="text-center" th:text="${item.interviewerGrade}">-</td>
-                                            <td class="text-center">
-                                                <span th:if="${item.recommendationStatus != null}" 
-                                                      th:class="${item.recommendationStatus == 'RECOMMENDED' ? 'text-success fw-bold' : 'text-danger fw-bold'}"
-                                                      th:text="${#strings.replace(item.recommendationStatus, '_', ' ')}">-</span>
-                                                <span th:unless="${item.recommendationStatus != null}">-</span>
-                                            </td>
                                             <td th:text="${item.remarks}">-</td>
                                         </tr>
                                     </tbody>
@@ -672,12 +646,8 @@
                                 </tr>
                                 <tr>
                                     <th>Marks (Comm/Tech/Leader/Rel-Exp)</th>
-                                    <td th:text="${(workflowDetail.assessment.communicationSkillMarks != null ? workflowDetail.assessment.communicationSkillMarks : 0) + ' / ' + (workflowDetail.assessment.technicalSkillMarks != null ? workflowDetail.assessment.technicalSkillMarks : 0) + ' / ' + (workflowDetail.assessment.leadershipQualityMarks != null ? workflowDetail.assessment.leadershipQualityMarks : 0) + ' / ' + (workflowDetail.assessment.relevantExperienceMarks != null ? workflowDetail.assessment.relevantExperienceMarks : 0)}">
+                                    <td colspan="3" th:text="${(workflowDetail.assessment.communicationSkillMarks != null ? workflowDetail.assessment.communicationSkillMarks : 0) + ' / ' + (workflowDetail.assessment.technicalSkillMarks != null ? workflowDetail.assessment.technicalSkillMarks : 0) + ' / ' + (workflowDetail.assessment.leadershipQualityMarks != null ? workflowDetail.assessment.leadershipQualityMarks : 0) + ' / ' + (workflowDetail.assessment.relevantExperienceMarks != null ? workflowDetail.assessment.relevantExperienceMarks : 0)}">
                                         0 / 0 / 0 / 0
-                                    </td>
-                                    <th>Grade / Recommendation</th>
-                                    <td th:text="${(workflowDetail.assessment.interviewerGrade != null ? workflowDetail.assessment.interviewerGrade : '-') + ' / ' + (workflowDetail.assessment.recommendationStatus != null ? workflowDetail.assessment.recommendationStatus : '-')}">
-                                        - / -
                                     </td>
                                 </tr>
                                 <tr>

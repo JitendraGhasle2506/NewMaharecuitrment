@@ -44,7 +44,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevel
 public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
         implements InternalVacancyInterviewAuthorityWorkflowService {
 
-    private static final String RECOMMENDED_STATUS = "RECOMMENDED";
+    private static final int LEVEL_TWO_MINIMUM_SCORE = 12;
     private static final int MAX_PANEL_MEMBER_COUNT = 5;
 
     private final UserRepository userRepository;
@@ -345,8 +345,8 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
         assessment.setTechnicalSkillMarks(submissionInput.getTechnicalSkillMarks());
         assessment.setLeadershipQualityMarks(submissionInput.getLeadershipQualityMarks());
         assessment.setRelevantExperienceMarks(submissionInput.getRelevantExperienceMarks());
-        assessment.setInterviewerGrade(normalizeUpper(submissionInput.getInterviewerGrade()));
-        assessment.setRecommendationStatus(normalizeUpper(submissionInput.getRecommendationStatus()));
+        assessment.setInterviewerGrade(null);
+        assessment.setRecommendationStatus(null);
         assessment.setAssessmentRemarks(normalizeText(submissionInput.getAssessmentRemarks()));
         assessment.setFinalRemarks(normalizeText(submissionInput.getFinalRemarks()));
         assessment.setInterviewerUserId(actor.userId());
@@ -362,7 +362,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
 
         synchronizeLevelTwoReadyState(
                 candidate,
-                RECOMMENDED_STATUS.equals(normalizeUpper(assessment.getRecommendationStatus())));
+                totalMarks(submissionInput) >= LEVEL_TWO_MINIMUM_SCORE);
     }
 
     private ActorContext resolveActorContext(String actorEmail) {
@@ -498,12 +498,13 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
         validateMarks("Leadership quality marks", input.getLeadershipQualityMarks());
         validateMarks("Relevant experience marks", input.getRelevantExperienceMarks());
 
-        if (!StringUtils.hasText(input.getInterviewerGrade())) {
-            throw new RecruitmentNotificationException("Interviewer grade is required.");
-        }
-        if (!StringUtils.hasText(input.getRecommendationStatus())) {
-            throw new RecruitmentNotificationException("Recommendation status is required.");
-        }
+    }
+
+    private int totalMarks(DepartmentInterviewAssessmentSubmissionInput input) {
+        return input.getCommunicationSkillMarks()
+                + input.getTechnicalSkillMarks()
+                + input.getLeadershipQualityMarks()
+                + input.getRelevantExperienceMarks();
     }
 
     private void validateMarks(String fieldLabel, Integer marks) {

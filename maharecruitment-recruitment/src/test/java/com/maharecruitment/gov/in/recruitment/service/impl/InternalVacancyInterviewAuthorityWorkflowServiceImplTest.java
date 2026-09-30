@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.recruitment.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -127,5 +128,9 @@ class InternalVacancyInterviewAuthorityWorkflowServiceImplTest {
         assertTrue(template.contains("workflowDetail.interviewAuthorities"));
         assertTrue(template.contains("authority.name"));
         assertTrue(template.contains("authority.designation"));
+        assertFalse(template.contains("Interviewer Grade"));
+        assertFalse(template.contains("Recommendation Status"));
+        assertFalse(template.contains("*{interviewerGrade}"));
+        assertFalse(template.contains("*{recommendationStatus}"));
     }
 }

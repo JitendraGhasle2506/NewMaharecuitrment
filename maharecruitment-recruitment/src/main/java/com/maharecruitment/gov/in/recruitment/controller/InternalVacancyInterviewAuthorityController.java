@@ -188,9 +188,6 @@ public class InternalVacancyInterviewAuthorityController {
             individualCommand.setLeadershipScore(BigDecimal.valueOf(assessmentForm.getLeadershipQualityMarks()));
             individualCommand.setRelevantExperienceScore(BigDecimal.valueOf(assessmentForm.getRelevantExperienceMarks()));
             individualCommand.setRemarks(assessmentForm.getAssessmentRemarks());
-            individualCommand.setInterviewerGrade(assessmentForm.getInterviewerGrade());
-            individualCommand.setRecommendationStatus(assessmentForm.getRecommendationStatus());
-            
             assessmentService.submitAssessment(individualCommand, actorEmail);
 
             redirectAttributes.addFlashAttribute("successMessage", "Interview feedback submitted successfully.");
@@ -228,8 +225,6 @@ public class InternalVacancyInterviewAuthorityController {
         form.setTechnicalSkillMarks(0);
         form.setLeadershipQualityMarks(0);
         form.setRelevantExperienceMarks(0);
-        form.setInterviewerGrade("A");
-        form.setRecommendationStatus("RECOMMENDED");
 
         List<InternalInterviewAssessmentPanelMemberForm> panelMembers = new ArrayList<>();
         for (int index = 0; index < MAX_PANEL_MEMBER_COUNT; index++) {
@@ -256,12 +251,6 @@ public class InternalVacancyInterviewAuthorityController {
             }
             if (assessment.getRelevantExperienceMarks() != null) {
                 form.setRelevantExperienceMarks(assessment.getRelevantExperienceMarks());
-            }
-            if (assessment.getInterviewerGrade() != null) {
-                form.setInterviewerGrade(assessment.getInterviewerGrade());
-            }
-            if (assessment.getRecommendationStatus() != null) {
-                form.setRecommendationStatus(assessment.getRecommendationStatus());
             }
             if (assessment.getAssessmentRemarks() != null) {
                 form.setAssessmentRemarks(assessment.getAssessmentRemarks());
@@ -315,8 +304,6 @@ public class InternalVacancyInterviewAuthorityController {
                 .technicalSkillMarks(form.getTechnicalSkillMarks())
                 .leadershipQualityMarks(form.getLeadershipQualityMarks())
                 .relevantExperienceMarks(form.getRelevantExperienceMarks())
-                .interviewerGrade(form.getInterviewerGrade())
-                .recommendationStatus(form.getRecommendationStatus())
                 .assessmentRemarks(form.getAssessmentRemarks())
                 .finalRemarks(form.getFinalRemarks())
                 .panelMembers(panelMembers)
