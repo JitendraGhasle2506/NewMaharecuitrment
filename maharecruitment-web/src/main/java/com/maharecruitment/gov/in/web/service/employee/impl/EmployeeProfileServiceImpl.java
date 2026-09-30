@@ -199,6 +199,8 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 employee != null ? normalizeText(employee.getGender()) : null));
         dto.setAlternateMobileNo(profile != null ? profile.getAlternateMobileNo() : null);
         dto.setEmail(firstText(employee != null ? employee.getEmail() : null, user.getEmail()));
+        dto.setAadhaarNo(SensitiveDataMaskingUtil.maskAadhaar(
+                employee != null ? employee.getAadhaarNumber() : null));
         dto.setPanNo(SensitiveDataMaskingUtil.maskPan(firstText(
                 profile != null ? normalizePanForDisplay(profile.getPanNo()) : null,
                 employee != null ? normalizePanForDisplay(employee.getPanNumber()) : null)));
@@ -315,6 +317,26 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
             completed += dto.getMarriageDate() != null ? 1 : 0;
         }
         return (int) Math.round((completed * 100.0d) / fieldCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getCurrentEmployeeSensitiveIdentity(String loginEmail, String field) {
+        User user = requireUser(loginEmail);
+        EmployeeEntity employee = requireEmployee(user);
+        String normalizedField = normalizeText(field);
+        if ("AADHAAR".equalsIgnoreCase(normalizedField)) {
+            return SensitiveDataMaskingUtil.normalizeAadhaar(employee.getAadhaarNumber());
+        }
+        if ("PAN".equalsIgnoreCase(normalizedField)) {
+            EmployeeProfile profile = employeeProfileRepository
+                    .findByEmployeeEmployeeId(employee.getEmployeeId())
+                    .orElse(null);
+            return firstText(
+                    profile != null ? normalizePanForDisplay(profile.getPanNo()) : null,
+                    normalizePanForDisplay(employee.getPanNumber()));
+        }
+        throw new RecruitmentNotificationException("Unsupported identity field requested.");
     }
 
     private boolean isMarried(String maritalStatus) {

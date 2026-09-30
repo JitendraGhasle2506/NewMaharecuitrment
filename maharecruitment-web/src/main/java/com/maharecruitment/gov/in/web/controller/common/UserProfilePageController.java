@@ -23,6 +23,9 @@ import com.maharecruitment.gov.in.auth.service.CurrentUserProfileService;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 import com.maharecruitment.gov.in.web.dto.profile.PasswordChangeForm;
 import com.maharecruitment.gov.in.web.dto.profile.UserProfileForm;
+import com.maharecruitment.gov.in.web.service.profile.CommonProfileDetails;
+import com.maharecruitment.gov.in.web.service.profile.CommonProfileUpdateResult;
+import com.maharecruitment.gov.in.web.service.profile.CommonProfileUpdateService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,14 +41,17 @@ public class UserProfilePageController {
     private static final String SESSION_USER_KEY = "SESSION_USER";
 
     private final CurrentUserProfileService currentUserProfileService;
+    private final CommonProfileUpdateService commonProfileUpdateService;
     private final CustomLogoutSuccessHandler logoutHandler;
     private final ApplicationCookieService applicationCookieService;
 
     public UserProfilePageController(
             CurrentUserProfileService currentUserProfileService,
+            CommonProfileUpdateService commonProfileUpdateService,
             CustomLogoutSuccessHandler logoutHandler,
             ApplicationCookieService applicationCookieService) {
         this.currentUserProfileService = currentUserProfileService;
+        this.commonProfileUpdateService = commonProfileUpdateService;
         this.logoutHandler = logoutHandler;
         this.applicationCookieService = applicationCookieService;
     }
@@ -64,16 +70,40 @@ public class UserProfilePageController {
     @PostMapping
     public String updateProfile(
             Principal principal,
+            HttpSession session,
+            @Valid @ModelAttribute("profileForm") UserProfileForm profileForm,
+            BindingResult bindingResult,
+            Model model,
+            HttpServletRequest request,
+            HttpServletResponse response,
             RedirectAttributes redirectAttributes) {
         String actorEmail = resolveActorEmail(principal);
         if (actorEmail == null) {
             return "redirect:/login";
         }
 
-        currentUserProfileService.updateProfile(actorEmail, null);
-        redirectAttributes.addFlashAttribute("profileSuccessMessage",
-                "Profile name and mobile number are read-only. Please contact administrator support for changes.");
-        return PROFILE_REDIRECT;
+        if (bindingResult.hasErrors()) {
+            populatePage(model, actorEmail, session);
+            return PROFILE_VIEW;
+        }
+
+        try {
+            CommonProfileUpdateResult result = commonProfileUpdateService.update(actorEmail, profileForm);
+            if (result.emailChanged()) {
+                var authentication = SecurityContextHolder.getContext().getAuthentication();
+                logoutHandler.logout(request, response, authentication);
+                new SecurityContextLogoutHandler().logout(request, response, authentication);
+                applicationCookieService.expireRequestCookies(request, response);
+                return "redirect:/login?profileUpdated";
+            }
+            refreshSessionContact(session, result);
+            redirectAttributes.addFlashAttribute("profileSuccessMessage", "Profile updated successfully.");
+            return PROFILE_REDIRECT;
+        } catch (RuntimeException ex) {
+            model.addAttribute("profileErrorMessage", ex.getMessage());
+            populatePage(model, actorEmail, session);
+            return PROFILE_VIEW;
+        }
     }
 
     @PostMapping("/password")
@@ -125,9 +155,11 @@ public class UserProfilePageController {
     private void populatePage(Model model, String actorEmail, HttpSession session) {
         UserProfileView profileView = currentUserProfileService.getProfile(actorEmail);
         model.addAttribute("profileView", profileView);
+        CommonProfileDetails profileDetails = commonProfileUpdateService.getDetails(profileView.getId());
+        model.addAttribute("employeeProfileAvailable", profileDetails.employeeProfileAvailable());
 
         if (!model.containsAttribute("profileForm")) {
-            model.addAttribute("profileForm", toProfileForm(profileView));
+            model.addAttribute("profileForm", toProfileForm(profileView, profileDetails));
         }
         if (!model.containsAttribute("passwordForm")) {
             model.addAttribute("passwordForm", new PasswordChangeForm());
@@ -139,11 +171,30 @@ public class UserProfilePageController {
                 session.getAttribute(CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE)));
     }
 
-    private UserProfileForm toProfileForm(UserProfileView profileView) {
+    private UserProfileForm toProfileForm(UserProfileView profileView, CommonProfileDetails profileDetails) {
         UserProfileForm form = new UserProfileForm();
         form.setName(profileView.getName());
+        form.setEmail(profileView.getEmail());
         form.setMobileNo(profileView.getMobileNo());
+        form.setDateOfBirth(profileDetails.dateOfBirth());
         return form;
+    }
+
+    private void refreshSessionContact(HttpSession session, CommonProfileUpdateResult result) {
+        SessionUserDTO current = extractSessionUser(session);
+        if (current == null) {
+            return;
+        }
+        session.setAttribute(SESSION_USER_KEY, new SessionUserDTO(
+                current.id(),
+                current.name(),
+                result.email(),
+                current.roles(),
+                current.departmentId(),
+                result.mobileNo(),
+                current.photoPath(),
+                current.loginTime(),
+                current.lastLoginTime()));
     }
 
     private UserPasswordChangeRequest toPasswordChangeRequest(PasswordChangeForm form) {

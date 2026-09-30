@@ -16,6 +16,49 @@
     const csrfToken = document.getElementById('csrfToken')?.value;
     const csrfHeader = document.getElementById('csrfHeader')?.value;
 
+    document.querySelectorAll('.sensitive-value-toggle').forEach((button) => {
+        button.addEventListener('click', () => toggleSensitiveValue(button));
+    });
+
+    async function toggleSensitiveValue(button) {
+        const target = document.getElementById(button.dataset.sensitiveTarget || '');
+        if (!target || button.disabled) {
+            return;
+        }
+
+        if (button.getAttribute('aria-pressed') === 'true') {
+            target.value = button.dataset.clearOnHide === 'true'
+                ? ''
+                : (target.dataset.maskedValue || '-');
+            button.textContent = 'View';
+            button.setAttribute('aria-pressed', 'false');
+            return;
+        }
+
+        button.disabled = true;
+        try {
+            const url = new URL(root.dataset.sensitiveViewUrl, window.location.origin);
+            url.searchParams.set('field', button.dataset.identityField || '');
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: headers(),
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
+            const payload = await responsePayload(response);
+            if (!response.ok || !payload.value) {
+                throw new Error(payload.message || 'The requested value is not available.');
+            }
+            target.value = payload.value;
+            button.textContent = 'Hide';
+            button.setAttribute('aria-pressed', 'true');
+        } catch (error) {
+            await showAlert('error', 'Unable to show value', error.message);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
     function headers() {
         const values = {
             'Accept': 'application/json',

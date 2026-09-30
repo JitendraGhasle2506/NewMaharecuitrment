@@ -91,6 +91,22 @@ public class EmployeeDashboardController {
         return ResponseEntity.ok(employeeProfileService.getCurrentEmployeeProfile(resolveLoginEmail(principal)));
     }
 
+    @GetMapping("/profile/sensitive")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> sensitiveProfileValue(
+            Principal principal,
+            @RequestParam String field) {
+        String value = employeeProfileService.getCurrentEmployeeSensitiveIdentity(
+                resolveLoginEmail(principal),
+                field);
+        log.info("Employee viewed sensitive profile field. login={}, field={}",
+                resolveLoginEmail(principal), field);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .body(Map.of("field", field, "value", value == null ? "" : value));
+    }
+
     @PostMapping("/profile/update")
     @ResponseBody
     public ResponseEntity<EmployeeProfileUpdateResponse> updateProfile(

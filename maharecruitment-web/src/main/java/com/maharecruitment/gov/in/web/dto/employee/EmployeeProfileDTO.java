@@ -26,6 +26,8 @@ public class EmployeeProfileDTO {
 
     private String email;
 
+    private String aadhaarNo;
+
     private String panNo;
 
     @Size(max = 800, message = "Encrypted PAN number is invalid")

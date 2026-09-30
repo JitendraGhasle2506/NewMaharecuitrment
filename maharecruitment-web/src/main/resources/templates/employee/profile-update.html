@@ -15,7 +15,8 @@
         <section class="employee-dashboard"
             th:attr="data-save-url=@{/employee/profile/update},
                      data-photo-upload-url=@{/employee/profile/photo/upload},
-                     data-photo-url=@{/employee/profile/photo}">
+                     data-photo-url=@{/employee/profile/photo},
+                     data-sensitive-view-url=@{/employee/profile/sensitive}">
             <input autocomplete="off" type="hidden" id="csrfToken" th:if="${_csrf != null}" th:value="${_csrf.token}" />
             <input autocomplete="off" type="hidden" id="csrfHeader" th:if="${_csrf != null}" th:value="${_csrf.headerName}" />
 
@@ -59,9 +60,22 @@
                                 <input autocomplete="off" type="email" th:value="${profile.email}" readonly disabled>
                             </label>
                             <label>
+                                Aadhaar Number
+                                <span class="input-group">
+                                <input autocomplete="off" id="aadhaarNo" type="text"
+                                    th:value="${#strings.isEmpty(profile.aadhaarNo) ? '-' : profile.aadhaarNo}"
+                                    th:attr="data-masked-value=${#strings.isEmpty(profile.aadhaarNo) ? '-' : profile.aadhaarNo}"
+                                    readonly aria-label="Masked Aadhaar number">
+                                <button type="button" class="btn btn-outline-secondary sensitive-value-toggle"
+                                    data-identity-field="aadhaar" data-sensitive-target="aadhaarNo"
+                                    aria-pressed="false">View</button>
+                                </span>
+                                <small>Only the last four digits are displayed.</small>
+                            </label>
+                            <!-- <label>
                                 Employee Code
                                 <input autocomplete="off" type="text" th:value="${profile.employeeCode}" readonly disabled>
-                            </label>
+                            </label> -->
                         </div>
 
                         <div class="form-grid">
@@ -93,9 +107,15 @@
                             </label>
                             <label>
                                 PAN Number
-                                <input autocomplete="off" id="panNo" type="password" maxlength="10"
+                                <span class="input-group">
+                                <input autocomplete="off" id="panNo" type="text" maxlength="10"
                                     data-sensitive-encrypted-name="panNoEncrypted" data-sensitive-field="panNo"
+                                    th:attr="data-masked-value=${profile.panNo}"
                                     th:placeholder="${#strings.isEmpty(profile.panNo) ? 'ABCDE1234F' : profile.panNo + ' (leave blank to keep)'}">
+                                <button type="button" class="btn btn-outline-secondary sensitive-value-toggle"
+                                    data-identity-field="pan" data-sensitive-target="panNo"
+                                    data-clear-on-hide="true" aria-pressed="false">View</button>
+                                </span>
                                 <small class="field-error" data-error-for="panNo"></small>
                             </label>
                             <label>

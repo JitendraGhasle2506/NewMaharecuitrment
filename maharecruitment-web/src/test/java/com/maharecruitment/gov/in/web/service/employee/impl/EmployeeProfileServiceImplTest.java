@@ -227,7 +227,26 @@ class EmployeeProfileServiceImplTest {
 
         String expectedVersion = Integer.toUnsignedString(resolvedPath.toString().hashCode(), 36);
         assertThat(result.getPhotoUrl()).isEqualTo("/employee/profile/photo?v=" + expectedVersion);
+        assertThat(result.getAadhaarNo()).isEqualTo("XXXXXXXX9012");
         verify(employeeRepository, never()).findDetailedByUserId(user.getId());
+    }
+
+    @Test
+    void revealsSensitiveIdentityOnlyForCurrentEmployeeOnDemand() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        EmployeeProfile profile = new EmployeeProfile();
+        profile.setEmployee(employee);
+        profile.setPanNo("ABCDE1234F");
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(employeeRepository.findEmployeeProfileByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()))
+                .thenReturn(Optional.of(profile));
+
+        assertThat(service().getCurrentEmployeeSensitiveIdentity(user.getEmail(), "aadhaar"))
+                .isEqualTo("123456789012");
+        assertThat(service().getCurrentEmployeeSensitiveIdentity(user.getEmail(), "pan"))
+                .isEqualTo("ABCDE1234F");
     }
 
     @Test
@@ -306,6 +325,7 @@ class EmployeeProfileServiceImplTest {
         employee.setFullName("Old Employee");
         employee.setEmail("old.employee@example.com");
         employee.setMobile("9876543210");
+        employee.setAadhaarNumber("123456789012");
         employee.setStatus("ACTIVE");
         return employee;
     }

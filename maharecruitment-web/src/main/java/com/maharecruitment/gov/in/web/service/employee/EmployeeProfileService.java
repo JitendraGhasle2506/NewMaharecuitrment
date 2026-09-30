@@ -13,6 +13,8 @@ public interface EmployeeProfileService {
 
     EmployeeProfileDTO updateCurrentEmployeeProfile(String loginEmail, EmployeeProfileDTO profileDTO);
 
+    String getCurrentEmployeeSensitiveIdentity(String loginEmail, String field);
+
     EmployeeProfileDTO uploadCurrentEmployeePhoto(String loginEmail, MultipartFile file);
 
     Optional<Path> resolveCurrentEmployeePhoto(String loginEmail);

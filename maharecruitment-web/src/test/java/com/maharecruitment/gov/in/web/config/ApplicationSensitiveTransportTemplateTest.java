@@ -58,8 +58,12 @@ class ApplicationSensitiveTransportTemplateTest {
                 .contains("data-sensitive-purpose=\"EMPLOYEE_PROFILE\"")
                 .contains("data-sensitive-encrypted-name=\"panNoEncrypted\"")
                 .contains("data-sensitive-field=\"panNo\"")
+                .contains("th:value=\"${#strings.isEmpty(profile.aadhaarNo) ? '-' : profile.aadhaarNo}\"")
                 .contains("@{/js/sensitive-data-encryption.js}")
-                .doesNotContain("name=\"panNo\"", "th:value=\"${profile.panNo}\"");
+                .doesNotContain(
+                        "name=\"panNo\"",
+                        "name=\"aadhaarNo\"",
+                        "th:value=\"${profile.panNo}\"");
         assertThat(dashboardScript)
                 .contains("SensitiveDataEncryption.createEncryptedFormData(form)")
                 .contains("body: encryptedFormData")
