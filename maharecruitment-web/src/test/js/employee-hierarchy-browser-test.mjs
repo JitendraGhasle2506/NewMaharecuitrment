@@ -34,7 +34,7 @@ function node(id, expanded = false) {
 let page = await readFile(join(base, 'templates/hr/employee-hierarchy.html'), 'utf8');
 page = page.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"')
     .replace(/th:src="@\{([^}]+)\}"/g, 'src="$1"')
-    .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy" data-context="/" data-photo-api="/api/employees/hierarchy/photo"')
+    .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy" data-context="/" data-photo-api="/api/employees/hierarchy/photo" data-layout="horizontal"')
     .replace('</head>', '<style>body{font-family:system-ui,sans-serif;margin:24px;background:#f4f7fb}.btn{color:#087ba4;text-decoration:none;font-size:13px}</style></head>');
 const dashboard = await readFile(join(base, 'templates/employee/dashboard.html'), 'utf8');
 const dashboardPage = dashboard.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
@@ -45,6 +45,7 @@ const reportingChain = teamTemplate.match(/<div id="employeeReportingChain"[\s\S
     .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy/reporting-chain"');
 const teamPage = page.replace('data-api="/api/employees/hierarchy"',
     'data-self-mode="true" data-api="/api/employees/hierarchy"')
+    .replace('data-layout="horizontal"', 'data-layout="vertical"')
     .replace('<section id="employeeHierarchy"', `${backLink}${reportingChain}<section id="employeeHierarchy"`);
 const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
@@ -80,7 +81,7 @@ const server = createServer(async (request, response) => {
             }
             response.setHeader('Content-Type', 'application/json');
             response.end(JSON.stringify({ success: true, data }));
-        } else if (url.pathname === '/') {
+        } else if (url.pathname === '/hr/employee-hierarchy') {
             response.setHeader('Content-Type', 'text/html'); response.end(page);
         } else if (url.pathname === '/employee/dashboard') {
             response.setHeader('Content-Type', 'text/html'); response.end(dashboardPage);
@@ -148,7 +149,7 @@ try {
         }, 25);
     })`);
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1080, deviceScaleFactor: 1, mobile: false });
-    await send('Page.navigate', { url: `${origin}/?hodEmployeeId=1` });
+    await send('Page.navigate', { url: `${origin}/hr/employee-hierarchy?hodEmployeeId=1` });
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`Array.from(document.querySelectorAll('label')).some(label =>
         ['Department', 'Designation', 'Reporting type'].includes(label.textContent.trim()))`), false,
@@ -169,10 +170,31 @@ try {
     assert.equal(await evaluate(`document.getElementById('ehVisibleCount').textContent`), '4');
     assert.equal(await evaluate(`document.getElementById('ehReportsCount').textContent`), '3');
     assert.equal(await evaluate(`document.getElementById('ehLevelsCount').textContent`), '2');
+    assert.equal(await evaluate(`document.getElementById('employeeHierarchy').dataset.layout`), 'horizontal');
     const upperLevelPositions = await evaluate(`Object.fromEntries([...document.querySelectorAll('.eh-card')].map(card => {
         const box = card.getBoundingClientRect();
-        return [card.dataset.id, {left: box.left, top: box.top, width: box.width}];
+        return [card.dataset.id, {left: box.left, right: box.right, top: box.top, bottom: box.bottom,
+            width: box.width, height: box.height, centerX: box.left + box.width / 2, centerY: box.top + box.height / 2}];
     }))`);
+    assert.ok(['2', '3', '4'].every(id => upperLevelPositions[id].left > upperLevelPositions['1'].right),
+        'Every direct report is placed to the right of the HOD');
+    assert.ok(['2', '3', '4'].every(id => Math.abs(upperLevelPositions[id].left - upperLevelPositions['2'].left) < 1),
+        'Direct reports share the same reporting level');
+    assert.ok(Math.abs((upperLevelPositions['2'].centerY + upperLevelPositions['4'].centerY) / 2
+        - upperLevelPositions['1'].centerY) < 1, 'Direct reports are vertically centered around the HOD');
+    assert.equal(await evaluate(`(() => {
+        const root = document.querySelector('.eh-card[data-id="1"]');
+        const children = ['2', '3', '4'].map(id => document.querySelector('.eh-card[data-id="' + id + '"]'));
+        const gap = parseFloat(getComputedStyle(document.getElementById('employeeHierarchy')).getPropertyValue('--eh-gap-x'));
+        const right = root.offsetLeft + root.offsetWidth;
+        const bus = right + gap / 2;
+        const center = root.offsetTop + root.offsetHeight / 2;
+        const childCenters = children.map(child => child.offsetTop + child.offsetHeight / 2);
+        const expected = 'M ' + right + ' ' + center + ' H ' + bus + ' M ' + bus + ' ' + childCenters[0]
+            + ' V ' + childCenters.at(-1) + children.map((child, index) =>
+                ' M ' + bus + ' ' + childCenters[index] + ' H ' + child.offsetLeft).join('');
+        return document.querySelector('#ehLines path').getAttribute('d') === expected;
+    })()`), true, 'Connectors run from the manager right edge to each report left edge');
     const parentToggleCenter = await evaluate(`(() => {
         const box = document.querySelector('button[data-id="2"][data-action="toggle"]').getBoundingClientRect();
         return {x: box.left + box.width / 2, y: box.top + box.height / 2};
@@ -182,17 +204,11 @@ try {
     const expandedUpperLevelPositions = await evaluate(`Object.fromEntries([...document.querySelectorAll('.eh-card')]
         .filter(card => ['1', '2', '3', '4'].includes(card.dataset.id)).map(card => {
             const box = card.getBoundingClientRect();
-            return [card.dataset.id, {left: box.left, top: box.top, width: box.width}];
+            return [card.dataset.id, {left: box.left, top: box.top, width: box.width, height: box.height}];
         }))`);
-    for (const employeeId of ['1', '2', '3', '4']) {
-        assert.ok(Math.abs(expandedUpperLevelPositions[employeeId].left - upperLevelPositions[employeeId].left) < 1,
-            `Expanding descendants must not shift upper-level employee ${employeeId} `
-            + `(${upperLevelPositions[employeeId].left} -> ${expandedUpperLevelPositions[employeeId].left})`);
-        assert.deepEqual(
-            {top: expandedUpperLevelPositions[employeeId].top, width: expandedUpperLevelPositions[employeeId].width},
-            {top: upperLevelPositions[employeeId].top, width: upperLevelPositions[employeeId].width},
-            `Upper-level dimensions remain fixed for employee ${employeeId}`);
-    }
+    assert.ok(Math.abs(expandedUpperLevelPositions['2'].left - upperLevelPositions['2'].left) < 1
+        && Math.abs(expandedUpperLevelPositions['2'].top - upperLevelPositions['2'].top) < 1,
+    'The clicked manager stays stationary while its branch expands');
     const expandedParentToggleCenter = await evaluate(`(() => {
         const box = document.querySelector('button[data-id="2"][data-action="toggle"]').getBoundingClientRect();
         return {x: box.left + box.width / 2, y: box.top + box.height / 2};
@@ -203,12 +219,12 @@ try {
     assert.equal(await evaluate(`(() => {
         const center = selector => {
             const box = document.querySelector(selector).getBoundingClientRect();
-            return box.left + box.width / 2;
+            return box.top + box.height / 2;
         };
         const parent = center('.eh-card[data-id="2"]');
         const children = ['5', '6'].map(id => center('.eh-card[data-id="' + id + '"]'));
         return Math.abs((children[0] + children[1]) / 2 - parent) < 1;
-    })()`), true, 'Child employees are centered around their selected parent');
+    })()`), true, 'Child employees are stacked vertically and centered around their selected parent');
     await assertSubordinates(1, 6, 'Expanding a branch does not change the HOD total');
     await assertSubordinates(2, 2, 'Branch loading retains its total');
     const overlap = await evaluate(`(() => {
@@ -229,10 +245,10 @@ try {
     assert.equal(await evaluate(`(() => {
         const center = id => {
             const box = document.querySelector('.eh-card[data-id="' + id + '"]').getBoundingClientRect();
-            return box.left + box.width / 2;
+            return box.top + box.height / 2;
         };
         return Math.abs(center('3') - center('7')) < 1;
-    })()`), true, 'A single child is positioned directly below its selected parent');
+    })()`), true, 'A single child is vertically centered to the right of its selected parent');
     await evaluate(`document.getElementById('ehFit').click()`);
     await waitFor(`document.querySelector('.eh-card[data-id="2"] img').naturalWidth > 0`);
     await waitFor(`document.querySelector('.eh-card[data-id="4"] img').naturalWidth > 0`);
@@ -255,8 +271,19 @@ try {
     }
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 6`);
+    const collapseAnchor = await evaluate(`(() => {
+        const box = document.querySelector('.eh-card[data-id="2"]').getBoundingClientRect();
+        return {left: box.left, top: box.top};
+    })()`);
     await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
     assert.equal(await evaluate(`document.querySelectorAll('.eh-card').length`), 4);
+    const collapsedAnchor = await evaluate(`(() => {
+        const box = document.querySelector('.eh-card[data-id="2"]').getBoundingClientRect();
+        return {left: box.left, top: box.top};
+    })()`);
+    assert.ok(Math.abs(collapsedAnchor.left - collapseAnchor.left) < 1
+        && Math.abs(collapsedAnchor.top - collapseAnchor.top) < 1,
+    'The clicked manager stays stationary while its branch collapses');
     await assertSubordinates(1, 6, 'Collapsing a branch does not reduce the total');
     await assertSubordinates(2, 2);
     await evaluate(`document.getElementById('ehSearch').value='EMP006'; document.getElementById('ehSearch').dispatchEvent(new Event('input'))`);
@@ -266,6 +293,11 @@ try {
     await evaluate(`document.querySelector('#ehResults button').click()`);
     assert.equal(await evaluate(`document.querySelector('.eh-found .eh-name-value').textContent`), names[5]);
     assert.equal(await evaluate(`document.querySelectorAll('.eh-card').length`), 3);
+    assert.equal(await evaluate(`(() => {
+        const cards = ['1', '2', '6'].map(id => document.querySelector('.eh-card[data-id="' + id + '"]').getBoundingClientRect());
+        return cards[0].right < cards[1].left && cards[1].right < cards[2].left
+            && Math.abs(cards[0].top - cards[1].top) < 1 && Math.abs(cards[1].top - cards[2].top) < 1;
+    })()`), true, 'Search result paths continue from left to right without overlap');
     await assertSubordinates(1, 6, 'Search paths retain full subtree totals');
     await assertSubordinates(2, 2);
     await assertSubordinates(6, 0);
@@ -292,9 +324,11 @@ try {
     await evaluate(`document.exitFullscreen()`);
     await waitFor(`!document.fullscreenElement`);
     await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-    await send('Page.navigate', { url: `${origin}/?hodEmployeeId=1` });
+    await send('Page.navigate', { url: `${origin}/hr/employee-hierarchy?hodEmployeeId=1` });
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`document.getElementById('ehZoom').value`), '100%', 'Mobile opens at a readable scale');
+    assert.equal(await evaluate(`document.getElementById('ehViewport').scrollWidth > document.getElementById('ehViewport').clientWidth`),
+        true, 'Mobile keeps the readable horizontal hierarchy scrollable inside the chart');
     const { cssContentSize: mobileSize } = await send('Page.getLayoutMetrics');
     const readableMobile = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true,
         clip: { x: 0, y: 0, width: mobileSize.width, height: mobileSize.height, scale: 1 } });
@@ -302,14 +336,15 @@ try {
     await evaluate(`document.getElementById('ehViewport').scrollIntoView({block:'start'})`);
     const dragStart = await evaluate(`(() => {
         const view = document.getElementById('ehViewport'), rect = view.getBoundingClientRect();
-        return {x: rect.left + 35, y: rect.top + 20, scrollLeft: view.scrollLeft};
+        return {x: rect.left + Math.min(150, rect.width - 30), y: rect.top + 20, scrollLeft: view.scrollLeft};
     })()`);
     await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: dragStart.x, y: dragStart.y, button: 'left', clickCount: 1 });
-    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: dragStart.x + 70, y: dragStart.y, button: 'left', buttons: 1 });
-    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: dragStart.x + 70, y: dragStart.y, button: 'left', clickCount: 1 });
-    assert.ok(await evaluate(`document.getElementById('ehViewport').scrollLeft`) < dragStart.scrollLeft, 'Drag-to-pan scrolls the chart');
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: dragStart.x - 80, y: dragStart.y, button: 'left', buttons: 1 });
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: dragStart.x - 80, y: dragStart.y, button: 'left', clickCount: 1 });
+    const dragEnd = await evaluate(`document.getElementById('ehViewport').scrollLeft`);
+    assert.ok(dragEnd > dragStart.scrollLeft, `Drag-to-pan scrolls the chart (${dragStart.scrollLeft} -> ${dragEnd})`);
     assert.equal(await evaluate(`document.getElementById('ehViewport').classList.contains('eh-dragging')`), false);
-    await send('Page.navigate', { url: `${origin}/` });
+    await send('Page.navigate', { url: `${origin}/hr/employee-hierarchy` });
     await waitFor(`document.getElementById('ehHod')?.options.length > 1`);
     assert.equal(await evaluate(`document.getElementById('ehEmpty').hidden`), false, 'Empty state shown until a HOD is selected');
     assert.equal(await evaluate(`document.getElementById('ehZoomIn').disabled`), true, 'Empty chart disables zoom');
@@ -329,6 +364,12 @@ try {
     await evaluate(`document.querySelector('a[href="/employee/employee-hierarchy"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`location.pathname`), '/employee/employee-hierarchy');
+    assert.equal(await evaluate(`document.getElementById('employeeHierarchy').dataset.layout`), 'vertical',
+        'The shared employee hierarchy retains its vertical layout');
+    assert.equal(await evaluate(`(() => {
+        const root = document.querySelector('.eh-card[data-id="1"]').getBoundingClientRect();
+        return ['2', '3', '4'].every(id => document.querySelector('.eh-card[data-id="' + id + '"]').getBoundingClientRect().top > root.bottom);
+    })()`), true, 'Non-HR reports remain below their manager');
     await waitFor(`document.querySelectorAll('#ehChainMembers li').length === 3`);
     assert.deepEqual(await evaluate(`[...document.querySelectorAll('#ehChainMembers strong')].map(item => item.textContent)`),
         ['Senior Director', 'Reporting Manager', names[0]], 'Upper chain runs from highest manager to employee');

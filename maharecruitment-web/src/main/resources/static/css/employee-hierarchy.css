@@ -6,6 +6,7 @@
     color: var(--eh-ink); max-width: 100%; min-width: 0; padding: 8px 2px 24px;
     font-family: inherit; font-size: 14px;
 }
+.eh-page[data-layout="horizontal"] { --eh-gap-x: 64px; --eh-gap-y: 20px; }
 .eh-page *, .eh-page *::before, .eh-page *::after { box-sizing: border-box; }
 .eh-page [hidden] { display: none !important; }
 .employee-team-page > .eh-secondary { margin-bottom: 20px; text-decoration: none; }
