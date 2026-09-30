@@ -291,7 +291,7 @@
                                                 class="btn btn-outline-secondary btn-sm resume-button"
                                                 th:if="${candidate.resumeFilePath != null}"
                                                 th:attr="data-path=${candidate.resumeFilePath}"
-                                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                data-managed-document>
                                             <i class="fa fa-eye me-1"></i>View
                                         </button>
                                         <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>

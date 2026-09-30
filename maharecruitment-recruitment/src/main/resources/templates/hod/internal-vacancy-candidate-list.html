@@ -325,7 +325,7 @@
                                         <td class="resume-cell" data-label="Resume">
                                             <button type="button" class="resume-button" th:if="${candidate.resumeFilePath != null}"
                                                 th:attr="data-path=${candidate.resumeFilePath},aria-label=${'View resume for ' + (candidate.candidateName != null ? candidate.candidateName : 'candidate')}"
-                                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                data-managed-document>
                                                 <i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>View</span>
                                             </button>
                                             <span class="resume-unavailable" th:if="${candidate.resumeFilePath == null}">

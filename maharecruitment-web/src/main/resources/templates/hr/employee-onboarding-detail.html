@@ -366,7 +366,7 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm passport-photo-action-btn"
                                     th:if="${detail.existingPhotoFilePath != null}"
                                     th:attr="data-path=${detail.existingPhotoFilePath}"
-                                    onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                    data-managed-document>
                                     View Photo
                                 </button>
                                 <span class="passport-photo-file-name text-muted text-truncate"
@@ -604,25 +604,25 @@
                             <button type="button" class="btn btn-outline-secondary btn-sm"
                                 th:if="${detail.existingPhotoFilePath != null}"
                                 th:attr="data-path=${detail.existingPhotoFilePath}"
-                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                data-managed-document>
                                 View Photo
                             </button>
                             <button type="button" class="btn btn-outline-secondary btn-sm"
                                 th:if="${detail.existingAadhaarFilePath != null}"
                                 th:attr="data-path=${detail.existingAadhaarFilePath}"
-                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                data-managed-document>
                                 View Aadhaar
                             </button>
                             <button type="button" class="btn btn-outline-secondary btn-sm"
                                 th:if="${detail.existingPanFilePath != null}"
                                 th:attr="data-path=${detail.existingPanFilePath}"
-                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                data-managed-document>
                                 View PAN
                             </button>
                             <button type="button" class="btn btn-outline-secondary btn-sm"
                                 th:if="${detail.existingExperienceDocFilePath != null}"
                                 th:attr="data-path=${detail.existingExperienceDocFilePath}"
-                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                data-managed-document>
                                 View Experience Document
                             </button>
                         </div>

@@ -88,7 +88,7 @@
                                                type="button"
                                                class="btn btn-sm btn-outline-secondary" 
                                                th:attr="data-path=${candidate.resumeFilePath}"
-                                               onclick="openManagedDocument(this.getAttribute('data-path'))"
+                                               data-managed-document
                                                title="Download Resume">
                                                <i class="fas fa-file-pdf"></i> Resume
                                             </button>

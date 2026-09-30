@@ -523,7 +523,7 @@
                         <button type="button" class="btn btn-outline-dark btn-sm"
                             th:if="${detail.resumeFilePath != null}"
                             th:attr="data-path=${detail.resumeFilePath}"
-                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                            data-managed-document>
                             View Resume
                         </button>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/internal-vacancies/level-two}">

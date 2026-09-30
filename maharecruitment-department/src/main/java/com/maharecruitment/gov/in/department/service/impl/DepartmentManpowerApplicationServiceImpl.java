@@ -54,6 +54,7 @@ import com.maharecruitment.gov.in.department.service.DepartmentWorkOrderStorageS
 import com.maharecruitment.gov.in.department.service.model.DepartmentActorContext;
 import com.maharecruitment.gov.in.department.service.model.StoredDocument;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
+import com.maharecruitment.gov.in.department.service.model.DepartmentApplicationSaveResult;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationRateResponse;
 import com.maharecruitment.gov.in.master.dto.ResourceLevelRefResponse;
@@ -152,7 +153,10 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
     @Override
     @Transactional
-    public Long saveApplication(DepartmentProjectApplicationForm form, String actionStatus, String actorEmail) {
+    public DepartmentApplicationSaveResult saveApplication(
+            DepartmentProjectApplicationForm form,
+            String actionStatus,
+            String actorEmail) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         String normalizedAction = normalizeActionStatus(actionStatus);
 
@@ -231,7 +235,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 saved.getApplicationStatus(),
                 actorContext.getActorEmail());
 
-        return saved.getDepartmentProjectApplicationId();
+        return new DepartmentApplicationSaveResult(
+                saved.getDepartmentProjectApplicationId(),
+                saved.getRequestId());
     }
 
     @Override

@@ -149,7 +149,7 @@
                     <div class="hero-actions">
                         <button th:if="${detail.resumeFilePath != null}" type="button" class="btn btn-outline-dark"
                             th:attr="data-path=${detail.resumeFilePath}"
-                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                            data-managed-document>
                             <i class="fas fa-file-pdf me-1"></i> View Resume
                         </button>
                         <a th:if="${detail.interviewLink != null and !detail.interviewLink.empty}"

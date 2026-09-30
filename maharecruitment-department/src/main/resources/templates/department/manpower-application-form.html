@@ -192,7 +192,7 @@
                                         class="text-danger">*</span></label>
                                 <div class="mb-2" th:if="${applicationForm.existingWorkOrderFilePath != null}">
                                     <span class="badge bg-success">Current document available</span>
-                                    <a class="ms-2"
+                                    <a class="ms-2" target="_blank" rel="noopener noreferrer"
                                         th:href="@{/department/manpower/download-work-order/{id}(id=${applicationForm.departmentProjectApplicationId})}">
                                         View Current Document
                                     </a>

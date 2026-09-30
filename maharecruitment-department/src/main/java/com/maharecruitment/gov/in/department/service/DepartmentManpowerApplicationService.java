@@ -16,6 +16,7 @@ import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationFor
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
 import com.maharecruitment.gov.in.department.dto.LevelOptionView;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
+import com.maharecruitment.gov.in.department.service.model.DepartmentApplicationSaveResult;
 
 public interface DepartmentManpowerApplicationService {
 
@@ -23,7 +24,10 @@ public interface DepartmentManpowerApplicationService {
 
     DepartmentProjectApplicationForm getApplicationForEdit(Long applicationId, String actorEmail);
 
-    Long saveApplication(DepartmentProjectApplicationForm form, String actionStatus, String actorEmail);
+    DepartmentApplicationSaveResult saveApplication(
+            DepartmentProjectApplicationForm form,
+            String actionStatus,
+            String actorEmail);
 
     Page<DepartmentProjectApplicationSummaryView> getApplicationSummaries(String actorEmail, Pageable pageable);
 

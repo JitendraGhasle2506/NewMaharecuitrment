@@ -349,7 +349,7 @@
                                     th:if="${preOnboardingForm.existingAadhaarFilePath}">
                                     <button type="button" class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
                                         th:attr="data-path=${preOnboardingForm.existingAadhaarFilePath}"
-                                        onclick="openManagedDocument(this.getAttribute('data-path'))">Open Aadhaar
+                                        data-managed-document>Open Aadhaar
                                         Document</button>
                                 </div>
                             </div>
@@ -381,7 +381,7 @@
                                     th:if="${preOnboardingForm.existingPanFilePath}">
                                     <button type="button" class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
                                         th:attr="data-path=${preOnboardingForm.existingPanFilePath}"
-                                        onclick="openManagedDocument(this.getAttribute('data-path'))">Open PAN
+                                        data-managed-document>Open PAN
                                         Document</button>
                                 </div>
                             </div>
@@ -522,7 +522,7 @@
                                             th:if="${preOnboardingForm.existingExperienceDocFilePath}">
                                             <button type="button" class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
                                                 th:attr="data-path=${preOnboardingForm.existingExperienceDocFilePath}"
-                                                onclick="openManagedDocument(this.getAttribute('data-path'))">Open Experience
+                                                data-managed-document>Open Experience
                                                 Document</button>
                                         </div>
                                     </div>
@@ -552,7 +552,7 @@
                                             <button type="button"
                                                 class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
                                                 th:attr="data-path=${preOnboardingForm.existingCompanyPayrollProofFilePath}"
-                                                onclick="openManagedDocument(this.getAttribute('data-path'))">Open Payroll
+                                                data-managed-document>Open Payroll
                                                 Proof</button>
                                         </div>
                                     </div>

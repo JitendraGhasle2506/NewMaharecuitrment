@@ -281,7 +281,7 @@
                     </div>
                     <div class="hero-actions">
                         <button th:if="${detail.resumeFilePath != null}" type="button" class="btn btn-outline-dark"
-                            th:attr="data-path=${detail.resumeFilePath}" onclick="openManagedDocument(this.getAttribute('data-path'))">
+                            th:attr="data-path=${detail.resumeFilePath}" data-managed-document>
                             <i class="fas fa-file-pdf me-1"></i> View Resume
                         </button>
                         <a class="btn btn-outline-secondary" th:href="@{/hr/external-interviews}">

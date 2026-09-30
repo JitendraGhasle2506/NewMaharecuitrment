@@ -39,6 +39,7 @@ import com.maharecruitment.gov.in.department.service.DepartmentManpowerApplicati
 import com.maharecruitment.gov.in.department.service.DepartmentTaxRateQueryService;
 import com.maharecruitment.gov.in.department.service.DepartmentWorkOrderStorageService;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
+import com.maharecruitment.gov.in.department.service.model.DepartmentApplicationSaveResult;
 
 import jakarta.validation.Valid;
 
@@ -103,9 +104,10 @@ public class DepartmentManpowerApplicationController {
         }
 
         try {
-            Long savedApplicationId = manpowerApplicationService.saveApplication(applicationForm, actionStatus, actorEmail);
+            DepartmentApplicationSaveResult savedApplication =
+                    manpowerApplicationService.saveApplication(applicationForm, actionStatus, actorEmail);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Application saved successfully. Application ID: " + savedApplicationId);
+                    "Application saved successfully. Request ID: " + savedApplication.requestId());
             return "redirect:/department/manpower/list";
         } catch (DepartmentApplicationException ex) {
             log.warn("Unable to save department manpower application. action={}, reason={}", actionStatus, ex.getMessage());
