@@ -26,11 +26,12 @@ class EmployeeHierarchyTemplateTest {
         context.setVariable("hierarchyApi", "/employee/api/employee-hierarchy");
         context.setVariable("hierarchyPhotoApi", "");
         context.setVariable("hierarchySelfMode", true);
+        context.setVariable("hierarchyLayout", "vertical");
         var engine = new SpringTemplateEngine();
         engine.setTemplateResolver(new StringTemplateResolver());
         String html = engine.process(template, context);
         assertThat(html).contains("data-api=\"/portal/employee/api/employee-hierarchy\"",
-                "data-self-mode=\"true\"", "My team hierarchy", ">You</span>", "hidden=\"hidden\"")
+                "data-self-mode=\"true\"", "data-layout=\"vertical\"", "My team hierarchy", ">You</span>", "hidden=\"hidden\"")
                 .doesNotContain("Manage reporting", "href=\"/portal/hr/reportingManager\"");
     }
 
@@ -46,10 +47,12 @@ class EmployeeHierarchyTemplateTest {
         context.setVariable("hierarchyApi", "/api/employees/hierarchy");
         context.setVariable("hierarchyPhotoApi", "/api/employees/hierarchy/photo");
         context.setVariable("hierarchySelfMode", false);
+        context.setVariable("hierarchyLayout", "horizontal");
         var engine = new SpringTemplateEngine();
         engine.setTemplateResolver(new StringTemplateResolver());
         String html = engine.process(template, context);
         assertThat(html).contains("data-api=\"/portal/api/employees/hierarchy\"", "data-context=\"/portal/\"",
+                "data-layout=\"horizontal\"",
                 "src=\"/portal/js/employee-hierarchy.js\"", "href=\"/portal/css/employee-hierarchy.css\"",
                 "id=\"ehHod\"", "id=\"ehViewport\"", "id=\"ehSearch\"",
                 "id=\"ehVisibleCount\"", "id=\"ehFullscreen\"", "id=\"ehRetry\"", "href=\"#eh-i-chart\"")

@@ -3,6 +3,7 @@
 Open `/hr/employee-hierarchy`, or select **Employee hierarchy** on `/hr/reportingManager`.
 The page and all hierarchy/photo APIs require `ROLE_HR`.
 The responsive workspace includes collapsible filters, visible-node/level counts, live name/code search with keyboard navigation, full-screen viewing where supported, and a floating zoom toolbar. Drag empty canvas space with a mouse, or scroll on touch devices. Mobile opens at 100% zoom with additional filters collapsed; **Fit** provides an overview of the entire visible tree.
+On the HR page, the selected HOD is placed at the left and reporting levels flow left to right. Direct reports are stacked vertically around their manager, with connectors joining the manager's right edge to each report's left edge. The chart owns both scroll axes so large hierarchies do not widen the page. Employee, HOD, and executive hierarchy views retain their vertical layout.
 To open a particular employee as the root, use `?hodEmployeeId=1001` (an **employee ID**, not a user ID).
 
 ## Data rules
@@ -41,4 +42,4 @@ Employee photos use the existing managed upload policy through an HR-only proxy.
 
 Tests: `EmployeeHierarchyServiceTest`, `EmployeeHierarchyQueryTest`, `EmployeeHierarchyControllerTest`, `EmployeeHierarchyTemplateTest`, and the migration registration test. The query test compiles against the real Hibernate entity model without connecting to a database.
 
-Run `node maharecruitment-web/src/test/js/employee-hierarchy-browser-test.mjs` from the repository root for dependency-free headless Chrome/Chromium tests with synthetic API responses. It checks expansion, collapse, search paths, duplicate-free branch merging, connectors, non-overlap, zoom, and desktop/tablet/mobile widths. Set `CHROME_BIN` if the browser is not in a standard location. Screenshots are generated in a temporary directory.
+Run `node maharecruitment-web/src/test/js/employee-hierarchy-browser-test.mjs` from the repository root for dependency-free headless Chrome/Chromium tests with synthetic API responses. It checks the HR-only horizontal placement and connector endpoints, preserved vertical employee layout, expansion, collapse, stationary managers, search paths, duplicate-free branch merging, non-overlap, internal scrolling, zoom, and desktop/tablet/mobile widths. Set `CHROME_BIN` if the browser is not in a standard location. Screenshots are generated in a temporary directory.

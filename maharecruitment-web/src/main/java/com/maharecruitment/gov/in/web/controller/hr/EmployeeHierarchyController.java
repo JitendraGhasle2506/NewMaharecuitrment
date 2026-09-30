@@ -61,6 +61,7 @@ public class EmployeeHierarchyController {
         model.addAttribute("hierarchyApi", "/coo/api/employee-hierarchy");
         model.addAttribute("hierarchyPhotoApi", "");
         model.addAttribute("hierarchySelfMode", true);
+        model.addAttribute("hierarchyLayout", "vertical");
         return "hr/employee-hierarchy";
     }
 
@@ -69,6 +70,7 @@ public class EmployeeHierarchyController {
         model.addAttribute("hierarchyApi", "/api/employees/hierarchy");
         model.addAttribute("hierarchyPhotoApi", "/api/employees/hierarchy/photo");
         model.addAttribute("hierarchySelfMode", false);
+        model.addAttribute("hierarchyLayout", "horizontal");
         return "hr/employee-hierarchy";
     }
 

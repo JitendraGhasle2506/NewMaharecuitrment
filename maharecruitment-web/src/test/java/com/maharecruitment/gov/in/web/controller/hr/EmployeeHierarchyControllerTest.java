@@ -71,7 +71,9 @@ class EmployeeHierarchyControllerTest {
                 .andExpect(jsonPath("$.data.children").isEmpty())
                 .andExpect(jsonPath("$.data.totalSubordinates").value(0))
                 .andExpect(jsonPath("$.data.hasChildren").value(false));
-        assertThat(controller.page(new ExtendedModelMap())).isEqualTo("hr/employee-hierarchy");
+        ExtendedModelMap pageModel = new ExtendedModelMap();
+        assertThat(controller.page(pageModel)).isEqualTo("hr/employee-hierarchy");
+        assertThat(pageModel.get("hierarchyLayout")).isEqualTo("horizontal");
         mvc.perform(get("/api/employees/hierarchy/1001").param("reportingType", "UNKNOWN"))
                 .andExpect(status().isBadRequest());
     }
@@ -85,6 +87,7 @@ class EmployeeHierarchyControllerTest {
         assertThat(model.get("canManageReporting")).isEqualTo(false);
         assertThat(model.get("hierarchyApi")).isEqualTo("/coo/api/employee-hierarchy");
         assertThat(model.get("hierarchySelfMode")).isEqualTo(true);
+        assertThat(model.get("hierarchyLayout")).isEqualTo("vertical");
     }
 
     @Test

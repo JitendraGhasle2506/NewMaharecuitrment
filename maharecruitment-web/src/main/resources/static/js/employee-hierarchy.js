@@ -7,6 +7,7 @@
     const context = page.dataset.context.replace(/\/$/, '');
     const photoApi = page.dataset.photoApi || '';
     const selfMode = page.dataset.selfMode === 'true';
+    const horizontalLayout = page.dataset.layout === 'horizontal';
     const viewport = $('ehViewport');
     const stage = $('ehStage');
     const surface = $('ehSurface');
@@ -21,7 +22,8 @@
     const PADDING = parseFloat(styles.getPropertyValue('--eh-chart-padding')) || 32;
     const CONTROL_SPACE = 80;
     const compactScreen = window.matchMedia('(max-width: 767px)');
-    let root = null, scale = 1, chartWidth = 0, chartHeight = 0, leftInset = 0, layoutOffsetX = 0;
+    let root = null, scale = 1, chartWidth = 0, chartHeight = 0, leftInset = 0, topInset = 0;
+    let layoutOffsetX = 0, layoutOffsetY = 0;
     let selectedId = null, generation = 0, queryGeneration = 0, searchController = null;
     let filters = null, displayed = new Map(), busy = new Set(), fitMode = false;
     let searchTimer = null, optionsReady = false, hierarchyController = null;
@@ -110,6 +112,7 @@
         branchSelectionGeneration++;
         selectedId = null;
         layoutOffsetX = 0;
+        layoutOffsetY = 0;
         $('ehSearch').value = '';
         busy = new Set();
         filters = { rootId: $('ehHod').value, reportingType: 'PRIMARY' };
@@ -280,29 +283,41 @@
         }
     }
 
+    function entryAnchor(entry) {
+        return horizontalLayout
+            ? { x: entry.x + CARD_WIDTH / 2, y: entry.y + CARD_HEIGHT / 2 }
+            : { x: entry.x, y: entry.y };
+    }
+
     function renderKeepingNodeFixed(node) {
         const existingEntry = displayed.get(node.employeeId);
-        const screenX = existingEntry
-            ? existingEntry.x * scale + leftInset - viewport.scrollLeft
-            : null;
+        const anchor = existingEntry && entryAnchor(existingEntry);
+        const screenPosition = anchor ? {
+            x: anchor.x * scale + leftInset - viewport.scrollLeft,
+            y: anchor.y * scale + topInset - viewport.scrollTop
+        } : null;
         render();
-        restoreNodeScreenPosition(node, screenX);
+        restoreNodeScreenPosition(node, screenPosition);
     }
 
-    function restoreNodeScreenPosition(node, screenX) {
+    function restoreNodeScreenPosition(node, screenPosition) {
         const updatedEntry = displayed.get(node.employeeId);
-        if (screenX === null || !updatedEntry) return;
-        viewport.scrollLeft = updatedEntry.x * scale + leftInset - screenX;
-        const actualScreenX = updatedEntry.x * scale + leftInset - viewport.scrollLeft;
-        const remainingOffset = screenX - actualScreenX;
-        if (Math.abs(remainingOffset) < .5) return;
-        layoutOffsetX += remainingOffset;
+        if (!screenPosition || !updatedEntry) return;
+        const anchor = entryAnchor(updatedEntry);
+        viewport.scrollLeft = anchor.x * scale + leftInset - screenPosition.x;
+        viewport.scrollTop = anchor.y * scale + topInset - screenPosition.y;
+        const remainingX = screenPosition.x - (anchor.x * scale + leftInset - viewport.scrollLeft);
+        const remainingY = screenPosition.y - (anchor.y * scale + topInset - viewport.scrollTop);
+        if (Math.abs(remainingX) < .5 && Math.abs(remainingY) < .5) return;
+        layoutOffsetX += remainingX;
+        layoutOffsetY += remainingY;
         applyScale();
-        viewport.scrollLeft = updatedEntry.x * scale + leftInset - screenX;
+        viewport.scrollLeft = anchor.x * scale + leftInset - screenPosition.x;
+        viewport.scrollTop = anchor.y * scale + topInset - screenPosition.y;
     }
 
-    // Each child group uses its own parent's center line. Canvas bounds grow around
-    // the positioned nodes, while scroll compensation keeps existing parents fixed.
+    // Horizontal subtrees reserve their full vertical span before placement so
+    // sibling branches cannot overlap. Scroll compensation keeps the acted-on manager fixed.
     function render() {
         const focused = document.activeElement;
         const focusedId = focused && focused.dataset.id;
@@ -332,33 +347,68 @@
                 stack.push({ node: entry.children[index], depth: entry.depth + 1 });
             }
         }
-        ordered[0].x = 0;
         let maxDepth = 0;
-        for (const entry of ordered) {
-            entry.y = PADDING + entry.depth * (CARD_HEIGHT + GAP_Y);
-            maxDepth = Math.max(maxDepth, entry.depth);
-            const groupWidth = entry.children.length * CARD_WIDTH
-                + Math.max(0, entry.children.length - 1) * GAP_X;
-            const childStart = entry.x - groupWidth / 2 + CARD_WIDTH / 2;
-            entry.children.forEach((child, index) => {
-                displayed.get(child.employeeId).x = childStart + index * (CARD_WIDTH + GAP_X);
-            });
+        let minLeft, maxRight;
+        if (horizontalLayout) {
+            for (let index = ordered.length - 1; index >= 0; index--) {
+                const entry = ordered[index];
+                entry.subtreeHeight = entry.children.length
+                    ? entry.children.reduce((height, child) => height + displayed.get(child.employeeId).subtreeHeight, 0)
+                        + (entry.children.length - 1) * GAP_Y
+                    : CARD_HEIGHT;
+            }
+            const positionSubtree = (entry, top) => {
+                entry.x = PADDING + entry.depth * (CARD_WIDTH + GAP_X);
+                entry.y = top + (entry.subtreeHeight - CARD_HEIGHT) / 2;
+                maxDepth = Math.max(maxDepth, entry.depth);
+                let childTop = top;
+                for (const child of entry.children) {
+                    const childEntry = displayed.get(child.employeeId);
+                    positionSubtree(childEntry, childTop);
+                    childTop += childEntry.subtreeHeight + GAP_Y;
+                }
+            };
+            positionSubtree(ordered[0], PADDING);
+            minLeft = PADDING;
+            maxRight = PADDING + (maxDepth + 1) * CARD_WIDTH + maxDepth * GAP_X;
+        } else {
+            ordered[0].x = 0;
+            for (const entry of ordered) {
+                entry.y = PADDING + entry.depth * (CARD_HEIGHT + GAP_Y);
+                maxDepth = Math.max(maxDepth, entry.depth);
+                const groupWidth = entry.children.length * CARD_WIDTH
+                    + Math.max(0, entry.children.length - 1) * GAP_X;
+                const childStart = entry.x - groupWidth / 2 + CARD_WIDTH / 2;
+                entry.children.forEach((child, index) => {
+                    displayed.get(child.employeeId).x = childStart + index * (CARD_WIDTH + GAP_X);
+                });
+            }
+            minLeft = Math.min(...ordered.map(entry => entry.x - CARD_WIDTH / 2));
+            maxRight = Math.max(...ordered.map(entry => entry.x + CARD_WIDTH / 2));
+            const horizontalOffset = PADDING - minLeft;
+            ordered.forEach(entry => { entry.x += horizontalOffset; });
         }
-        const minLeft = Math.min(...ordered.map(entry => entry.x - CARD_WIDTH / 2));
-        const maxRight = Math.max(...ordered.map(entry => entry.x + CARD_WIDTH / 2));
-        const horizontalOffset = PADDING - minLeft;
-        ordered.forEach(entry => { entry.x += horizontalOffset; });
 
         const fragment = document.createDocumentFragment();
         for (const entry of ordered) {
-            fragment.append(card(entry.node, entry.x - CARD_WIDTH / 2, entry.y));
+            fragment.append(card(entry.node, horizontalLayout ? entry.x : entry.x - CARD_WIDTH / 2, entry.y));
         }
         for (const entry of ordered) {
             if (!entry.children.length) continue;
             const childEntries = entry.children.map(child => displayed.get(child.employeeId));
-            const bottom = entry.y + CARD_HEIGHT, bus = bottom + GAP_Y / 2;
-            let path = `M ${entry.x} ${bottom} V ${bus} M ${childEntries[0].x} ${bus} H ${childEntries.at(-1).x}`;
-            for (const child of childEntries) path += ` M ${child.x} ${bus} V ${child.y}`;
+            let path;
+            if (horizontalLayout) {
+                const right = entry.x + CARD_WIDTH;
+                const centerY = entry.y + CARD_HEIGHT / 2;
+                const bus = right + GAP_X / 2;
+                const childCenters = childEntries.map(child => child.y + CARD_HEIGHT / 2);
+                path = `M ${right} ${centerY} H ${bus} M ${bus} ${childCenters[0]} V ${childCenters.at(-1)}`;
+                childEntries.forEach((child, index) => { path += ` M ${bus} ${childCenters[index]} H ${child.x}`; });
+            } else {
+                const bottom = entry.y + CARD_HEIGHT, bus = bottom + GAP_Y / 2;
+                path = `M ${entry.x} ${bottom} V ${bus} M ${childEntries[0].x} ${bus} H ${childEntries.at(-1).x}`;
+                for (const child of childEntries) path += ` M ${child.x} ${bus} V ${child.y}`;
+            }
             const connector = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             if (entry.node === root) connector.classList.add('eh-root-line');
             connector.setAttribute('d', path);
@@ -366,7 +416,8 @@
         }
         cards.append(fragment);
         chartWidth = maxRight - minLeft + PADDING * 2;
-        chartHeight = (maxDepth + 1) * CARD_HEIGHT + maxDepth * GAP_Y + PADDING * 2;
+        chartHeight = horizontalLayout ? ordered[0].subtreeHeight + PADDING * 2
+            : (maxDepth + 1) * CARD_HEIGHT + maxDepth * GAP_Y + PADDING * 2;
         stage.style.width = `${chartWidth}px`;
         stage.style.height = `${chartHeight}px`;
         lines.setAttribute('width', chartWidth);
@@ -382,28 +433,32 @@
     }
 
     function applyScale() {
-        leftInset = Math.max(0, (viewport.clientWidth - chartWidth * scale) / 2) + layoutOffsetX;
+        leftInset = (horizontalLayout ? 0 : Math.max(0, (viewport.clientWidth - chartWidth * scale) / 2)) + layoutOffsetX;
+        topInset = (horizontalLayout ? Math.max(0, (viewport.clientHeight - CONTROL_SPACE - chartHeight * scale) / 2) : 0)
+            + layoutOffsetY;
         stage.style.left = `${leftInset}px`;
+        stage.style.top = `${topInset}px`;
         stage.style.transform = `scale(${scale})`;
         surface.style.width = `${Math.max(viewport.clientWidth, Math.max(0, leftInset) + chartWidth * scale)}px`;
-        surface.style.height = `${Math.max(viewport.clientHeight, chartHeight * scale + CONTROL_SPACE)}px`;
+        surface.style.height = `${Math.max(viewport.clientHeight, Math.max(0, topInset) + chartHeight * scale + CONTROL_SPACE)}px`;
         $('ehZoom').value = `${Math.round(scale * 100)}%`;
     }
 
     function zoom(next) {
         if (!root) return;
         const centerX = (viewport.scrollLeft + viewport.clientWidth / 2 - leftInset) / scale;
-        const centerY = (viewport.scrollTop + viewport.clientHeight / 2) / scale;
+        const centerY = (viewport.scrollTop + viewport.clientHeight / 2 - topInset) / scale;
         scale = Math.max(.02, Math.min(2, next));
         fitMode = false;
         applyScale();
         viewport.scrollLeft = centerX * scale + leftInset - viewport.clientWidth / 2;
-        viewport.scrollTop = centerY * scale - viewport.clientHeight / 2;
+        viewport.scrollTop = centerY * scale + topInset - viewport.clientHeight / 2;
     }
 
     function fit() {
         if (!root) return;
         layoutOffsetX = 0;
+        layoutOffsetY = 0;
         scale = Math.min(1, Math.max(.001, Math.min((viewport.clientWidth - 20) / chartWidth,
             (viewport.clientHeight - CONTROL_SPACE) / chartHeight)));
         fitMode = true;
@@ -417,8 +472,11 @@
         if (scale < (compactScreen.matches ? 1 : .85)) {
             zoom(compactScreen.matches ? 1 : .85);
             const entry = displayed.get(focusId || root.employeeId);
-            viewport.scrollLeft = entry.x * scale + leftInset - viewport.clientWidth / 2;
-            viewport.scrollTop = focusId ? Math.max(0, entry.y * scale - viewport.clientHeight / 3) : 0;
+            const anchor = entryAnchor(entry);
+            viewport.scrollLeft = horizontalLayout && !focusId ? 0 : anchor.x * scale + leftInset - viewport.clientWidth / 2;
+            viewport.scrollTop = horizontalLayout
+                ? anchor.y * scale + topInset - viewport.clientHeight / 2
+                : focusId ? Math.max(0, anchor.y * scale - viewport.clientHeight / 3) : 0;
         }
     }
 
@@ -426,7 +484,11 @@
         if (busy.has(node.employeeId)) return;
         const current = generation;
         const existingEntry = displayed.get(node.employeeId);
-        const screenX = existingEntry.x * scale + leftInset - viewport.scrollLeft;
+        const anchor = entryAnchor(existingEntry);
+        const screenPosition = {
+            x: anchor.x * scale + leftInset - viewport.scrollLeft,
+            y: anchor.y * scale + topInset - viewport.scrollTop
+        };
         busy.add(node.employeeId);
         render();
         try {
@@ -450,7 +512,7 @@
             if (current === generation) {
                 busy.delete(node.employeeId);
                 render();
-                restoreNodeScreenPosition(node, screenX);
+                restoreNodeScreenPosition(node, screenPosition);
             }
         }
     }
@@ -515,6 +577,7 @@
         generation++; // Discard any branch response belonging to the previous view.
         branchSelectionGeneration++;
         layoutOffsetX = 0;
+        layoutOffsetY = 0;
         busy = new Set();
         selectedId = match.employeeId;
         const path = match.path.map(decorate);
@@ -545,9 +608,18 @@
     $('ehZoomOut').addEventListener('click', () => zoom(scale / 1.25));
     $('ehFit').addEventListener('click', fit);
     $('ehReset').addEventListener('click', () => {
-        zoom(1);
-        viewport.scrollTop = 0;
-        viewport.scrollLeft = Math.max(0, chartWidth / 2 + leftInset - viewport.clientWidth / 2);
+        scale = 1;
+        fitMode = false;
+        layoutOffsetX = layoutOffsetY = 0;
+        applyScale();
+        if (horizontalLayout) {
+            const anchor = entryAnchor(displayed.get(root.employeeId));
+            viewport.scrollLeft = 0;
+            viewport.scrollTop = anchor.y + topInset - viewport.clientHeight / 2;
+        } else {
+            viewport.scrollTop = 0;
+            viewport.scrollLeft = Math.max(0, chartWidth / 2 + leftInset - viewport.clientWidth / 2);
+        }
     });
     $('ehSearchForm').addEventListener('keydown', event => {
         if (event.key === 'Escape') { cancelSearch(); $('ehSearch').focus(); }
