@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/role-dashboard.css}">
+</head>
+
+<body class="role-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Dashboard', ~{::section})}">
+        <section class="executive-dashboard">
+            <div class="executive-hero">
+                <div>
+                    <span class="executive-eyebrow">EXECUTIVE OVERVIEW</span>
+                    <h1>Dashboard</h1>
+                    <p>Organization workforce and operational summary</p>
+                </div>
+                <a class="hierarchy-action" th:href="@{/coo/employee-hierarchy}">
+                    <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                    <span>View Employee Hierarchy</span>
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </a>
+            </div>
+            <div class="executive-content">
+                <div class="section-heading">
+                    <div>
+                        <span>AT A GLANCE</span>
+                        <h2>Organization statistics</h2>
+                    </div>
+                </div>
+                <section class="metrics-grid">
+                        <article class="metric-card metric-total">
+                            <span class="metric-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                            <p>Total Employees</p>
+                            <h3 th:text="${dashboard.totalEmployees}">0</h3>
+                        </article>
+                        <article class="metric-card metric-internal">
+                            <span class="metric-icon"><i class="fa-solid fa-user-tie" aria-hidden="true"></i></span>
+                            <p>Internal Employees</p>
+                            <h3 th:text="${dashboard.internalEmployees}">0</h3>
+                        </article>
+                        <article class="metric-card metric-mahait">
+                            <span class="metric-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+                            <p>MahaIT Employees</p>
+                            <h3 th:text="${dashboard.mahaitEmployees}">0</h3>
+                        </article>
+                        <article class="metric-card metric-external">
+                            <span class="metric-icon"><i class="fa-solid fa-user-group" aria-hidden="true"></i></span>
+                            <p>External Employees</p>
+                            <h3 th:text="${dashboard.externalEmployees}">0</h3>
+                        </article>
+                        <article class="metric-card metric-projects">
+                            <span class="metric-icon"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></span>
+                            <p>Total Projects</p>
+                            <h3 th:text="${dashboard.totalProjects}">0</h3>
+                        </article>
+                        <article class="metric-card metric-cells">
+                            <span class="metric-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+                            <p>Total Cells</p>
+                            <h3 th:text="${dashboard.totalCells}">0</h3>
+                        </article>
+                </section>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

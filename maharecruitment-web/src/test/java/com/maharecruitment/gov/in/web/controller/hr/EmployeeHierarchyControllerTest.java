@@ -77,6 +77,16 @@ class EmployeeHierarchyControllerTest {
     }
 
     @Test
+    void executiveCanOpenReadOnlyHierarchy() {
+        login("ROLE_COO");
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        assertThat(controller.executivePage(model)).isEqualTo("hr/employee-hierarchy");
+        assertThat(model.get("canManageReporting")).isEqualTo(false);
+        assertThat(model.get("hierarchyApi")).isEqualTo("/api/employees/hierarchy");
+    }
+
+    @Test
     void returnsTotalSubordinatesEvenWhenChildrenAreNotLoaded() throws Exception {
         EmployeeHierarchyNode node = new EmployeeHierarchyNode(1001L, "HOD Name", "EMP001", "HOD", "Finance", null, 2, 6, true);
         node.setNextOffset(0);

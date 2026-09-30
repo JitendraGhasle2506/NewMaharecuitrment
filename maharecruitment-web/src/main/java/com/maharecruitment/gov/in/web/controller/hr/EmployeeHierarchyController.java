@@ -27,7 +27,7 @@ import com.maharecruitment.gov.in.recruitment.service.organization.EmployeeHiera
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 @Controller
-@PreAuthorize("hasAuthority('ROLE_HR')")
+@PreAuthorize("hasAnyAuthority('ROLE_HR', 'ROLE_COO', 'ROLE_CTO', 'ROLE_CFO')")
 public class EmployeeHierarchyController {
     private final EmployeeHierarchyService hierarchy;
     private final EmployeeHierarchyRepository repository;
@@ -48,6 +48,19 @@ public class EmployeeHierarchyController {
 
     @GetMapping("/hr/employee-hierarchy")
     public String page(Model model) {
+        model.addAttribute("canManageReporting", true);
+        model.addAttribute("showExecutiveBack", false);
+        return hierarchyPage(model);
+    }
+
+    @GetMapping("/coo/employee-hierarchy")
+    public String executivePage(Model model) {
+        model.addAttribute("canManageReporting", false);
+        model.addAttribute("showExecutiveBack", true);
+        return hierarchyPage(model);
+    }
+
+    private String hierarchyPage(Model model) {
         model.addAttribute("sidebarActive", "Reporting Manager");
         model.addAttribute("hierarchyApi", "/api/employees/hierarchy");
         model.addAttribute("hierarchyPhotoApi", "/api/employees/hierarchy/photo");

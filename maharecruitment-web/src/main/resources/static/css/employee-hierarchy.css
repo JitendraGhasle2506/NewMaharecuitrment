@@ -200,3 +200,18 @@
 @media (prefers-reduced-motion: reduce) {
     .eh-page *, .eh-page *::before, .eh-page *::after { transition: none !important; animation: none !important; }
 }
+.eh-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.7rem;
+    color: #285b7e;
+    font-size: 0.84rem;
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.eh-back:hover {
+    color: #123d5d;
+    text-decoration: underline;
+}

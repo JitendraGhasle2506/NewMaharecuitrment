@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import com.maharecruitment.gov.in.web.service.dashboard.AgencyDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.MDDashboardService;
+import com.maharecruitment.gov.in.web.service.dashboard.ExecutiveDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.RoleLandingService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.MDDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.RoleDashboardView;
@@ -18,14 +19,17 @@ public class RoleLandingController {
     private final RoleLandingService roleLandingService;
     private final AgencyDashboardService agencyDashboardService;
     private final MDDashboardService mdDashboardService;
+    private final ExecutiveDashboardService executiveDashboardService;
 
     public RoleLandingController(
             RoleLandingService roleLandingService,
             AgencyDashboardService agencyDashboardService,
-            MDDashboardService mdDashboardService) {
+            MDDashboardService mdDashboardService,
+            ExecutiveDashboardService executiveDashboardService) {
         this.roleLandingService = roleLandingService;
         this.agencyDashboardService = agencyDashboardService;
         this.mdDashboardService = mdDashboardService;
+        this.executiveDashboardService = executiveDashboardService;
     }
 
     @GetMapping({
@@ -65,6 +69,15 @@ public class RoleLandingController {
             MDDashboardView dashboard = mdDashboardService.getDashboard();
             model.addAttribute("dashboard", dashboard);
             return "md/md_dashboard";
+        }
+
+        if ("/cto/dashboard".equals(path) || "/cfo/dashboard".equals(path)) {
+            return "redirect:/coo/dashboard";
+        }
+
+        if ("/coo/dashboard".equals(path)) {
+            model.addAttribute("dashboard", executiveDashboardService.getDashboard());
+            return "role/executive-dashboard";
         }
 
         RoleDashboardView dashboard = roleLandingService.getDashboardByPath(path);

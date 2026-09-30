@@ -29,12 +29,14 @@ class RoleBasedNavigationServiceTest {
     }
 
     @Test
-    void ctoAndCfoResolveToTheirOwnDashboardsAndRoutes() {
-        assertEquals("/cto/dashboard", service.resolveHomeUrl(List.of("ROLE_CTO")));
-        assertEquals("/cfo/dashboard", service.resolveHomeUrl(List.of("ROLE_CFO")));
-        assertTrue(service.canAccessUrl("/cto/dashboard", List.of("ROLE_CTO")));
-        assertTrue(service.canAccessUrl("/cfo/dashboard", List.of("ROLE_CFO")));
-        assertFalse(service.canAccessUrl("/cfo/dashboard", List.of("ROLE_CTO")));
+    void executiveRolesResolveToSharedCooDashboard() {
+        assertEquals("/coo/dashboard", service.resolveHomeUrl(List.of("ROLE_CTO")));
+        assertEquals("/coo/dashboard", service.resolveHomeUrl(List.of("ROLE_CFO")));
+        assertEquals("/coo/dashboard", service.resolveHomeUrl(List.of("ROLE_COO")));
+        assertTrue(service.canAccessUrl("/coo/dashboard", List.of("ROLE_CTO")));
+        assertTrue(service.canAccessUrl("/coo/dashboard", List.of("ROLE_CFO")));
+        assertTrue(service.canAccessUrl("/coo/dashboard", List.of("ROLE_COO")));
+        assertFalse(service.canAccessUrl("/coo/dashboard", List.of("ROLE_AUDITOR")));
     }
 
     @Test

@@ -232,7 +232,8 @@ public class SecurityConfig {
 
                 .requestMatchers("/home", "/common/**").authenticated()
                 .requestMatchers("/reporting-manager/attendance/**").authenticated()
-                .requestMatchers("/api/employees/hierarchy/**").hasAuthority("ROLE_HR")
+                .requestMatchers("/api/employees/hierarchy/**")
+                    .hasAnyAuthority("ROLE_HR", "ROLE_COO", "ROLE_CTO", "ROLE_CFO")
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 
                 .requestMatchers("/hr/department/payment/**")
@@ -254,7 +255,7 @@ public class SecurityConfig {
                 .requestMatchers("/hod2/**").hasAuthority("ROLE_HOD")
 
                 .requestMatchers("/coo/**")
-                    .hasAnyAuthority("ROLE_COO", "ROLE_AUDITOR")
+                    .hasAnyAuthority("ROLE_COO", "ROLE_CTO", "ROLE_CFO")
 
                 .requestMatchers("/cto/**").hasAuthority("ROLE_CTO")
                 .requestMatchers("/cfo/**").hasAuthority("ROLE_CFO")
