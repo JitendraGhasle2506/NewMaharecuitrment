@@ -59,12 +59,20 @@ public class EmployeeDashboardController {
     @GetMapping("/dashboard")
     public String dashboard(Principal principal, HttpSession session, Model model) {
         EmployeeProfileDTO profile = addProfileAttributes(principal, session, model);
+        SessionUserDTO sessionUser = extractSessionUser(session);
+        model.addAttribute("showTeamAttendance", !hasExecutiveRole(sessionUser));
         model.addAttribute("pageHeading", "Employee Dashboard");
         model.addAttribute("pageSubtitle", profile.isProfileAvailable()
                 ? "Welcome back, " + profile.getFullName() + ". Here is what is happening today."
                 : "Complete your profile to keep MahaIT employee records up to date.");
         model.addAttribute("dashboardContent", employeeDashboardContentService.getDashboardContent(profile));
         return "employee/dashboard";
+    }
+
+    private boolean hasExecutiveRole(SessionUserDTO user) {
+        return user != null && user.roles() != null
+                && user.roles().stream().anyMatch(role ->
+                        "ROLE_CTO".equals(role) || "ROLE_CFO".equals(role) || "ROLE_COO".equals(role));
     }
 
     @GetMapping("/employee-hierarchy")

@@ -31,6 +31,8 @@ class EmployeeProfileUpdateAlertTemplateTest {
                 .contains("confirmButtonText: 'OK'")
                 .contains("allowOutsideClick: false")
                 .contains("await showAlert('success', 'Success!'")
+                .contains("if (payload.reauthenticationRequired)")
+                .contains("window.location.assign(root.dataset.loginUrl)")
                 .contains("window.location.reload();")
                 .contains("error instanceof Error && error.message");
     }

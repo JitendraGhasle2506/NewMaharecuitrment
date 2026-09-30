@@ -332,9 +332,11 @@
             }
             updateDashboard(payload.profile);
             await showAlert('success', 'Success!', payload.message || 'Profile updated successfully.');
-            window.location.assign(payload.reauthenticationRequired
-                ? root.dataset.loginUrl
-                : window.location.href);
+            if (payload.reauthenticationRequired) {
+                window.location.assign(root.dataset.loginUrl);
+            } else {
+                window.location.reload();
+            }
         } catch (error) {
             const message = error instanceof Error && error.message
                 ? error.message

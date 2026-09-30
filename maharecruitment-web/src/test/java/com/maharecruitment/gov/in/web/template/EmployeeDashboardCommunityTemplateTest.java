@@ -47,6 +47,8 @@ class EmployeeDashboardCommunityTemplateTest {
                 .contains("th:action=\"@{/employee/birthday-wishes/{wishId}/reply(wishId=${wish.wishId})}\"")
                 .contains("Replies to Your Wishes")
                 .contains("th:text=\"${dashboardContent.todayLabel}\"")
+                .contains("th:if=\"${showTeamAttendance}\"")
+                .contains("th:href=\"@{/reporting-manager/attendance}\"")
                 .doesNotContain(
                         "<small th:text=\"${celebration.message}\"",
                         "Birthdays, anniversaries, and organization holidays.",

@@ -90,7 +90,8 @@
                         </span>
                         <i class="fa-solid fa-arrow-right quick-action-arrow"></i>
                     </a>
-                    <a class="quick-action" th:href="@{/reporting-manager/attendance}">
+                    <a class="quick-action" th:if="${showTeamAttendance}"
+                        th:href="@{/reporting-manager/attendance}">
                         <i class="fa-solid fa-people-group"></i>
                         <span class="quick-action-copy">
                             <strong>Team Attendance</strong>
