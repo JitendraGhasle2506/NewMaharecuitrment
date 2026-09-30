@@ -28,7 +28,6 @@ public class ProjectRequest {
     @NotNull(message = "Project scope is required")
     private ProjectScopeType projectScopeType;
 
-    @NotNull(message = "Department is required")
     private Long departmentId;
 
     private Long subDepartmentId;

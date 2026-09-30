@@ -56,18 +56,20 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         String projectName = normalizeName(request.getProjectName());
+        ProjectScopeType projectScopeType = resolveProjectScopeType(request.getProjectScopeType(), null);
         DepartmentSelection departmentSelection = resolveDepartmentSelection(
                 request.getDepartmentId(),
-                request.getSubDepartmentId());
+                request.getSubDepartmentId(),
+                projectScopeType);
         ensureUniqueProject(
                 projectName,
-                departmentSelection.department().getDepartmentId(),
+                departmentSelection.departmentId(),
                 departmentSelection.subDepartmentId(),
                 null);
         String projectCode = generateManualProjectCode();
 
         ProjectMst entity = new ProjectMst();
-        mapRequestToEntity(request, entity, projectName, projectCode, departmentSelection);
+        mapRequestToEntity(request, entity, projectName, projectCode, projectScopeType, departmentSelection);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -79,18 +81,22 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
 
         String projectName = normalizeName(request.getProjectName());
+        ProjectScopeType projectScopeType = resolveProjectScopeType(
+                request.getProjectScopeType(),
+                entity.getApplicationId());
         DepartmentSelection departmentSelection = resolveDepartmentSelection(
                 request.getDepartmentId(),
-                request.getSubDepartmentId());
+                request.getSubDepartmentId(),
+                projectScopeType);
         ensureUniqueProject(
                 projectName,
-                departmentSelection.department().getDepartmentId(),
+                departmentSelection.departmentId(),
                 departmentSelection.subDepartmentId(),
                 projectId);
         String projectCode = entity.getProjectCode() == null || entity.getProjectCode().isBlank()
                 ? generateManualProjectCode()
                 : normalizeCode(entity.getProjectCode());
-        mapRequestToEntity(request, entity, projectName, projectCode, departmentSelection);
+        mapRequestToEntity(request, entity, projectName, projectCode, projectScopeType, departmentSelection);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -162,7 +168,10 @@ public class ProjectMstServiceImpl implements ProjectMstService {
             throw new BusinessValidationException("Project name is required to sync project master.");
         }
 
-        DepartmentSelection departmentSelection = resolveDepartmentSelection(departmentId, subDepartmentId);
+        DepartmentSelection departmentSelection = resolveDepartmentSelection(
+                departmentId,
+                subDepartmentId,
+                ProjectScopeType.EXTERNAL);
 
         ProjectMst entity = projectRepository.findFirstByApplicationId(applicationId)
                 .orElseGet(() -> projectRepository
@@ -190,22 +199,29 @@ public class ProjectMstServiceImpl implements ProjectMstService {
             ProjectMst entity,
             String normalizedProjectName,
             String projectCode,
+            ProjectScopeType projectScopeType,
             DepartmentSelection departmentSelection) {
         entity.setProjectName(normalizedProjectName);
         entity.setProjectCode(projectCode);
         entity.setProjectDesc(normalizeDescription(request.getProjectDesc()));
         entity.setProjectType(request.getProjectType());
-        ProjectScopeType projectScopeType = resolveProjectScopeType(
-                request.getProjectScopeType(),
-                entity.getApplicationId());
         entity.setProjectScopeType(projectScopeType);
         applyDepartmentSelection(entity, departmentSelection);
         entity.setCell(resolveCell(request.getCellId(), projectScopeType));
     }
 
-    private DepartmentSelection resolveDepartmentSelection(Long departmentId, Long subDepartmentId) {
+    private DepartmentSelection resolveDepartmentSelection(
+            Long departmentId,
+            Long subDepartmentId,
+            ProjectScopeType projectScopeType) {
         if (departmentId == null) {
-            throw new BusinessValidationException("Department is required.");
+            if (subDepartmentId != null) {
+                throw new BusinessValidationException("Select a department before selecting a sub-department.");
+            }
+            if (projectScopeType == ProjectScopeType.EXTERNAL) {
+                throw new BusinessValidationException("Department is required for external projects.");
+            }
+            return new DepartmentSelection(null, null);
         }
 
         DepartmentMst department = departmentRepository.findById(departmentId)
@@ -222,7 +238,7 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     }
 
     private void applyDepartmentSelection(ProjectMst entity, DepartmentSelection selection) {
-        entity.setDepartmentId(selection.department().getDepartmentId());
+        entity.setDepartmentId(selection.departmentId());
         entity.setDepartment(selection.department());
         entity.setSubDepartmentId(selection.subDepartmentId());
         entity.setSubDepartment(selection.subDepartment());
@@ -324,6 +340,10 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     }
 
     private record DepartmentSelection(DepartmentMst department, SubDepartment subDepartment) {
+
+        private Long departmentId() {
+            return department != null ? department.getDepartmentId() : null;
+        }
 
         private Long subDepartmentId() {
             return subDepartment != null ? subDepartment.getSubDeptId() : null;

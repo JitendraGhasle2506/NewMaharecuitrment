@@ -144,6 +144,45 @@ class ProjectMstServiceImplTest {
     }
 
     @Test
+    void createInternalProjectDoesNotRequireDepartment() {
+        CellMaster cell = activeCell(30L);
+        ProjectRequest request = validRequest(null, null, 30L);
+
+        when(cellRepository.findByCellId(30L)).thenReturn(Optional.of(cell));
+        when(projectRepository.save(any(ProjectMst.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectResponse response = service.create(request);
+
+        assertThat(response.getDepartmentId()).isNull();
+        assertThat(response.getSubDepartmentId()).isNull();
+        assertThat(response.getCellId()).isEqualTo(30L);
+        verify(departmentRepository, never()).findById(any());
+    }
+
+    @Test
+    void createExternalProjectRequiresDepartment() {
+        ProjectRequest request = validRequest(null, null, null);
+        request.setProjectScopeType(ProjectScopeType.EXTERNAL);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Department is required for external projects.");
+
+        verify(projectRepository, never()).save(any(ProjectMst.class));
+    }
+
+    @Test
+    void createInternalProjectRejectsSubDepartmentWithoutDepartment() {
+        ProjectRequest request = validRequest(null, 20L, 30L);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Select a department before selecting a sub-department.");
+
+        verify(projectRepository, never()).save(any(ProjectMst.class));
+    }
+
+    @Test
     void createInternalProjectStillRequiresCell() {
         DepartmentMst department = department(10L, "Finance");
         ProjectRequest request = validRequest(10L, null, null);

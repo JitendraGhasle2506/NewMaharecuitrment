@@ -61,9 +61,9 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label" for="departmentId">Department <span class="text-danger">*</span></label>
+                            <label class="form-label" for="departmentId">Department <span id="departmentRequiredMarker" class="text-danger">*</span></label>
                             <select autocomplete="off" class="form-select" id="departmentId" th:field="*{departmentId}">
-                                <option value="">Select Department</option>
+                                <option value="">Select Department (optional for internal projects)</option>
                                 <option th:each="department : ${availableDepartments}"
                                     th:value="${department.departmentId}"
                                     th:text="${department.departmentName}"></option>
@@ -115,16 +115,24 @@
             const projectScopeSelect = document.getElementById('projectScopeType');
             const cellSelect = document.getElementById('cellId');
             const cellRequiredMarker = document.getElementById('cellRequiredMarker');
+            const departmentRequiredMarker = document.getElementById('departmentRequiredMarker');
             const form = departmentSelect?.closest('form');
             const subDepartmentsUrl = form?.dataset.subdepartmentsUrl;
 
             const updateCellRequirement = () => {
                 const cellRequired = projectScopeSelect?.value !== 'EXTERNAL';
+                const departmentRequired = projectScopeSelect?.value === 'EXTERNAL';
                 if (cellSelect) {
                     cellSelect.required = cellRequired;
                 }
                 if (cellRequiredMarker) {
                     cellRequiredMarker.hidden = !cellRequired;
+                }
+                if (departmentSelect) {
+                    departmentSelect.required = departmentRequired;
+                }
+                if (departmentRequiredMarker) {
+                    departmentRequiredMarker.hidden = !departmentRequired;
                 }
             };
             projectScopeSelect?.addEventListener('change', updateCellRequirement);

@@ -113,6 +113,7 @@ public class ProjectMasterPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        validateDepartmentRequirement(form, bindingResult);
         if (bindingResult.hasErrors()) {
             populateForm(model, form, null);
             return "master/projects/form";
@@ -136,6 +137,7 @@ public class ProjectMasterPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        validateDepartmentRequirement(form, bindingResult);
         if (bindingResult.hasErrors()) {
             populateForm(model, form, projectId);
             return "master/projects/form";
@@ -198,6 +200,17 @@ public class ProjectMasterPageController {
         redirectAttributes.addAttribute("includeInactive", includeInactive);
         redirectAttributes.addAttribute("page", page);
         redirectAttributes.addAttribute("size", size);
+    }
+
+    private void validateDepartmentRequirement(ProjectRequest form, BindingResult bindingResult) {
+        if (form.getProjectScopeType() == ProjectScopeType.EXTERNAL
+                && form.getDepartmentId() == null
+                && !bindingResult.hasFieldErrors("departmentId")) {
+            bindingResult.rejectValue(
+                    "departmentId",
+                    "project.department.required",
+                    "Department is required for external projects");
+        }
     }
 
     private void populateForm(Model model, ProjectRequest form, Long projectId) {

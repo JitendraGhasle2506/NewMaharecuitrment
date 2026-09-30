@@ -21,7 +21,10 @@ class ProjectMasterDepartmentTemplateTest {
                 .contains("fetch(")
                 .contains("encodeURIComponent(departmentId)")
                 .contains("departmentSelect.addEventListener('change'")
-                .contains("Select Sub Department (optional)");
+                .contains("Select Sub Department (optional)")
+                .contains("Select Department (optional for internal projects)")
+                .contains("departmentSelect.required = departmentRequired")
+                .contains("projectScopeSelect?.value === 'EXTERNAL'");
     }
 
     @Test
