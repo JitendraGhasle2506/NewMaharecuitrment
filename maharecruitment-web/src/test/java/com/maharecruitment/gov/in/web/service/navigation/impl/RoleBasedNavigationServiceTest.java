@@ -62,6 +62,18 @@ class RoleBasedNavigationServiceTest {
     }
 
     @Test
+    void attendanceApprovalRoutesAllowEveryAuthenticatedRole() {
+        for (String role : List.of("ROLE_ADMIN", "ROLE_HR", "ROLE_EMPLOYEE", "ROLE_COO",
+                "ROLE_CTO", "ROLE_CFO", "ROLE_DEPARTMENT", "ROLE_AUDITOR")) {
+            assertTrue(service.canAccessUrl("/hod1/manual-attendance", List.of(role)));
+            assertTrue(service.canAccessUrl("/hod1/manual-attendance/details?userId=10", List.of(role)));
+            assertTrue(service.canAccessUrl("/hod1/leaveApprovals", List.of(role)));
+        }
+        assertFalse(service.canAccessUrl("/hod1/manual-attendance", List.of()));
+        assertFalse(service.canAccessUrl("/hod1/leaveApprovals", List.of()));
+    }
+
+    @Test
     void canAccessUrlRejectsBlankSubmenuUrl() {
         assertFalse(service.canAccessUrl(null, List.of("ROLE_ADMIN")));
         assertFalse(service.canAccessUrl("   ", List.of("ROLE_ADMIN")));

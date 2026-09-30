@@ -232,6 +232,11 @@ public class SecurityConfig {
 
                 .requestMatchers("/home", "/common/**").authenticated()
                 .requestMatchers("/reporting-manager/attendance/**").authenticated()
+                .requestMatchers(
+                    "/hod1/manual-attendance", "/hod1/manual-attendance/**",
+                    "/hod1/leaveApprovals", "/hod1/approveLeave", "/hod1/rejectLeave",
+                    "/hod1/approveTour", "/hod1/rejectTour")
+                    .authenticated()
                 .requestMatchers("/api/employees/hierarchy/**").hasAuthority("ROLE_HR")
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 
