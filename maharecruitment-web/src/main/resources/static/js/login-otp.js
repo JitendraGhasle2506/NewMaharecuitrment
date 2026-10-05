@@ -492,6 +492,13 @@
                 return;
             }
 
+            var captchaSection = form.querySelector("[data-login-captcha]");
+            if (!window.LoginCaptcha || !window.LoginCaptcha.validate(captchaSection)) {
+                return;
+            }
+            var captchaId = captchaSection.querySelector("[data-captcha-id]").value;
+            var captchaAnswer = captchaSection.querySelector('[name="loginCaptchaAnswer"]').value.trim();
+
             sendRequestInProgress = true;
             sendButton.disabled = true;
             setStatus("Sending OTP...", "is-pending");
@@ -507,7 +514,9 @@
                         identifier: identifier,
                         purpose: "LOGIN",
                         deliveryChannel: channel,
-                        channel: channel
+                        channel: channel,
+                        loginCaptchaId: captchaId,
+                        loginCaptchaAnswer: captchaAnswer
                     })
                 });
 
@@ -515,6 +524,9 @@
                     return {
                         message: "Unexpected response received."
                     };
+                });
+                window.LoginCaptcha.refresh().catch(function () {
+                    setStatus("Unable to load a new CAPTCHA. Please refresh the page.", "is-error");
                 });
 
                 if (response.status === 429

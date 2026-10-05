@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
 import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
+import com.maharecruitment.gov.in.web.service.security.LoginCaptchaService;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
@@ -30,11 +31,17 @@ import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult
 class OtpLoginControllerTest {
 
     private final OtpLoginService otpLoginService = mock(OtpLoginService.class);
+    private final LoginCaptchaService loginCaptchaService = mock(LoginCaptchaService.class);
     private final OtpLoginController controller = new OtpLoginController(
             otpLoginService,
             mock(MySimpleUrlAuthenticationSuccessHandler.class),
             new TransportSecurityProperties(),
-            mock(AuthenticationAuditService.class));
+            mock(AuthenticationAuditService.class),
+            loginCaptchaService);
+
+    {
+        when(loginCaptchaService.validateAndConsume(any(), any(), any())).thenReturn(true);
+    }
 
     @Test
     void disabledOtpChannelReturnsOkMessageWithoutSendingOtp() {
@@ -170,5 +177,26 @@ class OtpLoginControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message())
                 .isEqualTo("Email OTP service is temporarily unavailable. Please try again later.");
+    }
+
+    @Test
+    void invalidCaptchaPreventsOtpFromBeingSent() {
+        OtpLoginSendRequest request = new OtpLoginSendRequest();
+        request.setIdentifier("hr@mahait.org");
+        request.setChannel("EMAIL");
+        request.setLoginCaptchaId("challenge");
+        request.setLoginCaptchaAnswer("wrong");
+        when(loginCaptchaService.validateAndConsume(any(), eq("challenge"), eq("wrong"))).thenReturn(false);
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                new BeanPropertyBindingResult(request, "request"),
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("LOGIN_CAPTCHA_INVALID");
+        verify(otpLoginService, never()).sendOtp(any(), any(), any(), any());
     }
 }

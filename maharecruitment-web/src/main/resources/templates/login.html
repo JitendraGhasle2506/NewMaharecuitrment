@@ -12,7 +12,6 @@
 <body class="portal-shell">
 
     <div style="display: none;">
-        <img alt="" th:src="@{/img/captchabg7.png}" class="hide" id="captchImg" />
         <img th:src="@{/img/mahait_logo.png}" alt="favicon" class="hide" id="favicon" />
     </div>
 
@@ -102,6 +101,9 @@
                         <div th:if="${otpErrorMessage != null}" class="alert alert-danger" th:text="${otpErrorMessage}">
                             OTP login failed.
                         </div>
+                        <div th:if="${param.captchaError}" class="alert alert-danger">
+                            Invalid or expired CAPTCHA. Please complete the new challenge.
+                        </div>
 
                         <div class="login-mode-switch" role="radiogroup" aria-label="Login method">
                             <label class="login-mode-option">
@@ -118,7 +120,7 @@
                         </div>
 
                         <form autocomplete="off" id="otpLoginForm" method="post" th:action="@{/login/otp}" class="form-horizontal login-mode-panel otp-login-form"
-                            th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySecondsRemaining != null ? otpExpirySecondsRemaining : otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSecondsRemaining != null ? otpResendCooldownSecondsRemaining : otpResendCooldownSeconds},data-otp-sent=${otpErrorMessage != null},data-otp-error-code=${otpErrorCode},data-email-otp-enabled=${otpEmailEnabled},data-sms-otp-enabled=${otpSmsEnabled}">
+                            th:attr="data-otp-send-url=@{/login/otp/send},data-captcha-url=@{/login/captcha},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySecondsRemaining != null ? otpExpirySecondsRemaining : otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSecondsRemaining != null ? otpResendCooldownSecondsRemaining : otpResendCooldownSeconds},data-otp-sent=${otpErrorMessage != null},data-otp-error-code=${otpErrorCode},data-email-otp-enabled=${otpEmailEnabled},data-sms-otp-enabled=${otpSmsEnabled}">
                             <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <div class="form-group mb-3">
                                 <label for="otpIdentifier" class="control-label">Email / Mobile</label>
@@ -132,6 +134,27 @@
                                 <div id="otpChannelDisplay" class="otp-channel-display" aria-live="polite">
                                     Enter Email / Mobile
                                 </div>
+                            </div>
+                            <div class="form-group mb-3 login-captcha" data-login-captcha>
+                                <input type="hidden" name="loginCaptchaId" data-captcha-id th:value="${loginCaptcha.id}" />
+                                <label for="otpLoginCaptchaAnswer" class="control-label">Security check</label>
+                                <div class="captcha-image-wrap mb-2">
+                                    <img class="capcode" data-captcha-image alt="Six-character CAPTCHA"
+                                        th:src="@{/login/captcha/{id}/image(id=${loginCaptcha.id})}" />
+                                </div>
+                                <div class="captcha-entry-row">
+                                    <input type="text" id="otpLoginCaptchaAnswer" name="loginCaptchaAnswer"
+                                        class="form-control text-uppercase" pattern="[A-Za-z0-9]{6}" maxlength="6"
+                                        autocomplete="off" placeholder="Enter 6 characters"
+                                        aria-describedby="otpCaptchaHelp"
+                                        oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();" />
+                                    <button type="button" class="btn btn-outline-secondary" data-captcha-refresh
+                                        aria-label="Get a new CAPTCHA" title="Get a new CAPTCHA">
+                                        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div id="otpCaptchaHelp" class="captcha-help">Required only when sending or resending an OTP.</div>
+                                <div class="error mt-1" data-captcha-error aria-live="polite"></div>
                             </div>
                             <div class="form-group mb-3">
                                 <div class="otp-send-row">
@@ -175,7 +198,7 @@
 
                         <form autocomplete="off" id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal login-mode-panel is-hidden"
                             data-login-mode="password"
-                            th:attr="data-credential-key-url=@{/security/credential-encryption/public-key}">
+                            th:attr="data-credential-key-url=@{/security/credential-encryption/public-key},data-captcha-url=@{/login/captcha}">
                             <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <input type="hidden" id="encryptedPassword" name="password" autocomplete="off" />
                             <div class="form-group mb-3">
@@ -198,6 +221,26 @@
                                     </button>
                                 </div>
                                 <div id="passwordLoginStatus" class="otp-status" aria-live="polite"></div>
+                            </div>
+
+                            <div class="form-group mb-3 login-captcha" data-login-captcha>
+                                <input type="hidden" name="loginCaptchaId" data-captcha-id th:value="${loginCaptcha.id}" />
+                                <label for="passwordLoginCaptchaAnswer" class="control-label">Security check</label>
+                                <div class="captcha-image-wrap mb-2">
+                                    <img class="capcode" data-captcha-image alt="Six-character CAPTCHA"
+                                        th:src="@{/login/captcha/{id}/image(id=${loginCaptcha.id})}" />
+                                </div>
+                                <div class="captcha-entry-row">
+                                    <input type="text" id="passwordLoginCaptchaAnswer" name="loginCaptchaAnswer"
+                                        class="form-control text-uppercase" pattern="[A-Za-z0-9]{6}" maxlength="6"
+                                        autocomplete="off" placeholder="Enter 6 characters"
+                                        oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();" required />
+                                    <button type="button" class="btn btn-outline-secondary" data-captcha-refresh
+                                        aria-label="Get a new CAPTCHA" title="Get a new CAPTCHA">
+                                        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="error mt-1" data-captcha-error aria-live="polite"></div>
                             </div>
 
                             <div class="form-group mb-3 d-grid">
@@ -268,7 +311,7 @@
             }
         });
     </script>
-    <script th:src="@{/js/captcha.js}"></script>
+    <script th:src="@{/js/captcha.js(v='20261005-server-validated')}"></script>
     <script th:src="@{/js/login-otp.js(v='20260819-otp-policy')}"></script>
 </body>
 

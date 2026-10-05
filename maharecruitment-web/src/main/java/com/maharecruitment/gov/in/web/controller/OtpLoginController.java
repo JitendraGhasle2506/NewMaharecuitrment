@@ -31,6 +31,7 @@ import com.maharecruitment.gov.in.web.service.verification.OtpVerificationExcept
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
 import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
+import com.maharecruitment.gov.in.web.service.security.LoginCaptchaService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,16 +60,19 @@ public class OtpLoginController {
     private final MySimpleUrlAuthenticationSuccessHandler successHandler;
     private final TransportSecurityProperties transportSecurityProperties;
     private final AuthenticationAuditService authenticationAuditService;
+    private final LoginCaptchaService loginCaptchaService;
 
     public OtpLoginController(
             OtpLoginService otpLoginService,
             MySimpleUrlAuthenticationSuccessHandler successHandler,
             TransportSecurityProperties transportSecurityProperties,
-            AuthenticationAuditService authenticationAuditService) {
+            AuthenticationAuditService authenticationAuditService,
+            LoginCaptchaService loginCaptchaService) {
         this.otpLoginService = otpLoginService;
         this.successHandler = successHandler;
         this.transportSecurityProperties = transportSecurityProperties;
         this.authenticationAuditService = authenticationAuditService;
+        this.loginCaptchaService = loginCaptchaService;
     }
 
     @PostMapping("/login/otp/send")
@@ -84,6 +88,17 @@ public class OtpLoginController {
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel()));
+        }
+
+        if (!loginCaptchaService.validateAndConsume(
+                session, request.getLoginCaptchaId(), request.getLoginCaptchaAnswer())) {
+            return ResponseEntity.badRequest().body(new VerificationResponse(
+                    "Invalid or expired CAPTCHA. Please try the new challenge.",
+                    false,
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    request.getChannel(),
+                    0, false, null, null, null, 0, 0, 0, 0,
+                    request.getChannelValue(), null, 0, 0, false, "LOGIN_CAPTCHA_INVALID"));
         }
 
         if (!otpLoginService.isChannelEnabled(request.getChannel())) {

@@ -30,7 +30,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(sessionValidationInterceptor)
                 .order(0)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
+                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send", "/login/captcha/**")
                 .excludePathPatterns("/register/**", "/registration**")
                 .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
@@ -39,7 +39,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(passwordChangeRequiredInterceptor)
                 .order(1)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
+                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send", "/login/captcha/**")
                 .excludePathPatterns("/register/**", "/registration**")
                 .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
@@ -47,7 +47,7 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addInterceptor(menuInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
+                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send", "/login/captcha/**")
                 .excludePathPatterns("/register/**", "/registration**")
                 .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
@@ -55,6 +55,7 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addInterceptor(breadcrumbInterceptor)
                 .addPathPatterns("/**")
+                .excludePathPatterns("/login/captcha/**")
                 .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/api/**", "/rest/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
     }

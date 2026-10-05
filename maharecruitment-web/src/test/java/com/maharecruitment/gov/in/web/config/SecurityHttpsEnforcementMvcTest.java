@@ -163,7 +163,13 @@ class SecurityHttpsEnforcementMvcTest {
             return new HomeController(
                     otpVerificationProperties(),
                     notificationChannelProperties(),
-                    contextPathUrlResolver());
+                    contextPathUrlResolver(),
+                    loginCaptchaService());
+        }
+
+        @Bean
+        com.maharecruitment.gov.in.web.service.security.LoginCaptchaService loginCaptchaService() {
+            return new com.maharecruitment.gov.in.web.service.security.LoginCaptchaService();
         }
 
         @Bean

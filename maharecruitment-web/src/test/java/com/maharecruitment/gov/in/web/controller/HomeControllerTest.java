@@ -10,6 +10,7 @@ import org.springframework.mock.web.MockHttpSession;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.util.ContextPathUrlResolver;
+import com.maharecruitment.gov.in.web.service.security.LoginCaptchaService;
 
 class HomeControllerTest {
 
@@ -19,7 +20,8 @@ class HomeControllerTest {
     private final HomeController controller = new HomeController(
             new OtpVerificationProperties(),
             notificationChannelProperties,
-            new ContextPathUrlResolver());
+            new ContextPathUrlResolver(),
+            new LoginCaptchaService());
 
     @Test
     void homeRedirectStripsContextPathBeforeReturningSpringRedirect() {
@@ -49,7 +51,7 @@ class HomeControllerTest {
         notificationChannelProperties.setSmsEnabled(false);
         ExtendedModelMap model = new ExtendedModelMap();
 
-        String viewName = controller.loginPage(model);
+        String viewName = controller.loginPage(model, new MockHttpSession());
 
         assertThat(viewName).isEqualTo("login");
         assertThat(model.get("otpEmailEnabled")).isEqualTo(false);
