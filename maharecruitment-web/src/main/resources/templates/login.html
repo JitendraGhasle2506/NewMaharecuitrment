@@ -6,12 +6,12 @@
     <title>MahaIT Recruitment Login</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/captcha.css}" />
-    <link rel="stylesheet" th:href="@{/css/login.css}" />
+    <link rel="stylesheet" th:href="@{/css/login.css(v='20261005-csp')}" />
 </head>
 
 <body class="portal-shell">
 
-    <div style="display: none;">
+    <div class="d-none">
         <img th:src="@{/img/mahait_logo.png}" alt="favicon" class="hide" id="favicon" />
     </div>
 
@@ -216,7 +216,7 @@
                                         pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}"
                                         title="Password must be between 8 to 20 characters and contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
                                         oninput="this.value = this.value.replace(/^\s+/, '');" required />
-                                    <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center" type="button" id="togglePassword" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-left: 0;">
+                                    <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center" type="button" id="togglePassword">
                                         <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
                                     </button>
                                 </div>
@@ -274,7 +274,7 @@
             var otpLoginForm = document.getElementById('otpLoginForm');
 
             if (loginForm) {
-                loginForm.style.display = 'none';
+                loginForm.classList.add('d-none');
                 loginForm.querySelectorAll('input, button, textarea, select, a').forEach(function (element) {
                     if ('disabled' in element) {
                         element.disabled = true;
@@ -283,7 +283,7 @@
             }
 
             if (otpLoginForm) {
-                otpLoginForm.style.display = 'none';
+                otpLoginForm.classList.add('d-none');
                 otpLoginForm.querySelectorAll('input, button, textarea, select, a').forEach(function (element) {
                     if ('disabled' in element) {
                         element.disabled = true;

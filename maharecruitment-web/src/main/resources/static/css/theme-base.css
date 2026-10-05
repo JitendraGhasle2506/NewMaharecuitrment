@@ -1,6 +1,4 @@
-﻿@import url('/assets/css/fonts/public-sans.css');
-@import url('/assets/css/fonts/merriweather-sans.css');
-
+﻿
 :root {
     --font-family-base: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
     --font-family-heading: "Merriweather Sans", "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;

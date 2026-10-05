@@ -45,6 +45,25 @@ class LoginClientTransportGuardTest {
                 .doesNotContain("id=\"password\" name=\"password\"");
     }
 
+    @Test
+    void loginAssetsComplyWithStrictStylePolicyAndUseBundledFonts() throws Exception {
+        String loginTemplate = Files.readString(loginTemplatePath());
+        String headerTemplate = Files.readString(resourcePath("templates/header/header.html"));
+        String loginStyles = Files.readString(resourcePath("static/css/login.css"));
+        String themeStyles = Files.readString(resourcePath("static/css/theme-base.css"));
+
+        assertThat(loginTemplate)
+                .doesNotContain("style=")
+                .doesNotContain(".style.");
+        assertThat(loginStyles)
+                .doesNotContain("fonts.googleapis.com")
+                .doesNotContain("fonts.gstatic.com");
+        assertThat(themeStyles).doesNotContain("@import");
+        assertThat(headerTemplate)
+                .contains("@{/assets/css/fonts/public-sans.css")
+                .contains("@{/assets/css/fonts/merriweather-sans.css");
+    }
+
     private Path loginScriptPath() throws IOException {
         Path userDir = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
         Path modulePath = userDir.resolve("src/main/resources/static/js/login-otp.js");
@@ -61,5 +80,14 @@ class LoginClientTransportGuardTest {
             return modulePath;
         }
         return userDir.resolve("maharecruitment-web/src/main/resources/templates/login.html");
+    }
+
+    private Path resourcePath(String relativePath) throws IOException {
+        Path userDir = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        Path modulePath = userDir.resolve("src/main/resources").resolve(relativePath);
+        if (Files.isRegularFile(modulePath)) {
+            return modulePath;
+        }
+        return userDir.resolve("maharecruitment-web/src/main/resources").resolve(relativePath);
     }
 }
