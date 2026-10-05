@@ -45,6 +45,7 @@
         var otpSection = document.getElementById("loginOtpSection");
         var sendButton = document.getElementById("sendLoginOtpBtn");
         var verifyButton = document.getElementById("loginOtpVerifyBtn");
+        var verifyAction = document.getElementById("otpVerifyAction");
         var statusElement = document.getElementById("otpLoginStatus");
         var timingElement = document.getElementById("otpLoginTiming");
         var lockCountdownElement = document.getElementById("otpLoginLockCountdown");
@@ -372,6 +373,9 @@
                 return;
             }
             otpSection.classList.toggle("is-visible", visible);
+            if (verifyAction) {
+                verifyAction.classList.toggle("is-visible", visible);
+            }
             if (otpInput) {
                 if (!visible) {
                     otpInput.value = "";

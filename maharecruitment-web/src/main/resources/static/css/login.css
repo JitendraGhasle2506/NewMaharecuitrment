@@ -82,7 +82,9 @@
     min-height: 100vh;
     margin: 0;
     color: var(--tx);
-    font-family: "Public Sans", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family: var(--font-family-base, "Public Sans", "Segoe UI", Arial, sans-serif);
+    font-size: 16px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background:
@@ -90,6 +92,13 @@
         radial-gradient(ellipse 60% 40% at 110% 105%, rgba(37,99,235,.08) 0%, transparent 55%),
         radial-gradient(ellipse 35% 25% at 98%    0%, rgba(14,165,233,.05) 0%, transparent 45%),
         var(--bg);
+}
+
+.portal-shell button,
+.portal-shell input,
+.portal-shell select,
+.portal-shell textarea {
+    font-family: inherit;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -146,11 +155,14 @@
     max-width: 1240px;
 }
 
-.login-con > .row { min-height: 640px; }
+.login-con > .row {
+    min-height: 620px;
+    align-items: stretch;
+}
 
 @media (min-width: 992px) {
-    .login-con > .row > .col-lg-7 { flex: 0 0 auto; width: 60%; }
-    .login-con > .row > .col-lg-5 { flex: 0 0 auto; width: 40%; }
+    .login-con > .row > .col-lg-7 { flex: 0 0 auto; width: 58%; }
+    .login-con > .row > .col-lg-5 { flex: 0 0 auto; width: 42%; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -425,8 +437,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: clamp(2rem, 3.5vw, 2.75rem);
+    justify-content: flex-start;
+    padding: clamp(1.75rem, 2.5vw, 2.4rem);
     border: 1px solid rgba(255,255,255,.92);
     background: var(--surface);
     box-shadow: var(--shadow-card);
@@ -436,7 +448,7 @@
 }
 
 .auth-card:hover {
-    transform: translateY(-2px);
+    transform: none;
     box-shadow:
         0 0 0 1px rgba(11,92,173,.06),
         0 6px 14px rgba(0,0,0,.05),
@@ -787,6 +799,9 @@
 
 .otp-entry-section.is-visible,
 .otp-captcha-section.is-visible { display: block; }
+
+.otp-verify-action { display: none !important; }
+.otp-verify-action.is-visible { display: grid !important; }
 
 /* Mode panel fade */
 .login-mode-panel { animation: panelFade .2s ease both; }

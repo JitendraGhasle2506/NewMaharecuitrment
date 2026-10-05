@@ -6,7 +6,7 @@
     <title>MahaIT Recruitment Login</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/captcha.css}" />
-    <link rel="stylesheet" th:href="@{/css/login.css(v='20261005-csp')}" />
+    <link rel="stylesheet" th:href="@{/css/login.css(v='20261005-layout')}" />
 </head>
 
 <body class="portal-shell">
@@ -187,7 +187,7 @@
                                     inputmode="numeric" maxlength="3" autocomplete="off"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
                             </div>
-                            <div class="form-group mb-0 d-grid">
+                            <div class="form-group mb-0 d-grid otp-verify-action" id="otpVerifyAction">
                                 <button type="submit" id="loginOtpVerifyBtn" class="btn btn-primary btn-login" disabled>Login with OTP</button>
                             </div>
                             <div class="form-group mt-3 mb-0 d-grid">
