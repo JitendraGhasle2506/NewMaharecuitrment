@@ -77,10 +77,10 @@ public class RecruitmentInternalLevelTwoFeedbackEntity extends RecruitmentAudita
     @Column(name = "relevant_experience_marks", nullable = false)
     private Integer relevantExperienceMarks;
 
-    @Column(name = "interviewer_grade", nullable = false, length = 10)
+    @Column(name = "interviewer_grade", length = 10)
     private String interviewerGrade;
 
-    @Column(name = "recommendation_status", nullable = false, length = 30)
+    @Column(name = "recommendation_status", length = 30)
     private String recommendationStatus;
 
     @Column(name = "assessment_remarks", length = 1000)

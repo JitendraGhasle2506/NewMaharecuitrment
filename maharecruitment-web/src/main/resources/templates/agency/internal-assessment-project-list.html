@@ -531,7 +531,7 @@
                         </span>
                         <span class="hero-chip">
                             <i class="fa-solid fa-user-check"></i>
-                            <span th:text="${(recommendedTotal != null ? recommendedTotal : 0) + ' Recommended Candidates'}">0 Recommended Candidates</span>
+                            <span th:text="${(recommendedTotal != null ? recommendedTotal : 0) + ' L2 Qualified Candidates'}">0 L2 Qualified Candidates</span>
                         </span>
                     </div>
                 </div>
@@ -564,7 +564,7 @@
                     <div class="metric-card">
                         <div class="metric-top">
                             <div>
-                                <span class="metric-label small">Recommended</span>
+                                <span class="metric-label small">L2 Qualified</span>
                                 <div class="metric-value h3 mb-0" th:text="${recommendedTotal != null ? recommendedTotal : 0}">0</div>
                             </div>
                             <span class="metric-icon">
@@ -607,7 +607,7 @@
                                 <th>Request ID</th>
                                 <th>Project</th>
                                 <th>Assessment Submitted</th>
-                                <th>Recommended</th>
+                                <th>L2 Qualified</th>
                                 <th>Latest Assessment</th>
                             </tr>
                         </thead>
@@ -667,7 +667,7 @@
                                                         </span>
                                                         <span class="summary-chip recommended">
                                                             <i class="fa-solid fa-user-check"></i>
-                                                            <span th:text="${(item.recommendedCandidatesCount != null ? item.recommendedCandidatesCount : 0) + ' Recommended'}">0 Recommended</span>
+                                                            <span th:text="${(item.recommendedCandidatesCount != null ? item.recommendedCandidatesCount : 0) + ' L2 Qualified'}">0 L2 Qualified</span>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -685,7 +685,7 @@
                                                             <th>Candidate</th>
                                                             <th>Designation</th>
                                                             <th>Assessment</th>
-                                                            <th>Recommendation</th>
+                                                            <th>L2 Qualification</th>
                                                             <th>Level 2 Status</th>
                                                             <th class="text-center">View</th>
                                                         </tr>
@@ -728,9 +728,9 @@
                                                             </td>
                                                             <td>
                                                                 <span class="badge"
-                                                                    th:classappend="${candidate.recommendationStatus == 'RECOMMENDED' ? ' text-bg-success' : ' text-bg-danger'}"
+                                                                    th:classappend="${candidate.recommendationStatus == 'QUALIFIED' ? ' text-bg-success' : ' text-bg-danger'}"
                                                                     th:text="${candidate.recommendationStatus != null ? #strings.replace(candidate.recommendationStatus, '_', ' ') : '-'}">
-                                                                    RECOMMENDED
+                                                                    QUALIFIED
                                                                 </span>
                                                             </td>
                                                             <td>
@@ -753,7 +753,7 @@
                                                                 </div>
                                                                 <span class="text-muted"
                                                                     th:if="${candidate.workflowStatus == null}">
-                                                                    Not recommended for Level 2
+                                                                    Not qualified for Level 2
                                                                 </span>
                                                             </td>
                                                             <td class="text-center">

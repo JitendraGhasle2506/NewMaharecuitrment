@@ -32,14 +32,13 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssess
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoEligibility;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatusResolver;
 
 @Service
 @Transactional(readOnly = true)
 public class RecruitmentAgencyInternalAssessmentServiceImpl implements RecruitmentAgencyInternalAssessmentService {
-
-    private static final String RECOMMENDED_STATUS = "RECOMMENDED";
 
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
@@ -185,9 +184,9 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(recruitmentInterviewDetailId)
                 .orElseThrow(() -> new RecruitmentNotificationException("Assessment details are not available."));
 
-        if (!RECOMMENDED_STATUS.equals(normalizeUpper(assessment.getRecommendationStatus()))) {
+        if (!InternalVacancyLevelTwoEligibility.isQualified(assessment)) {
             throw new RecruitmentNotificationException(
-                    "Only recommended candidates can be scheduled for Level 2 interview.");
+                    "Only candidates scoring above 60% can be scheduled for Level 2 interview.");
         }
 
         RecruitmentInternalLevelTwoScheduleEntity schedule = levelTwoScheduleRepository
@@ -219,7 +218,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
         long recommendedCount = groupedCandidates.stream()
                 .map(candidate -> assessmentMap.get(candidate.getRecruitmentInterviewDetailId()))
                 .filter(Objects::nonNull)
-                .filter(assessment -> RECOMMENDED_STATUS.equals(normalizeUpper(assessment.getRecommendationStatus())))
+                .filter(InternalVacancyLevelTwoEligibility::isQualified)
                 .count();
 
         LocalDateTime latestAssessmentSubmittedAt = groupedCandidates.stream()
@@ -273,7 +272,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .joiningTime(candidate.getJoiningTime())
                 .resumeFilePath(candidate.getResumeFilePath())
                 .interviewerGrade(assessment != null ? assessment.getInterviewerGrade() : null)
-                .recommendationStatus(assessment != null ? normalizeUpper(assessment.getRecommendationStatus()) : null)
+                .recommendationStatus(toQualificationStatus(assessment))
                 .interviewAuthority(resolveInterviewAuthorityLabel(assessment, interviewerNameMap))
                 .assessmentSubmittedAt(resolveAssessmentSubmittedAt(candidate, assessment))
                 .levelTwoInterviewDateTime(schedule != null ? schedule.getInterviewDateTime() : null)
@@ -466,7 +465,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .leadershipQualityMarks(assessment.getLeadershipQualityMarks())
                 .relevantExperienceMarks(assessment.getRelevantExperienceMarks())
                 .interviewerGrade(normalizeUpper(assessment.getInterviewerGrade()))
-                .recommendationStatus(normalizeUpper(assessment.getRecommendationStatus()))
+                .recommendationStatus(toQualificationStatus(assessment))
                 .assessmentRemarks(assessment.getAssessmentRemarks())
                 .finalRemarks(assessment.getFinalRemarks())
                 .submittedAt(assessment.getCreatedDateTime())
@@ -528,8 +527,15 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
             RecruitmentInterviewDetailEntity candidate,
             RecruitmentAssessmentFeedbackEntity assessment) {
         return assessment != null
-                && RECOMMENDED_STATUS.equals(normalizeUpper(assessment.getRecommendationStatus()))
+                && InternalVacancyLevelTwoEligibility.isQualified(assessment)
                 && !StringUtils.hasText(candidate.getFinalDecisionStatus());
+    }
+
+    private String toQualificationStatus(RecruitmentAssessmentFeedbackEntity assessment) {
+        if (assessment == null) {
+            return null;
+        }
+        return InternalVacancyLevelTwoEligibility.isQualified(assessment) ? "QUALIFIED" : "NOT_QUALIFIED";
     }
 
     private String resolveInterviewAuthorityLabel(

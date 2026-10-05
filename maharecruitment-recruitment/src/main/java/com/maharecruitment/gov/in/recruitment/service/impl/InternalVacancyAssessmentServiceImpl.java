@@ -24,6 +24,7 @@ import com.maharecruitment.gov.in.recruitment.service.InternalVacancyAssessmentS
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoEligibility;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 
 @Service
@@ -82,7 +83,7 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
         assessment.setRelevantExperienceScore(command.getRelevantExperienceScore());
         assessment.setRemarks(command.getRemarks());
         assessment.setInterviewerGrade(command.getInterviewerGrade());
-        assessment.setRecommendationStatus(command.getRecommendationStatus());
+        assessment.setRecommendationStatus(null);
         assessment.setStatus("SUBMITTED");
 
         assessmentRepository.save(assessment);
@@ -118,7 +119,9 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
                 .submittedAssessments(assessments.size())
                 .averageScore(averageScore)
                 .individualAssessments(assessments.stream().map(this::toView).toList())
-                .isSelectionCriteriaMet(assessments.size() >= 2 && assessments.stream().allMatch(a -> a.getTotalScore() != null && a.getTotalScore().compareTo(BigDecimal.valueOf(12.0)) >= 0))
+                .isSelectionCriteriaMet(assessments.size() >= 2
+                        && assessments.stream()
+                                .allMatch(a -> InternalVacancyLevelTwoEligibility.isQualified(a.getTotalScore())))
                 .build();
     }
 
@@ -183,8 +186,10 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
         List<InternalVacancyPanelAssessmentEntity> assessments = assessmentRepository.findByInterviewDetailRecruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId());
         long count = assessments.size();
         
-        // Criteria: >= 2 panels and ALL panels must be >= 12 (60% of 20)
-        boolean criteriaMet = count >= 2 && assessments.stream().allMatch(a -> a.getTotalScore() != null && a.getTotalScore().doubleValue() >= 12.0);
+        // Criteria: at least two panels, with every submitted score strictly above 60%.
+        boolean criteriaMet = count >= 2
+                && assessments.stream()
+                        .allMatch(a -> InternalVacancyLevelTwoEligibility.isQualified(a.getTotalScore()));
 
         RecruitmentInternalLevelTwoScheduleEntity schedule = levelTwoScheduleRepository
                 .findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())

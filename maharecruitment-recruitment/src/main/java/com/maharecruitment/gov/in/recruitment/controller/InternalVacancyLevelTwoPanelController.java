@@ -143,8 +143,6 @@ public class InternalVacancyLevelTwoPanelController {
         form.setTechnicalSkillMarks(detail.getMyFeedback().getTechnicalSkillMarks());
         form.setLeadershipQualityMarks(detail.getMyFeedback().getLeadershipQualityMarks());
         form.setRelevantExperienceMarks(detail.getMyFeedback().getRelevantExperienceMarks());
-        form.setInterviewerGrade(detail.getMyFeedback().getInterviewerGrade());
-        form.setRecommendationStatus(detail.getMyFeedback().getRecommendationStatus());
         form.setAssessmentRemarks(detail.getMyFeedback().getAssessmentRemarks());
         form.setFinalRemarks(detail.getMyFeedback().getFinalRemarks());
         return form;
@@ -157,8 +155,6 @@ public class InternalVacancyLevelTwoPanelController {
                 .technicalSkillMarks(form.getTechnicalSkillMarks())
                 .leadershipQualityMarks(form.getLeadershipQualityMarks())
                 .relevantExperienceMarks(form.getRelevantExperienceMarks())
-                .interviewerGrade(form.getInterviewerGrade())
-                .recommendationStatus(form.getRecommendationStatus())
                 .assessmentRemarks(form.getAssessmentRemarks())
                 .finalRemarks(form.getFinalRemarks())
                 .build();

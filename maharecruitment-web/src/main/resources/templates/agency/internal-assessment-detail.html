@@ -441,10 +441,10 @@
                             <strong th:text="${detail.candidateEmail != null ? detail.candidateEmail : '-'}">candidate@email.com</strong>
                         </div>
                         <div class="hero-chip" th:if="${detail.assessment != null}">
-                            <span>Recommendation</span>
+                            <span>L2 Qualification</span>
                             <strong
                                 th:text="${detail.assessment.recommendationStatus != null ? #strings.replace(detail.assessment.recommendationStatus, '_', ' ') : '-'}">
-                                RECOMMENDED
+                                QUALIFIED
                             </strong>
                         </div>
                     </div>
@@ -552,9 +552,9 @@
                             </div>
                             <div th:if="${detail.assessment != null}"
                                 class="recommendation-pill"
-                                th:classappend="${detail.assessment.recommendationStatus == 'RECOMMENDED' ? ' recommended' : ' not-recommended'}"
+                                th:classappend="${detail.assessment.recommendationStatus == 'QUALIFIED' ? ' recommended' : ' not-recommended'}"
                                 th:text="${detail.assessment.recommendationStatus != null ? #strings.replace(detail.assessment.recommendationStatus, '_', ' ') : '-'}">
-                                RECOMMENDED
+                                QUALIFIED
                             </div>
                         </div>
                         <div class="section-card-body">
@@ -620,7 +620,7 @@
                                 
                                 <div class="remarks-grid mb-4" th:if="${detail.consolidatedAssessment != null and !#lists.isEmpty(detail.consolidatedAssessment.individualAssessments)}">
                                     <div class="remarks-card">
-                                        <h6 class="remarks-card-title">Final Recommendation Remarks</h6>
+                                        <h6 class="remarks-card-title">Final Assessment Remarks</h6>
                                         <p class="remarks-card-text"
                                             th:text="${detail.assessment.finalRemarks != null ? detail.assessment.finalRemarks : '-'}">
                                             Remarks
@@ -665,7 +665,7 @@
                         <div class="section-card-header">
                             <div>
                                 <h5 class="section-title">Level 2 Workflow</h5>
-                                <p class="section-subtitle">Schedule the next interview round only for recommended candidates.</p>
+                                <p class="section-subtitle">Schedule the next interview round only for candidates scoring above 60%.</p>
                             </div>
                         </div>
                         <div class="section-card-body">
@@ -778,7 +778,7 @@
 
                             <div class="empty-state"
                                 th:if="${detail.assessment != null and !detail.levelTwoSchedulingAllowed}">
-                                Level 2 interview can be scheduled only for candidates recommended in the internal assessment.
+                                Level 2 interview can be scheduled only for candidates scoring above 60% in the internal assessment.
                             </div>
                         </div>
                     </div>

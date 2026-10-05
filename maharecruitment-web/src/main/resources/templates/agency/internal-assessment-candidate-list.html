@@ -38,7 +38,7 @@
                                     <th>Candidate</th>
                                     <th>Designation</th>
                                     <th>Assessment</th>
-                                    <th>Recommendation</th>
+                                    <th>L2 Qualification</th>
                                     <th>Level 2 Status</th>
                                     <th class="text-center">View</th>
                                 </tr>
@@ -73,9 +73,9 @@
                                     </td>
                                     <td>
                                         <span class="badge"
-                                            th:classappend="${candidate.recommendationStatus == 'RECOMMENDED' ? ' text-bg-success' : ' text-bg-danger'}"
+                                            th:classappend="${candidate.recommendationStatus == 'QUALIFIED' ? ' text-bg-success' : ' text-bg-danger'}"
                                             th:text="${candidate.recommendationStatus != null ? #strings.replace(candidate.recommendationStatus, '_', ' ') : '-'}">
-                                            RECOMMENDED
+                                            QUALIFIED
                                         </span>
                                     </td>
                                     <td>
@@ -99,7 +99,7 @@
                                         </div>
                                         <span class="text-muted"
                                             th:if="${candidate.workflowStatus == null}">
-                                            Not recommended for Level 2
+                                            Not qualified for Level 2
                                         </span>
                                     </td>
                                     <td class="text-center">

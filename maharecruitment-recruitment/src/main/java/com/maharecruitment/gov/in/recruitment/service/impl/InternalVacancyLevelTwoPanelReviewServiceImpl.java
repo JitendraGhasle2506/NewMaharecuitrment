@@ -135,8 +135,8 @@ public class InternalVacancyLevelTwoPanelReviewServiceImpl implements InternalVa
         feedback.setTechnicalSkillMarks(submissionInput.getTechnicalSkillMarks());
         feedback.setLeadershipQualityMarks(submissionInput.getLeadershipQualityMarks());
         feedback.setRelevantExperienceMarks(submissionInput.getRelevantExperienceMarks());
-        feedback.setInterviewerGrade(normalizeUpper(submissionInput.getInterviewerGrade()));
-        feedback.setRecommendationStatus(normalizeUpper(submissionInput.getRecommendationStatus()));
+        feedback.setInterviewerGrade(null);
+        feedback.setRecommendationStatus(null);
         feedback.setAssessmentRemarks(normalizeText(submissionInput.getAssessmentRemarks()));
         feedback.setFinalRemarks(normalizeText(submissionInput.getFinalRemarks()));
         feedback.setSubmittedAt(LocalDateTime.now());
@@ -331,12 +331,6 @@ public class InternalVacancyLevelTwoPanelReviewServiceImpl implements InternalVa
         validateMarks("Technical skill marks", input.getTechnicalSkillMarks());
         validateMarks("Leadership quality marks", input.getLeadershipQualityMarks());
         validateMarks("Relevant experience marks", input.getRelevantExperienceMarks());
-        if (!StringUtils.hasText(input.getInterviewerGrade())) {
-            throw new RecruitmentNotificationException("Interviewer grade is required.");
-        }
-        if (!StringUtils.hasText(input.getRecommendationStatus())) {
-            throw new RecruitmentNotificationException("Recommendation status is required.");
-        }
     }
 
     private void validateMarks(String fieldLabel, Integer marks) {

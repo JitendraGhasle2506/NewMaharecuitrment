@@ -575,7 +575,7 @@
                                 <div class="col-md-8">
                                     <div class="alert alert-info py-2 px-3 mb-0" style="font-size: 13px;">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        <strong>Selection Criteria:</strong> At least 2 assessments are required and EACH assessment must be at least 12.00 (60%) to finalize the candidate selection.
+                                        <strong>Selection Criteria:</strong> At least 2 assessments are required and EACH assessment must be above 12.00 (60%) to qualify the candidate for Round L2. Recommendation is not considered.
                                         
                                         <div class="mt-2" th:if="${consolidatedAssessment.selectionCriteriaMet}">
                                             <span class="badge bg-success" style="font-size: 14px;">
@@ -588,7 +588,7 @@
                                             <span class="badge bg-danger" style="font-size: 14px;">
                                                 <i class="fas fa-times-circle me-1"></i> Not Eligible for Round 2
                                             </span>
-                                            <div class="text-danger mt-1 small">Criteria Not Met: One or more panel scores are below 60%.</div>
+                                            <div class="text-danger mt-1 small">Criteria Not Met: One or more panel scores are 60% or below.</div>
                                         </div>
 
                                         <div class="mt-2" th:if="${consolidatedAssessment.submittedAssessments < 2}">

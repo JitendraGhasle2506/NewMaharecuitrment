@@ -133,4 +133,16 @@ class InternalVacancyInterviewAuthorityWorkflowServiceImplTest {
         assertFalse(template.contains("*{interviewerGrade}"));
         assertFalse(template.contains("*{recommendationStatus}"));
     }
+
+    @Test
+    void levelTwoPanelFeedbackTemplateOmitsGradeAndRecommendation() throws Exception {
+        String template = new ClassPathResource(
+                "templates/panel/internal-vacancy-level-two-detail.html")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertFalse(template.contains("Interviewer Grade"));
+        assertFalse(template.contains("Recommendation Status"));
+        assertFalse(template.contains("*{interviewerGrade}"));
+        assertFalse(template.contains("*{recommendationStatus}"));
+    }
 }

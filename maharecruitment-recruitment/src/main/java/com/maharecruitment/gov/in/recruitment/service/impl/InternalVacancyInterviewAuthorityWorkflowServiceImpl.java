@@ -37,6 +37,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewA
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssignedInterviewAuthorityView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoEligibility;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 
 @Service
@@ -44,7 +45,6 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevel
 public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
         implements InternalVacancyInterviewAuthorityWorkflowService {
 
-    private static final int LEVEL_TWO_MINIMUM_SCORE = 12;
     private static final int MAX_PANEL_MEMBER_COUNT = 5;
 
     private final UserRepository userRepository;
@@ -362,7 +362,11 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
 
         synchronizeLevelTwoReadyState(
                 candidate,
-                totalMarks(submissionInput) >= LEVEL_TWO_MINIMUM_SCORE);
+                InternalVacancyLevelTwoEligibility.isQualified(
+                        submissionInput.getCommunicationSkillMarks(),
+                        submissionInput.getTechnicalSkillMarks(),
+                        submissionInput.getLeadershipQualityMarks(),
+                        submissionInput.getRelevantExperienceMarks()));
     }
 
     private ActorContext resolveActorContext(String actorEmail) {
@@ -500,13 +504,6 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
 
     }
 
-    private int totalMarks(DepartmentInterviewAssessmentSubmissionInput input) {
-        return input.getCommunicationSkillMarks()
-                + input.getTechnicalSkillMarks()
-                + input.getLeadershipQualityMarks()
-                + input.getRelevantExperienceMarks();
-    }
-
     private void validateMarks(String fieldLabel, Integer marks) {
         if (marks == null) {
             throw new RecruitmentNotificationException(fieldLabel + " is required.");
@@ -570,7 +567,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
 
     private void synchronizeLevelTwoReadyState(
             RecruitmentInterviewDetailEntity candidate,
-            boolean recommendedForLevelTwo) {
+            boolean qualifiedForLevelTwo) {
         if (candidate == null || candidate.getRecruitmentInterviewDetailId() == null) {
             return;
         }
@@ -580,7 +577,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                         candidate.getRecruitmentInterviewDetailId())
                 .orElse(null);
 
-        if (recommendedForLevelTwo) {
+        if (qualifiedForLevelTwo) {
             if (schedule == null) {
                 schedule = new RecruitmentInternalLevelTwoScheduleEntity();
                 schedule.setRecruitmentInterviewDetail(candidate);
