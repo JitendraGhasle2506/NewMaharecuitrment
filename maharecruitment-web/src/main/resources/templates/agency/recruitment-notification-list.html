@@ -466,6 +466,12 @@
             color: #55657e;
         }
 
+        .notification-closed {
+            background: #fbe9e9;
+            border-color: #efc5c5;
+            color: #a12b2b;
+        }
+
         .row-action-cell {
             min-width: 150px;
         }
@@ -772,7 +778,7 @@
                                             <div class="status-stack">
                                                 <!-- <div class="status-caption">Notification State</div> -->
                                                 <span class="status-badge"
-                                                    th:classappend="${item.notificationStatus.name() == 'IN_PROGRESS' ? ' notification-in-progress' : ' notification-pending'}"
+                                                    th:classappend="${item.notificationStatus.name() == 'CLOSED' ? ' notification-closed' : (item.notificationStatus.name() == 'IN_PROGRESS' ? ' notification-in-progress' : ' notification-pending')}"
                                                     th:text="${#strings.replace(item.notificationStatus.name(), '_', ' ')}">
                                                     IN PROGRESS
                                                 </span>

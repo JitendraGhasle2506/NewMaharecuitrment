@@ -22,6 +22,7 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.recruitment.repository.AgencyGlobalRankRepository;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyVisibleNotificationMetricsProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyVisibleNotificationProjection;
@@ -50,6 +51,7 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
         private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
         private final EmployeeRepository employeeRepository;
         private final AgencyGlobalRankRepository agencyGlobalRankRepository;
+        private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
 
         public RecruitmentAgencyNotificationQueryServiceImpl(
                         AgencyNotificationTrackingRepository trackingRepository,
@@ -57,13 +59,15 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                         RecruitmentNotificationRepository notificationRepository,
                         ResourceLevelExperienceRepository resourceLevelExperienceRepository,
                         EmployeeRepository employeeRepository,
-                        AgencyGlobalRankRepository agencyGlobalRankRepository) {
+                        AgencyGlobalRankRepository agencyGlobalRankRepository,
+                        RecruitmentDesignationVacancyRepository designationVacancyRepository) {
                 this.trackingRepository = trackingRepository;
                 this.agencyRepository = agencyRepository;
                 this.notificationRepository = notificationRepository;
                 this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
                 this.employeeRepository = employeeRepository;
                 this.agencyGlobalRankRepository = agencyGlobalRankRepository;
+                this.designationVacancyRepository = designationVacancyRepository;
         }
 
         @Override
@@ -79,13 +83,24 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                         throw new RecruitmentNotificationException("Agency not found for id: " + agencyId);
                 }
 
-                return trackingRepository.findVisibleNotificationPageByAgency(
+                Page<AgencyVisibleNotificationProjection> notificationPage = trackingRepository
+                                .findVisibleNotificationPageByAgency(
                                 agencyId,
                                 VISIBLE_TRACKING_STATUSES,
                                 VISIBLE_NOTIFICATION_STATUSES,
                                 buildSearchPattern(searchText),
-                                pageable)
-                                .map(this::toView);
+                                pageable);
+
+                Set<Long> fullyFilledNotificationIds = notificationPage.isEmpty()
+                                ? Set.of()
+                                : Set.copyOf(designationVacancyRepository.findFullyFilledNotificationIds(
+                                                notificationPage.getContent().stream()
+                                                                .map(AgencyVisibleNotificationProjection::getRecruitmentNotificationId)
+                                                                .toList()));
+
+                return notificationPage.map(projection -> toView(
+                                projection,
+                                fullyFilledNotificationIds.contains(projection.getRecruitmentNotificationId())));
         }
 
         @Override
@@ -210,7 +225,9 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 .build();
         }
 
-        private AgencyVisibleNotificationView toView(AgencyVisibleNotificationProjection projection) {
+        private AgencyVisibleNotificationView toView(
+                        AgencyVisibleNotificationProjection projection,
+                        boolean allPostsFilled) {
                 return AgencyVisibleNotificationView.builder()
                                 .recruitmentNotificationId(projection.getRecruitmentNotificationId())
                                 .requestId(projection.getRequestId())
@@ -221,7 +238,9 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 .releasedRank(projection.getReleasedRank())
                                 .notifiedAt(projection.getNotifiedAt())
                                 .trackingStatus(projection.getTrackingStatus())
-                                .notificationStatus(projection.getNotificationStatus())
+                                .notificationStatus(allPostsFilled
+                                                ? RecruitmentNotificationStatus.CLOSED
+                                                : projection.getNotificationStatus())
                                 .build();
         }
 

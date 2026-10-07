@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,6 +22,15 @@ public interface RecruitmentDesignationVacancyRepository
             findByRecruitmentDesignationVacancyIdAndNotificationRecruitmentNotificationId(
                     Long recruitmentDesignationVacancyId,
                     Long recruitmentNotificationId);
+
+    @Query("select vacancy.notification.recruitmentNotificationId "
+            + "from RecruitmentDesignationVacancyEntity vacancy "
+            + "where vacancy.notification.recruitmentNotificationId in :notificationIds "
+            + "group by vacancy.notification.recruitmentNotificationId "
+            + "having count(vacancy.recruitmentDesignationVacancyId) > 0 "
+            + "and sum(case when coalesce(vacancy.fillPost, 0) < coalesce(vacancy.numberOfVacancy, 0) "
+            + "then 1 else 0 end) = 0")
+    List<Long> findFullyFilledNotificationIds(@Param("notificationIds") Collection<Long> notificationIds);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select vacancy "

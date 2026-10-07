@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +24,17 @@ import jakarta.persistence.LockModeType;
 
 @Repository
 public interface RecruitmentInterviewDetailRepository extends JpaRepository<RecruitmentInterviewDetailEntity, Long> {
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "where candidate.createdDateTime > :appliedAfter "
+            + "and (lower(candidate.candidateEmail) in :candidateEmails "
+            + "or candidate.candidateMobile in :candidateMobiles) "
+            + "order by candidate.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findRecentApplications(
+            @Param("candidateEmails") Collection<String> candidateEmails,
+            @Param("candidateMobiles") Collection<String> candidateMobiles,
+            @Param("appliedAfter") LocalDateTime appliedAfter);
 
     @Query("select candidate "
             + "from RecruitmentInterviewDetailEntity candidate "

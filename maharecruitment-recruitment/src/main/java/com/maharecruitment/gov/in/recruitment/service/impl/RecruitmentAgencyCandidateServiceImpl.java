@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.recruitment.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -20,6 +21,7 @@ import com.maharecruitment.gov.in.master.entity.ResourceLevelExperience;
 import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
@@ -46,6 +48,9 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandi
 @Service
 @Transactional(readOnly = true)
 public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyCandidateService {
+
+    private static final int CANDIDATE_REAPPLICATION_WAIT_MONTHS = 6;
+    private static final DateTimeFormatter REAPPLICATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM uuuu");
 
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
@@ -254,7 +259,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
 
         Set<String> emailSet = new LinkedHashSet<>();
         Set<String> mobileSet = new LinkedHashSet<>();
-        List<RecruitmentInterviewDetailEntity> candidatesToPersist = new ArrayList<>();
+        List<AgencyCandidateSubmissionInput> normalizedInputs = new ArrayList<>(candidateInputs.size());
 
         for (int index = 0; index < candidateInputs.size(); index++) {
             AgencyCandidateSubmissionInput normalizedInput = normalizeCandidateInput(candidateInputs.get(index));
@@ -268,34 +273,40 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             if (!mobileSet.add(normalizedInput.getMobile())) {
                 throw new RecruitmentNotificationException("Duplicate mobile number in row " + rowNumber + ".");
             }
+            normalizedInputs.add(normalizedInput);
+        }
 
-            if (interviewDetailRepository
-                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateEmailIgnoreCase(
-                            recruitmentNotificationId,
-                            agencyId,
-                            normalizedEmail)) {
-                throw new RecruitmentNotificationException(
-                        "Candidate email already exists in submitted candidates for this notification: "
-                                + normalizedEmail);
-            }
+        List<EmployeeEntity> onboardedEmployees = employeeRepository
+                .findActiveOnboardedEmployeesByEmailOrMobile(emailSet, mobileSet);
+        if (!onboardedEmployees.isEmpty()) {
+            EmployeeEntity onboardedEmployee = onboardedEmployees.getFirst();
+            throw new RecruitmentNotificationException(
+                    "Candidate " + onboardedEmployee.getEmail()
+                            + " is already onboarded as an active employee and cannot apply for another post.");
+        }
 
-            if (interviewDetailRepository
-                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile(
-                            recruitmentNotificationId,
-                            agencyId,
-                            normalizedInput.getMobile())) {
-                throw new RecruitmentNotificationException(
-                        "Candidate mobile already exists in submitted candidates for this notification: "
-                                + normalizedInput.getMobile());
-            }
+        LocalDateTime reappliableBefore = LocalDateTime.now().minusMonths(CANDIDATE_REAPPLICATION_WAIT_MONTHS);
+        List<RecruitmentInterviewDetailEntity> recentApplications = interviewDetailRepository
+                .findRecentApplications(emailSet, mobileSet, reappliableBefore);
+        if (!recentApplications.isEmpty()) {
+            RecruitmentInterviewDetailEntity previousApplication = recentApplications.getFirst();
+            LocalDateTime reapplicationDate = previousApplication.getCreatedDateTime()
+                    .plusMonths(CANDIDATE_REAPPLICATION_WAIT_MONTHS);
+            throw new RecruitmentNotificationException(
+                    "Candidate " + previousApplication.getCandidateEmail()
+                            + " has already applied for a post. You can reapply after "
+                            + reapplicationDate.format(REAPPLICATION_DATE_FORMAT) + ".");
+        }
 
+        List<RecruitmentInterviewDetailEntity> candidatesToPersist = new ArrayList<>(normalizedInputs.size());
+        for (AgencyCandidateSubmissionInput normalizedInput : normalizedInputs) {
             RecruitmentInterviewDetailEntity candidateEntity = new RecruitmentInterviewDetailEntity();
             candidateEntity.setRecruitmentNotification(notification);
             candidateEntity.setAgency(tracking.getAgency());
             candidateEntity.setDesignationVacancy(designationVacancy);
             candidateEntity.setAgencyUserId(agencyUserId);
             candidateEntity.setCandidateName(normalizedInput.getCandidateName());
-            candidateEntity.setCandidateEmail(normalizedEmail);
+            candidateEntity.setCandidateEmail(normalizedInput.getEmail().toLowerCase(Locale.ROOT));
             candidateEntity.setCandidateMobile(normalizedInput.getMobile());
             candidateEntity.setCandidateEducation(normalizedInput.getCandidateEducation());
             candidateEntity.setTotalExperience(normalizedInput.getTotalExperience());

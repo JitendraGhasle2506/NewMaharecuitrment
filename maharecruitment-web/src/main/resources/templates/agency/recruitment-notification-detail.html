@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <title>Notification Detail</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/sweetalert2/sweetalert2.min.css}">
+    <script th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
     <style>
         #candidateInputTable {
             min-width: 1900px;
@@ -39,9 +41,6 @@
                 </div>
 
                 <div class="card-body">
-                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-
                     <!-- Summary -->
                     <table class="table table-bordered table-sm">
                         <tr>
@@ -494,8 +493,10 @@
 
     <script th:inline="javascript">
         const contextPath = /*[[@{/}]]*/ '/';
+        const pageSuccessMessage = /*[[${successMessage}]]*/ null;
+        const pageErrorMessage = /*[[${errorMessage}]]*/ null;
     </script>
-    <script th:src="@{/js/agency-notification-candidates.js(v=6)}"></script>
+    <script th:src="@{/js/agency-notification-candidates.js(v=7)}"></script>
 </body>
 
 </html>

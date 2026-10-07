@@ -1,4 +1,36 @@
 (function () {
+    function showSweetAlert(message, icon, title) {
+        if (!message) {
+            return Promise.resolve();
+        }
+
+        if (!window.Swal || typeof window.Swal.fire !== "function") {
+            console.error((title || "Notification") + ": " + message);
+            return Promise.resolve();
+        }
+
+        return window.Swal.fire({
+            title: title || "Notification",
+            text: message,
+            icon: icon || "info",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#0d6efd"
+        });
+    }
+
+    function showValidationAlert(message) {
+        if (window.Swal && typeof window.Swal.isVisible === "function" && window.Swal.isVisible()) {
+            return Promise.resolve();
+        }
+        return showSweetAlert(message, "warning", "Validation Required");
+    }
+
+    if (typeof pageErrorMessage !== "undefined" && pageErrorMessage) {
+        showSweetAlert(pageErrorMessage, "error", "Unable to Submit");
+    } else if (typeof pageSuccessMessage !== "undefined" && pageSuccessMessage) {
+        showSweetAlert(pageSuccessMessage, "success", "Success");
+    }
+
     function openManagedDocument(path) {
         if (!path) {
             return;
@@ -9,7 +41,7 @@
             window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
         } catch (error) {
             console.error("Unable to open document.", error);
-            alert("Unable to open document.");
+            showSweetAlert("Unable to open document.", "error", "Document Error");
         }
     }
 
@@ -102,7 +134,7 @@
 
     addRowButton.addEventListener("click", function () {
         if (!hasOpenVacancy()) {
-            alert("Selected designation is already fully filled. You cannot add more candidates.");
+            showValidationAlert("Selected designation is already fully filled. You cannot add more candidates.");
             return;
         }
         var index = tableBody.querySelectorAll(".candidate-input-row").length;
@@ -361,13 +393,13 @@
 
     function validateFileInput(fileInput, rowNumber) {
         if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            alert("Resume PDF is required in row " + rowNumber + ".");
+            showValidationAlert("Resume PDF is required in row " + rowNumber + ".");
             return false;
         }
 
         var file = fileInput.files[0];
         if (!/\.pdf$/i.test(file.name)) {
-            alert("Only PDF resumes are allowed in row " + rowNumber + ".");
+            showValidationAlert("Only PDF resumes are allowed in row " + rowNumber + ".");
             return false;
         }
         return true;
@@ -382,7 +414,7 @@
                 return;
             }
             if (values.has(value)) {
-                alert(label + " is duplicated in row " + (index + 1) + ".");
+                showValidationAlert(label + " is duplicated in row " + (index + 1) + ".");
                 valid = false;
                 return;
             }
@@ -400,7 +432,7 @@
             var relevantExp = parseFloat(row.querySelector(".relevant-exp-input").value || "0");
 
             if (relevantExp > totalExp) {
-                alert("Relevant experience cannot be greater than total experience in row " + rowNumber + ".");
+                showValidationAlert("Relevant experience cannot be greater than total experience in row " + rowNumber + ".");
                 valid = false;
                 return;
             }
@@ -477,7 +509,7 @@
             var totalExp = parseFloat(row.querySelector(".total-exp-input").value || "0");
 
             if (minimumExperience !== null && totalExp < minimumExperience) {
-                alert("Total experience must be at least " + minimumExperience + " year(s) in row " + rowNumber + ".");
+                showValidationAlert("Total experience must be at least " + minimumExperience + " year(s) in row " + rowNumber + ".");
                 valid = false;
                 return;
             }
@@ -494,13 +526,13 @@
         form.classList.add("was-validated");
 
         if (!designationSelect.value) {
-            alert("Please select designation.");
+            showValidationAlert("Please select designation.");
             event.preventDefault();
             return;
         }
 
         if (!hasOpenVacancy()) {
-            alert("All vacancies are already filled for the selected designation and level.");
+            showValidationAlert("All vacancies are already filled for the selected designation and level.");
             event.preventDefault();
             return;
         }

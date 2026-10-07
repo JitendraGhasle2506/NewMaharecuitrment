@@ -21,6 +21,15 @@ import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeCell
 @Repository
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
 
+    @Query("select employee from EmployeeEntity employee "
+            + "where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE' "
+            + "and (lower(trim(employee.email)) in :candidateEmails "
+            + "or trim(employee.mobile) in :candidateMobiles) "
+            + "order by employee.employeeId desc")
+    List<EmployeeEntity> findActiveOnboardedEmployeesByEmailOrMobile(
+            @Param("candidateEmails") Collection<String> candidateEmails,
+            @Param("candidateMobiles") Collection<String> candidateMobiles);
+
     @Query("""
             select employee.employeeId as employeeId,
                    employee.fullName as fullName,

@@ -22,6 +22,7 @@ import com.maharecruitment.gov.in.master.entity.ResourceLevelExperience;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
@@ -41,7 +42,8 @@ import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepos
 
 class RecruitmentAgencyCandidateServiceImplTest {
 
-    private final AtomicBoolean duplicateSubmittedEmail = new AtomicBoolean(false);
+    private final AtomicBoolean recentApplicationExists = new AtomicBoolean(false);
+    private final AtomicBoolean activeOnboardedEmployeeExists = new AtomicBoolean(false);
     private final AtomicInteger saveCandidateCallCount = new AtomicInteger(0);
     private final AtomicInteger deletePreOnboardingCallCount = new AtomicInteger(0);
     private final AtomicInteger deleteAssessmentCallCount = new AtomicInteger(0);
@@ -100,10 +102,16 @@ class RecruitmentAgencyCandidateServiceImplTest {
         RecruitmentInterviewDetailRepository interviewDetailRepository = proxyWithDefaults(
                 RecruitmentInterviewDetailRepository.class,
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateEmailIgnoreCase" ->
-                        duplicateSubmittedEmail.get();
-                    case "existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile" ->
-                        false;
+                    case "findRecentApplications" -> {
+                        if (!recentApplicationExists.get()) {
+                            yield List.of();
+                        }
+                        RecruitmentInterviewDetailEntity previousApplication = new RecruitmentInterviewDetailEntity();
+                        previousApplication.setCandidateEmail("candidate@example.com");
+                        previousApplication.setCandidateMobile("9876543210");
+                        previousApplication.setCreatedDateTime(LocalDateTime.of(2026, 6, 15, 10, 0));
+                        yield List.of(previousApplication);
+                    }
                     case "saveAll" -> {
                         @SuppressWarnings("unchecked")
                         List<RecruitmentInterviewDetailEntity> candidates =
@@ -156,6 +164,16 @@ class RecruitmentAgencyCandidateServiceImplTest {
                 EmployeeRepository.class,
                 (proxy, method, args) -> switch (method.getName()) {
                     case "countByPreOnboardingInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndStatusIgnoreCase" -> 0L;
+                    case "findActiveOnboardedEmployeesByEmailOrMobile" -> {
+                        if (!activeOnboardedEmployeeExists.get()) {
+                            yield List.of();
+                        }
+                        EmployeeEntity employee = new EmployeeEntity();
+                        employee.setEmail("candidate@example.com");
+                        employee.setMobile("9876543210");
+                        employee.setStatus("ACTIVE");
+                        yield List.of(employee);
+                    }
                     default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
 
@@ -195,15 +213,28 @@ class RecruitmentAgencyCandidateServiceImplTest {
     }
 
     @Test
-    void submitCandidatesRejectsDuplicateSubmittedEmail() {
-        duplicateSubmittedEmail.set(true);
+    void submitCandidatesRejectsAnyApplicationWithinSixMonths() {
+        recentApplicationExists.set(true);
 
         RecruitmentNotificationException exception = assertThrows(
                 RecruitmentNotificationException.class,
                 () -> service.submitCandidates(11L, 22L, 55L, 44L, List.of(validInput())));
 
         assertEquals(
-                "Candidate email already exists in submitted candidates for this notification: candidate@example.com",
+                "Candidate candidate@example.com has already applied for a post. You can reapply after 15 Dec 2026.",
+                exception.getMessage());
+    }
+
+    @Test
+    void submitCandidatesRejectsAlreadyOnboardedActiveEmployee() {
+        activeOnboardedEmployeeExists.set(true);
+
+        RecruitmentNotificationException exception = assertThrows(
+                RecruitmentNotificationException.class,
+                () -> service.submitCandidates(11L, 22L, 55L, 44L, List.of(validInput())));
+
+        assertEquals(
+                "Candidate candidate@example.com is already onboarded as an active employee and cannot apply for another post.",
                 exception.getMessage());
     }
 

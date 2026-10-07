@@ -26,7 +26,11 @@ class AgencyRecruitmentNotificationCandidateTemplateTest {
                 .contains("th:disabled=\"${candidateRow.resigned != true}\"")
                 .contains("Min Exp: ")
                 .contains("+ yrs")
-                .contains("agency-notification-candidates.js(v=6)")
+                .contains("sweetalert2/sweetalert2.min.css")
+                .contains("sweetalert2/sweetalert2.all.min.js")
+                .contains("pageSuccessMessage")
+                .contains("pageErrorMessage")
+                .contains("agency-notification-candidates.js(v=7)")
                 .contains("name=\"interviewTimeSlot\" required")
                 .contains("Select Time Slot")
                 .contains("th:each=\"timeSlot : ${interviewTimeSlots}\"")
@@ -41,6 +45,9 @@ class AgencyRecruitmentNotificationCandidateTemplateTest {
                 .contains("lastWorkingDayInput.disabled = !resigned")
                 .contains("Minimum total experience: ")
                 .contains("Candidates with higher experience are allowed.")
+                .contains("window.Swal.fire")
+                .contains("showValidationAlert(\"Please select designation.\")")
+                .doesNotContain("window.alert(")
                 .doesNotContain("must not exceed")
                 .doesNotContain("data-max-exp");
     }
