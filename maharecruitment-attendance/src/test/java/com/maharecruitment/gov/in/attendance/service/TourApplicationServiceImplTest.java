@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.attendance.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,10 +14,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import com.maharecruitment.gov.in.attendance.dto.TourApplicationHODDTO;
 import com.maharecruitment.gov.in.attendance.entity.TourApplicationEntity;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -34,6 +40,12 @@ class TourApplicationServiceImplTest {
     @Mock
     private EmployeeRepository employeeRepository;
 
+    @Mock
+    private RecruitmentTypeApprovalRoutingService approvalRoutingService;
+
+    @Mock
+    private UserRepository userRepository;
+
     private TourApplicationServiceImpl service;
 
     @BeforeEach
@@ -41,7 +53,9 @@ class TourApplicationServiceImplTest {
         service = new TourApplicationServiceImpl(
                 tourApplicationRepository,
                 reportingManagerService,
-                employeeRepository);
+                employeeRepository,
+                approvalRoutingService,
+                userRepository);
     }
 
     @Test
@@ -51,7 +65,8 @@ class TourApplicationServiceImplTest {
         EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
 
         when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
-        when(tourApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(
+        when(tourApplicationRepository.findPendingForApprover(
+                7L,
                 employeeIds,
                 "PENDING")).thenReturn(List.of(tour));
         when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds))
@@ -76,7 +91,8 @@ class TourApplicationServiceImplTest {
         EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
 
         when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
-        when(tourApplicationRepository.findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(
+        when(tourApplicationRepository.findProcessedForApprover(
+                7L,
                 employeeIds,
                 statuses)).thenReturn(List.of(tour));
         when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds))
@@ -89,6 +105,53 @@ class TourApplicationServiceImplTest {
             assertThat(dto.getStatus()).isEqualTo("APPROVED");
         });
         verify(reportingManagerService).getEffectiveEmployeeIdsForAuthority(7L);
+    }
+
+    @Test
+    void processedTourHistoryIsFilteredAndPaginatedInRepository() {
+        List<Long> employeeIds = List.of(101L);
+        LocalDate searchDate = LocalDate.of(2026, 9, 5);
+        PageRequest pageable = PageRequest.of(0, 10);
+        TourApplicationEntity tour = tour(504L, 101L, "APPROVED");
+        EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
+
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
+        when(tourApplicationRepository.findProcessedForApproverPage(
+                7L, employeeIds, "%EMP101%", searchDate, pageable))
+                .thenReturn(new PageImpl<>(List.of(tour), pageable, 12));
+        when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds))
+                .thenReturn(List.of(employee));
+
+        Page<TourApplicationHODDTO> result = service.getProcessedToursForHOD(
+                7L, "emp101", searchDate, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(12);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+        assertThat(result.getContent()).singleElement()
+                .extracting(TourApplicationHODDTO::getEmployeeName)
+                .isEqualTo("Asha Patil");
+    }
+
+    @Test
+    void tourHistoryIncludesManagerAndHodNames() {
+        TourApplicationEntity tour = tour(503L, 101L, "PENDING");
+        tour.setManagerApproverUserId(7L);
+        tour.setHodApproverUserId(9L);
+        User manager = new User();
+        manager.setId(7L);
+        manager.setName("Reporting Manager");
+        User hod = new User();
+        hod.setId(9L);
+        hod.setName("Reporting HOD");
+
+        when(tourApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(101L))
+                .thenReturn(List.of(tour));
+        when(userRepository.findAllById(any())).thenReturn(List.of(manager, hod));
+
+        List<TourApplicationEntity> result = service.getTourApplicationsByEmployee(101L);
+
+        assertThat(result.getFirst().getManagerApproverName()).isEqualTo("Reporting Manager");
+        assertThat(result.getFirst().getHodApproverName()).isEqualTo("Reporting HOD");
     }
 
     private TourApplicationEntity tour(Long tourId, Long employeeId, String status) {

@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
 
 @Data
@@ -50,4 +51,22 @@ public class TourApplicationEntity {
 
     @Column(name = "hod_remarks")
     private String hodRemarks;
+
+    @Column(name = "manager_remarks")
+    private String managerRemarks;
+
+    @Column(name = "approval_stage", length = 20)
+    private String approvalStage;
+
+    @Column(name = "manager_approver_user_id")
+    private Long managerApproverUserId;
+
+    @Column(name = "hod_approver_user_id")
+    private Long hodApproverUserId;
+
+    @Transient
+    private String managerApproverName;
+
+    @Transient
+    private String hodApproverName;
 }

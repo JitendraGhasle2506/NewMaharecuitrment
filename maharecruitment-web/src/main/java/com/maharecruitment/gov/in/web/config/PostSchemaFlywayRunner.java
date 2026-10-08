@@ -116,6 +116,8 @@ import db.postmigration.V136__smtp_configuration;
 import db.postmigration.V137__email_dispatch_log;
 import db.postmigration.V138__internal_interview_optional_grade_recommendation;
 import db.postmigration.V139__internal_level_two_feedback_optional_grade_recommendation;
+import db.postmigration.V140__mahait_employee_leave_tour_approval_workflow;
+import db.postmigration.V141__leave_tour_approval_history_indexes;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -274,6 +276,8 @@ public class PostSchemaFlywayRunner {
                 new V137__email_dispatch_log(),
                 new V138__internal_interview_optional_grade_recommendation(),
                 new V139__internal_level_two_feedback_optional_grade_recommendation(),
+                new V140__mahait_employee_leave_tour_approval_workflow(),
+                new V141__leave_tour_approval_history_indexes(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

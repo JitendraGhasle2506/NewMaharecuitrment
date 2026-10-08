@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,6 @@ import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationReposito
 import com.maharecruitment.gov.in.attendance.service.LeaveApplicationService;
 import com.maharecruitment.gov.in.master.entity.LeaveEntity;
 import com.maharecruitment.gov.in.master.repository.LeaveRepository;
-import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileCompOffValidationResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLeaveApplication;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLeaveApplicationResponse;
@@ -39,7 +37,6 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_REJECTED = "REJECTED";
-    private static final String ROLE_HOD = "ROLE_HOD";
     private static final String COMP_OFF_CODE = "CO";
 
     private static final List<MobileLeaveOptionsResponse.LeaveCategory> LEAVE_CATEGORIES = List.of(
@@ -52,19 +49,16 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
     private final LeaveApplicationService leaveApplicationService;
     private final LeaveApplicationRepository leaveApplicationRepository;
     private final LeaveRepository leaveRepository;
-    private final ReportingManagerService reportingManagerService;
 
     public MobileLeaveServiceImpl(
             MobileEmployeeAccessService mobileEmployeeAccessService,
             LeaveApplicationService leaveApplicationService,
             LeaveApplicationRepository leaveApplicationRepository,
-            LeaveRepository leaveRepository,
-            ReportingManagerService reportingManagerService) {
+            LeaveRepository leaveRepository) {
         this.mobileEmployeeAccessService = mobileEmployeeAccessService;
         this.leaveApplicationService = leaveApplicationService;
         this.leaveApplicationRepository = leaveApplicationRepository;
         this.leaveRepository = leaveRepository;
-        this.reportingManagerService = reportingManagerService;
     }
 
     @Override
@@ -171,7 +165,7 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
     @Override
     @Transactional(readOnly = true)
     public MobileLeaveApprovalsResponse getApprovals(Long employeeId, String query) {
-        MobileEmployeeAccessContext context = requireHodContext(employeeId);
+        MobileEmployeeAccessContext context = requireApproverContext(employeeId);
         String normalizedQuery = textOrNull(query);
         List<MobileLeaveApprovalsResponse.ApprovalItem> pending = leaveApplicationService
                 .getPendingLeavesForHOD(context.user().getId(), normalizedQuery)
@@ -212,19 +206,11 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
             Long leaveId,
             String decisionStatus,
             String remarks) {
-        MobileEmployeeAccessContext context = requireHodContext(employeeId);
+        MobileEmployeeAccessContext context = requireApproverContext(employeeId);
         requireLeaveId(leaveId);
         LeaveApplicationEntity leave = leaveApplicationRepository.findByLeaveIdForUpdate(leaveId)
                 .orElseThrow(() -> notFound("LEAVE_NOT_FOUND", "Leave application not found."));
 
-        Set<Long> authorizedEmployeeIds = Set.copyOf(
-                reportingManagerService.getEffectiveEmployeeIdsForAuthority(context.user().getId()));
-        if (!authorizedEmployeeIds.contains(leave.getEmployeeId())) {
-            throw new MobileApiException(
-                    HttpStatus.FORBIDDEN,
-                    "LEAVE_APPROVAL_FORBIDDEN",
-                    "This leave application is outside your reporting authority.");
-        }
         if (!STATUS_PENDING.equalsIgnoreCase(trim(leave.getStatus()))) {
             throw new MobileApiException(
                     HttpStatus.CONFLICT,
@@ -232,29 +218,31 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
                     "Only pending leave applications can be processed.");
         }
 
-        leave.setStatus(decisionStatus);
-        leave.setHodRemarks(textOrNull(remarks));
-        leaveApplicationRepository.save(leave);
+        try {
+            leaveApplicationService.updateLeaveStatus(
+                    leaveId,
+                    decisionStatus,
+                    textOrNull(remarks),
+                    context.user().getId());
+        } catch (IllegalArgumentException ex) {
+            throw new MobileApiException(
+                    HttpStatus.FORBIDDEN,
+                    "LEAVE_APPROVAL_FORBIDDEN",
+                    ex.getMessage());
+        }
 
-        String action = STATUS_APPROVED.equals(decisionStatus) ? "approved" : "rejected";
+        String action = STATUS_APPROVED.equals(decisionStatus)
+                && STATUS_PENDING.equalsIgnoreCase(leave.getStatus())
+                        ? "forwarded to the reporting HOD"
+                        : STATUS_APPROVED.equals(decisionStatus) ? "approved" : "rejected";
         return new MobileLeaveApplicationResponse(
                 true,
                 "Leave application " + action + " successfully.",
                 toApplication(leave));
     }
 
-    private MobileEmployeeAccessContext requireHodContext(Long employeeId) {
-        MobileEmployeeAccessContext context = mobileEmployeeAccessService.requireCurrentActiveEmployeeContext(employeeId);
-        boolean hod = context.user().getRoles() != null
-                && context.user().getRoles().stream()
-                        .anyMatch(role -> role != null && ROLE_HOD.equalsIgnoreCase(trim(role.getName())));
-        if (!hod) {
-            throw new MobileApiException(
-                    HttpStatus.FORBIDDEN,
-                    "HOD_ACCESS_REQUIRED",
-                    "HOD access is required for leave approvals.");
-        }
-        return context;
+    private MobileEmployeeAccessContext requireApproverContext(Long employeeId) {
+        return mobileEmployeeAccessService.requireCurrentActiveEmployeeContext(employeeId);
     }
 
     private List<MobileLeaveOptionsResponse.LeaveType> getLeaveTypes() {

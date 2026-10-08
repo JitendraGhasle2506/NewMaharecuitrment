@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,7 +31,6 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.master.entity.LeaveEntity;
 import com.maharecruitment.gov.in.master.repository.LeaveRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
-import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLeaveApplyRequest;
 import com.maharecruitment.gov.in.web.service.mobile.MobileApiException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileEmployeeAccessContext;
@@ -51,9 +51,6 @@ class MobileLeaveServiceImplTest {
     @Mock
     private LeaveRepository leaveRepository;
 
-    @Mock
-    private ReportingManagerService reportingManagerService;
-
     private MobileLeaveServiceImpl service;
 
     @BeforeEach
@@ -62,8 +59,7 @@ class MobileLeaveServiceImplTest {
                 mobileEmployeeAccessService,
                 leaveApplicationService,
                 leaveApplicationRepository,
-                leaveRepository,
-                reportingManagerService);
+                leaveRepository);
     }
 
     @Test
@@ -150,13 +146,17 @@ class MobileLeaveServiceImplTest {
         LeaveApplicationEntity leave = leaveApplication(88L, 101L, "PENDING");
         when(mobileEmployeeAccessService.requireCurrentActiveEmployeeContext(500L)).thenReturn(context);
         when(leaveApplicationRepository.findByLeaveIdForUpdate(88L)).thenReturn(Optional.of(leave));
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        doAnswer(invocation -> {
+            leave.setStatus("APPROVED");
+            leave.setHodRemarks("Approved");
+            return null;
+        }).when(leaveApplicationService).updateLeaveStatus(88L, "APPROVED", "Approved", 7L);
 
         var response = service.approve(500L, 88L, "Approved");
 
         assertThat(response.leaveApplication().status()).isEqualTo("APPROVED");
         assertThat(response.leaveApplication().hodRemarks()).isEqualTo("Approved");
-        verify(leaveApplicationRepository).save(leave);
+        verify(leaveApplicationService).updateLeaveStatus(88L, "APPROVED", "Approved", 7L);
     }
 
     @Test
@@ -165,7 +165,8 @@ class MobileLeaveServiceImplTest {
         LeaveApplicationEntity leave = leaveApplication(88L, 202L, "PENDING");
         when(mobileEmployeeAccessService.requireCurrentActiveEmployeeContext(500L)).thenReturn(context);
         when(leaveApplicationRepository.findByLeaveIdForUpdate(88L)).thenReturn(Optional.of(leave));
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        doThrow(new IllegalArgumentException("This leave application is outside your reporting authority."))
+                .when(leaveApplicationService).updateLeaveStatus(88L, "APPROVED", null, 7L);
 
         assertThatThrownBy(() -> service.approve(500L, 88L, null))
                 .isInstanceOfSatisfying(MobileApiException.class, ex -> {

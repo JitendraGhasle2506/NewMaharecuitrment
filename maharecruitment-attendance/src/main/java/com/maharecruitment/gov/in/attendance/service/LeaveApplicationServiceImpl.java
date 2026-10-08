@@ -3,12 +3,16 @@ package com.maharecruitment.gov.in.attendance.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -19,6 +23,8 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
@@ -47,6 +53,12 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Autowired
     private EmployeeRepository employeeRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RecruitmentTypeApprovalRoutingService approvalRoutingService;
+
     @Override
     public void saveLeaveApplication(LeaveApplicationEntity leaveApplication) {
         prepareAndValidateLeaveApplication(leaveApplication);
@@ -56,7 +68,16 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         if (leaveApplication.getStatus() == null) {
             leaveApplication.setStatus("PENDING");
         }
+        initializeApprovalRoute(leaveApplication);
         leaveApplicationRepository.save(leaveApplication);
+    }
+
+    private void initializeApprovalRoute(LeaveApplicationEntity leaveApplication) {
+        RecruitmentTypeApprovalRoutingService.ApprovalRoute route =
+                approvalRoutingService.routeNewRequest(leaveApplication.getEmployeeId());
+        leaveApplication.setApprovalStage(route.initialStage());
+        leaveApplication.setManagerApproverUserId(route.managerUserId());
+        leaveApplication.setHodApproverUserId(route.hodUserId());
     }
 
     private void prepareAndValidateLeaveApplication(LeaveApplicationEntity leaveApplication) {
@@ -173,40 +194,114 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<LeaveApplicationEntity> getLeaveApplicationsByEmployee(Long employeeId) {
-        return leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(employeeId);
+        List<LeaveApplicationEntity> applications =
+                leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(employeeId);
+        populateApproverNames(applications);
+        return applications;
+    }
+
+    private void populateApproverNames(List<LeaveApplicationEntity> applications) {
+        LinkedHashSet<Long> approverIds = new LinkedHashSet<>();
+        for (LeaveApplicationEntity application : applications) {
+            if (application.getManagerApproverUserId() != null) {
+                approverIds.add(application.getManagerApproverUserId());
+            }
+            if (application.getHodApproverUserId() != null) {
+                approverIds.add(application.getHodApproverUserId());
+            }
+        }
+        if (approverIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, String> approverNames = userRepository.findAllById(approverIds).stream()
+                .collect(Collectors.toMap(User::getId, this::approverDisplayName));
+        for (LeaveApplicationEntity application : applications) {
+            application.setManagerApproverName(
+                    approverNames.get(application.getManagerApproverUserId()));
+            application.setHodApproverName(
+                    approverNames.get(application.getHodApproverUserId()));
+        }
+    }
+
+    private String approverDisplayName(User user) {
+        return user.getName() == null || user.getName().isBlank()
+                ? "Approver"
+                : user.getName().trim();
     }
 
     @Override
     public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(Long hodUserId, String search) {
-        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId);
-        if (employeeIds.isEmpty()) {
-            return List.of();
-        }
-
-        List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(employeeIds, "PENDING");
+        List<Long> legacyEmployeeIds = legacyEmployeeIds(hodUserId);
+        List<LeaveApplicationEntity> leaves = leaveApplicationRepository
+                .findPendingForApprover(hodUserId, legacyEmployeeIds, "PENDING");
         
         if (leaves.isEmpty()) {
             return List.of();
         }
 
-        return convertToHODDTO(leaves, employeeIds, search);
+        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(
+            Long hodUserId, String search, LocalDate searchDate) {
+        List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findPendingForApproverFiltered(
+                hodUserId,
+                legacyEmployeeIds(hodUserId),
+                searchPattern(search),
+                searchDate);
+        return leaves.isEmpty()
+                ? List.of()
+                : convertToHODDTO(leaves, applicationEmployeeIds(leaves), null);
     }
 
     @Override
     public List<LeaveApplicationHODDTO> getProcessedLeavesForHOD(Long hodUserId, String search) {
-        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId);
-        if (employeeIds.isEmpty()) {
-            return List.of();
-        }
-
-        List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(employeeIds, List.of("APPROVED", "REJECTED"));
+        List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findProcessedForApprover(
+                hodUserId,
+                legacyEmployeeIds(hodUserId),
+                List.of("APPROVED", "REJECTED"));
         
         if (leaves.isEmpty()) {
             return List.of();
         }
 
-        return convertToHODDTO(leaves, employeeIds, search);
+        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LeaveApplicationHODDTO> getProcessedLeavesForHOD(
+            Long hodUserId, String search, LocalDate searchDate, Pageable pageable) {
+        Page<LeaveApplicationEntity> page = leaveApplicationRepository.findProcessedForApproverPage(
+                hodUserId,
+                legacyEmployeeIds(hodUserId),
+                searchPattern(search),
+                searchDate,
+                pageable);
+        if (page.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, page.getTotalElements());
+        }
+        List<LeaveApplicationHODDTO> content = convertToHODDTO(
+                page.getContent(), applicationEmployeeIds(page.getContent()), null);
+        return new PageImpl<>(content, pageable, page.getTotalElements());
+    }
+
+    private String searchPattern(String search) {
+        return StringUtils.hasText(search) ? "%" + search.trim().toUpperCase(Locale.ROOT) + "%" : null;
+    }
+
+    private List<Long> legacyEmployeeIds(Long actorUserId) {
+        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId);
+        return employeeIds.isEmpty() ? List.of(-1L) : employeeIds;
+    }
+
+    private List<Long> applicationEmployeeIds(List<LeaveApplicationEntity> leaves) {
+        return leaves.stream().map(LeaveApplicationEntity::getEmployeeId).distinct().toList();
     }
 
     private List<LeaveApplicationHODDTO> convertToHODDTO(List<LeaveApplicationEntity> leaves, List<Long> employeeIds, String search) {
@@ -254,12 +349,66 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     }
 
     @Override
-    public void updateLeaveStatus(Long leaveId, String status, String remarks) {
-        LeaveApplicationEntity leave = leaveApplicationRepository.findById(leaveId).orElse(null);
-        if (leave != null) {
+    public void updateLeaveStatus(Long leaveId, String status, String remarks, Long actorUserId) {
+        requireValidDecision(status);
+        LeaveApplicationEntity leave = leaveApplicationRepository.findByLeaveIdForUpdate(leaveId)
+                .orElseThrow(() -> new IllegalArgumentException("Leave application not found."));
+        requirePending(leave.getStatus());
+
+        if (!approvalRoutingService.isTwoLevelStage(leave.getApprovalStage())) {
+            requireLegacyAuthority(actorUserId, leave.getEmployeeId());
             leave.setStatus(status);
             leave.setHodRemarks(remarks);
-            leaveApplicationRepository.save(leave);
+        } else {
+            requireStageAuthority(
+                    actorUserId,
+                    leave.getApprovalStage(),
+                    leave.getManagerApproverUserId(),
+                    leave.getHodApproverUserId());
+            applyStagedDecision(leave, status, remarks);
+        }
+        leaveApplicationRepository.save(leave);
+    }
+
+    private void applyStagedDecision(LeaveApplicationEntity leave, String status, String remarks) {
+        if (RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(leave.getApprovalStage())) {
+            leave.setManagerRemarks(remarks);
+            if ("APPROVED".equalsIgnoreCase(status)) {
+                leave.setApprovalStage(RecruitmentTypeApprovalRoutingService.STAGE_HOD);
+                return;
+            }
+        } else {
+            leave.setHodRemarks(remarks);
+        }
+        leave.setStatus(status);
+    }
+
+    private void requirePending(String status) {
+        if (!"PENDING".equalsIgnoreCase(trim(status))) {
+            throw new IllegalArgumentException("Only pending leave applications can be processed.");
+        }
+    }
+
+    private void requireValidDecision(String status) {
+        if (!"APPROVED".equalsIgnoreCase(trim(status))
+                && !"REJECTED".equalsIgnoreCase(trim(status))) {
+            throw new IllegalArgumentException("Decision must be APPROVED or REJECTED.");
+        }
+    }
+
+    private void requireLegacyAuthority(Long actorUserId, Long employeeId) {
+        if (!reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId).contains(employeeId)) {
+            throw new IllegalArgumentException("This leave application is outside your reporting authority.");
+        }
+    }
+
+    private void requireStageAuthority(
+            Long actorUserId,
+            String stage,
+            Long managerApproverUserId,
+            Long hodApproverUserId) {
+        if (!approvalRoutingService.canAct(actorUserId, stage, managerApproverUserId, hodApproverUserId)) {
+            throw new IllegalArgumentException("This leave application is not pending at your approval level.");
         }
     }
 
