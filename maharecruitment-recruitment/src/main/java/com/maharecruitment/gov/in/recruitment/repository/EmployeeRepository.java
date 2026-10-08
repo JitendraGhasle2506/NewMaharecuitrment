@@ -97,7 +97,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     List<EmployeeEntity> findByRecruitmentTypeAndStatus(String recruitmentType, String status);
     Page<EmployeeEntity> findByRecruitmentTypeAndStatus(String recruitmentType, String status, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "designation", "designation.levels" })
+    @EntityGraph(attributePaths = { "designation", "designation.levels", "department", "subDepartment",
+            "subDepartment.department" })
     List<EmployeeEntity> findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
             String recruitmentType, String status);
 

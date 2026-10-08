@@ -261,9 +261,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private void addOtherEmployeeAuthorities(Map<Long, String> authorityTypesByUserId) {
         addAuthorityEmployees(
                 authorityTypesByUserId,
-                employeeRepository
-                        .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
-                                INTERNAL, ACTIVE),
+                employeeRepository.findActiveCellAuthorityEmployees(CELL_AUTHORITY_RECRUITMENT_TYPES),
                 TYPE_OTHER);
     }
 

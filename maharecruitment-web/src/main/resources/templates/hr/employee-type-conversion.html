@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Type Conversion</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
+    <link rel="stylesheet" th:href="@{/css/employee-type-conversion.css(v='20261008-4')}">
+    <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}" defer></script>
+    <script th:src="@{/assets/vendor/select2/select2.min.js}" defer></script>
+    <script th:src="@{/js/employee-type-conversion.js(v='20261008-5')}" defer></script>
+</head>
+
+<body class="hr-shell employee-type-conversion-screen">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Employee Type Conversion', ~{::section})}">
+        <section class="conversion-page">
+            <div class="conversion-hero">
+                <div>
+                    <div class="conversion-eyebrow">Employee management</div>
+                    <h2>Employee Type Conversion</h2>
+                    <p>Convert an employee type and update the applicable department, location and reporting assignments.</p>
+                </div>
+                <a class="btn btn-light" th:href="@{/hr/employees}">
+                    <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i> Back to Employees
+                </a>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success conversion-alert" role="status">
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                <span th:text="${successMessage}">Employee converted successfully.</span>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger conversion-alert" role="alert">
+                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+                <span th:text="${errorMessage}">Unable to convert employee.</span>
+            </div>
+
+            <form id="employeeConversionForm" method="post" th:action="@{/hr/employee-type-conversion}"
+                th:object="${conversionForm}" novalidate>
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" id="targetType" th:field="*{targetType}">
+                <input type="hidden" id="employeeId" th:field="*{employeeId}">
+
+                <div class="conversion-layout">
+                    <div class="conversion-main">
+                        <div class="conversion-card">
+                            <div class="conversion-card-header">
+                                <span class="step-number">1</span>
+                                <div>
+                                    <h3>Choose conversion direction</h3>
+                                    <p>Select how the employee record should be converted.</p>
+                                </div>
+                            </div>
+
+                            <div class="direction-grid" role="radiogroup" aria-label="Conversion direction">
+                                <button type="button" class="direction-option" data-target-type="EXTERNAL"
+                                    role="radio" aria-checked="false">
+                                    <span class="direction-icon internal"><i class="fa-solid fa-building-user"></i></span>
+                                    <span class="direction-copy">
+                                        <strong>Internal to External</strong>
+                                        <small>Move an internal employee to external employment</small>
+                                    </span>
+                                    <span class="direction-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                                    <span class="direction-icon external"><i class="fa-solid fa-user-tie"></i></span>
+                                    <span class="direction-check"><i class="fa-solid fa-circle-check"></i></span>
+                                </button>
+
+                                <button type="button" class="direction-option" data-target-type="INTERNAL"
+                                    role="radio" aria-checked="false">
+                                    <span class="direction-icon external"><i class="fa-solid fa-user-tie"></i></span>
+                                    <span class="direction-copy">
+                                        <strong>External to Internal</strong>
+                                        <small>Bring an external employee into internal employment</small>
+                                    </span>
+                                    <span class="direction-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                                    <span class="direction-icon internal"><i class="fa-solid fa-building-user"></i></span>
+                                    <span class="direction-check"><i class="fa-solid fa-circle-check"></i></span>
+                                </button>
+                            </div>
+                            <div class="text-danger small mt-2" th:if="${#fields.hasErrors('targetType')}" th:errors="*{targetType}"></div>
+                        </div>
+
+                        <div class="conversion-card">
+                            <div class="conversion-card-header">
+                                <span class="step-number">2</span>
+                                <div>
+                                    <h3>Select employee</h3>
+                                    <p id="employeeHelp">Choose an active internal employee to convert.</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="sourceEmployee">Employee <span class="text-danger">*</span></label>
+                                <select id="sourceEmployee" class="form-select form-select-lg searchable-conversion-select"
+                                    data-placeholder="Search employee by name or code">
+                                    <option value="">Select employee</option>
+                                </select>
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('employeeId')}" th:errors="*{employeeId}"></div>
+                            </div>
+
+                            <template id="internalEmployeeOptions">
+                                <option th:each="employee : ${internalEmployees}"
+                                    th:value="${employee.id}"
+                                    th:text="${employee.name + (employee.code != null ? ' (' + employee.code + ')' : '')}"
+                                    th:attr="data-name=${employee.name},data-code=${employee.code},data-email=${employee.email},data-designation=${employee.designation},data-department-id=${employee.departmentId},data-department=${employee.departmentName}">
+                                    Employee
+                                </option>
+                            </template>
+                            <template id="externalEmployeeOptions">
+                                <option th:each="employee : ${externalEmployees}"
+                                    th:value="${employee.id}"
+                                    th:text="${employee.name + (employee.code != null ? ' (' + employee.code + ')' : '')}"
+                                    th:attr="data-name=${employee.name},data-code=${employee.code},data-email=${employee.email},data-designation=${employee.designation},data-department-id=${employee.departmentId},data-department=${employee.departmentName}">
+                                    Employee
+                                </option>
+                            </template>
+
+                            <div id="employeeProfile" class="employee-profile" hidden>
+                                <div class="employee-avatar" id="employeeAvatar">E</div>
+                                <div class="employee-identity">
+                                    <strong id="employeeName">Employee Name</strong>
+                                    <span id="employeeEmail">email@example.com</span>
+                                </div>
+                                <div class="employee-fact">
+                                    <span>Employee code</span>
+                                    <strong id="employeeCode">—</strong>
+                                </div>
+                                <div class="employee-fact">
+                                    <span>Designation</span>
+                                    <strong id="employeeDesignation">—</strong>
+                                </div>
+                                <div class="employee-fact">
+                                    <span>Current department</span>
+                                    <strong id="employeeDepartment">—</strong>
+                                </div>
+                            </div>
+
+                            <div id="noEmployeesMessage" class="empty-state" hidden>
+                                <i class="fa-regular fa-folder-open"></i>
+                                <span>No active employees are available for this conversion direction.</span>
+                            </div>
+                        </div>
+
+                        <div class="conversion-card">
+                            <div class="conversion-card-header">
+                                <span class="step-number">3</span>
+                                <div>
+                                    <h3>Map location</h3>
+                                    <p>Optionally assign a primary location for either employee type.</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="locationId">Primary location</label>
+                                <select id="locationId" class="form-select form-select-lg searchable-conversion-select"
+                                    data-placeholder="Search office or location" th:field="*{locationId}">
+                                    <option value="">Keep current location mapping</option>
+                                    <option th:each="location : ${locations}" th:value="${location.id}"
+                                        th:text="${location.name}">Office - Location</option>
+                                </select>
+                                <div class="form-text">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    Selecting a location makes it the employee's primary location. Leave blank to keep existing mappings.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="conversion-card" id="departmentMappingCard">
+                            <div class="conversion-card-header">
+                                <span class="step-number">4</span>
+                                <div>
+                                    <h3>Map department</h3>
+                                    <p>Select the department for an employee being converted to external.</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="departmentId">Department <span class="text-danger">*</span></label>
+                                <select id="departmentId" class="form-select form-select-lg searchable-conversion-select"
+                                    data-placeholder="Search department" th:field="*{departmentId}">
+                                    <option value="">Select department</option>
+                                    <option th:each="department : ${departments}" th:value="${department.id}"
+                                        th:text="${department.name}">Department</option>
+                                </select>
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('departmentId')}" th:errors="*{departmentId}"></div>
+                                <div class="form-text">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    Internal employees will not retain department or sub-department mappings.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="conversion-card internal-assignment-card" id="internalAssignments" hidden>
+                            <div class="conversion-card-header">
+                                <span class="step-number">4</span>
+                                <div>
+                                    <h3>Internal reporting assignments</h3>
+                                    <p>These assignments are mandatory when converting an external employee to internal.</p>
+                                </div>
+                            </div>
+
+                            <div class="internal-requirement-note">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <span>The employee must have a finalized employee code, active cell, reporting HOD and reporting manager.</span>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6 col-xl-4">
+                                    <label class="form-label" for="cellId">Cell <span class="text-danger">*</span></label>
+                                    <select id="cellId" class="form-select searchable-conversion-select"
+                                        data-placeholder="Search cell or wing" th:field="*{cellId}" data-internal-required>
+                                        <option value="">Select active cell</option>
+                                        <option th:each="cell : ${cells}" th:value="${cell.cellId}"
+                                            th:text="${cell.displayName}">Wing - Cell</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-xl-4">
+                                    <label class="form-label" for="reportingHodUserId">Reporting HOD <span class="text-danger">*</span></label>
+                                    <select id="reportingHodUserId" class="form-select searchable-conversion-select"
+                                        data-placeholder="Search Internal or MAHAIT employee"
+                                        th:field="*{reportingHodUserId}" data-internal-required>
+                                        <option value="">Select reporting HOD</option>
+                                        <option th:each="person : ${reportingPeople}"
+                                            th:value="${person.userId}"
+                                            th:disabled="${!person.activeAccount}"
+                                            th:text="${person.label + (person.activeAccount ? '' : ' - No active user account')}">Employee</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-xl-4">
+                                    <label class="form-label" for="reportingManagerEmployeeId">Reporting manager <span class="text-danger">*</span></label>
+                                    <input type="hidden" id="managerType" th:field="*{managerType}" value="OTHER">
+                                    <select id="reportingManagerEmployeeId" class="form-select searchable-conversion-select"
+                                        data-placeholder="Search Internal or MAHAIT employee"
+                                        th:field="*{reportingManagerEmployeeId}"
+                                        data-internal-required>
+                                        <option value="">Select reporting manager</option>
+                                        <option th:each="person : ${reportingPeople}"
+                                            th:value="${person.employeeId}" th:text="${person.label}">Employee</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <aside class="conversion-summary">
+                        <div class="summary-card">
+                            <div class="summary-header">
+                                <i class="fa-solid fa-clipboard-check"></i>
+                                <div>
+                                    <h3>Conversion summary</h3>
+                                    <p>Review before confirming</p>
+                                </div>
+                            </div>
+
+                            <div class="summary-person" id="summaryPerson">
+                                <div class="summary-avatar" id="summaryAvatar">?</div>
+                                <div>
+                                    <strong id="summaryName">No employee selected</strong>
+                                    <span id="summaryCode">Select an employee to continue</span>
+                                </div>
+                            </div>
+
+                            <div class="type-transition">
+                                <div>
+                                    <span>Current type</span>
+                                    <strong id="summarySourceType">Internal</strong>
+                                </div>
+                                <i class="fa-solid fa-arrow-right"></i>
+                                <div>
+                                    <span>New type</span>
+                                    <strong id="summaryTargetType">External</strong>
+                                </div>
+                            </div>
+
+                            <dl class="summary-details">
+                                <div>
+                                    <dt>Current department</dt>
+                                    <dd id="summaryCurrentDepartment">—</dd>
+                                </div>
+                                <div id="summaryDepartmentRow">
+                                    <dt>Mapped department</dt>
+                                    <dd id="summaryNewDepartment">Not selected</dd>
+                                </div>
+                                <div>
+                                    <dt>Primary location</dt>
+                                    <dd id="summaryLocation">Keep current mapping</dd>
+                                </div>
+                                <div class="internal-summary-row" hidden>
+                                    <dt>Cell</dt>
+                                    <dd id="summaryCell">Not selected</dd>
+                                </div>
+                                <div class="internal-summary-row" hidden>
+                                    <dt>Reporting HOD</dt>
+                                    <dd id="summaryHod">Not selected</dd>
+                                </div>
+                                <div class="internal-summary-row" hidden>
+                                    <dt>Reporting manager</dt>
+                                    <dd id="summaryManager">Not selected</dd>
+                                </div>
+                            </dl>
+
+                            <div class="summary-notice">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span id="summaryNoticeText">This updates the employee type and department mapping immediately.</span>
+                            </div>
+
+                            <button type="submit" id="convertButton" class="btn btn-primary btn-lg w-100" disabled>
+                                <i class="fa-solid fa-right-left me-2"></i> Confirm Conversion
+                            </button>
+                            <a class="btn btn-link w-100 mt-2" th:href="@{/hr/employees}">Cancel</a>
+                        </div>
+                    </aside>
+                </div>
+            </form>
+
+        </section>
+    </th:block>
+</body>
+
+</html>

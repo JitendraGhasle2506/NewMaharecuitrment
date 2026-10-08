@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.master.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -12,6 +13,8 @@ import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 
 @Repository
 public interface DepartmentMstRepository extends JpaRepository<DepartmentMst, Long> {
+
+    List<DepartmentMst> findAllByOrderByDepartmentNameAsc();
 
     @EntityGraph(attributePaths = "subDepartments")
     @Query("""

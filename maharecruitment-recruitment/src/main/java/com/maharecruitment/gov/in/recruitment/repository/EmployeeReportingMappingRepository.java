@@ -24,6 +24,8 @@ public interface EmployeeReportingMappingRepository extends JpaRepository<Employ
 
     EmployeeReportingMappingEntity findByEmployeeId(Long employeeId);
 
+    long deleteByEmployeeId(Long employeeId);
+
     Optional<EmployeeReportingMappingEntity> findFirstByEmployeeIdOrderByMappingIdDesc(Long employeeId);
 
     @Query("""
