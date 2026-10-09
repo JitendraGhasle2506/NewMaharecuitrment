@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261009-3')}">
 </head>
 
 <body class="hr-shell">
@@ -163,6 +163,137 @@
                             <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
                             <span>Pending Department Requests</span>
                             <strong th:text="${dashboard.pendingApprovals}">0</strong>
+                        </div>
+                    </section>
+
+                    <section class="hrd-calendar" aria-labelledby="hrCalendarTitle">
+                        <div class="hrd-calendar-heading">
+                            <div>
+                                <span class="hrd-calendar-eyebrow">Organization calendar</span>
+                                <h3 id="hrCalendarTitle">Calendar Highlights</h3>
+                                <p>Events, festivals and holidays scheduled for today and the next 10 days.</p>
+                            </div>
+                            <a class="hrd-calendar-link" th:href="@{/common/holidays}">
+                                <span>Open calendar</span>
+                                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                            </a>
+                        </div>
+
+                        <div class="hrd-calendar-grid">
+                            <section class="hrd-calendar-panel hrd-calendar-current" aria-labelledby="hrCurrentEventsTitle">
+                                <div class="hrd-calendar-panel-title">
+                                    <span class="hrd-calendar-title-icon" aria-hidden="true">
+                                        <i class="fa-solid fa-calendar-day"></i>
+                                    </span>
+                                    <div>
+                                        <h4 id="hrCurrentEventsTitle">Events &amp; Festivals</h4>
+                                        <span>Today through
+                                            <time th:datetime="${dashboard.calendarHighlights.holidayWindowEnd}"
+                                                th:text="${#temporals.format(dashboard.calendarHighlights.holidayWindowEnd, 'dd MMM yyyy')}">
+                                                19 Oct 2026
+                                            </time>
+                                        </span>
+                                    </div>
+                                    <span class="hrd-calendar-count"
+                                        th:text="${#lists.size(dashboard.calendarHighlights.currentEvents)}">0</span>
+                                </div>
+
+                                <div class="hrd-event-list"
+                                    th:if="${not #lists.isEmpty(dashboard.calendarHighlights.currentEvents)}">
+                                    <article class="hrd-event-card"
+                                        th:each="entry : ${dashboard.calendarHighlights.currentEvents}"
+                                        tabindex="0"
+                                        th:classappend="${(entry.type == 'Festival' ? ' is-festival' : ' is-event') + (entry.backgroundPhotoToken != null ? ' has-background' : '')}">
+                                        <img class="hrd-event-background" th:if="${entry.backgroundPhotoToken != null}"
+                                            th:src="@{/documents/view(path=${entry.backgroundPhotoToken})}"
+                                            th:alt="${entry.title + ' background'}" loading="lazy">
+                                        <div class="hrd-event-icon" aria-hidden="true">
+                                            <i th:class="${entry.type == 'Festival'} ? 'fa-solid fa-star' : 'fa-solid fa-calendar-check'"></i>
+                                        </div>
+                                        <div class="hrd-event-content">
+                                            <div class="hrd-event-meta">
+                                                <span class="hrd-event-type" th:text="${entry.type}">Festival</span>
+                                                <span th:if="${entry.daysUntilStart > 0}">
+                                                    <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                                    Starts
+                                                    <time th:datetime="${entry.startDate}"
+                                                        th:text="${#temporals.format(entry.startDate, 'dd MMM')}">11 Oct</time>
+                                                </span>
+                                                <span th:if="${entry.daysUntilStart <= 0 and entry.spansMultipleDays()}">
+                                                    <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                                                    Runs until
+                                                    <time th:datetime="${entry.endDate}"
+                                                        th:text="${#temporals.format(entry.endDate, 'dd MMM')}">10 Oct</time>
+                                                </span>
+                                            </div>
+                                            <h5 th:text="${entry.title}">Calendar entry</h5>
+                                            <p th:if="${entry.description != null and not #strings.isEmpty(entry.description)}"
+                                                th:text="${entry.description}">Description</p>
+                                            <span class="hrd-event-hover-hint"
+                                                th:if="${entry.backgroundPhotoToken != null and entry.description != null and not #strings.isEmpty(entry.description)}">
+                                                <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                                Hover or focus to view details
+                                            </span>
+                                        </div>
+                                    </article>
+                                </div>
+
+                                <div class="hrd-calendar-empty"
+                                    th:if="${#lists.isEmpty(dashboard.calendarHighlights.currentEvents)}">
+                                    <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+                                    <div>
+                                        <strong>No event or festival in the next 10 days</strong>
+                                        <span>No celebration is scheduled in this period.</span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="hrd-calendar-panel hrd-calendar-upcoming" aria-labelledby="hrUpcomingHolidayTitle">
+                                <div class="hrd-calendar-panel-title">
+                                    <span class="hrd-calendar-title-icon" aria-hidden="true">
+                                        <i class="fa-solid fa-umbrella-beach"></i>
+                                    </span>
+                                    <div>
+                                        <h4 id="hrUpcomingHolidayTitle">Upcoming Holidays</h4>
+                                        <span>Today through
+                                            <time th:datetime="${dashboard.calendarHighlights.holidayWindowEnd}"
+                                                th:text="${#temporals.format(dashboard.calendarHighlights.holidayWindowEnd, 'dd MMM yyyy')}">
+                                                19 Oct 2026
+                                            </time>
+                                        </span>
+                                    </div>
+                                    <span class="hrd-calendar-count"
+                                        th:text="${#lists.size(dashboard.calendarHighlights.upcomingHolidays)}">0</span>
+                                </div>
+
+                                <div class="hrd-holiday-list"
+                                    th:if="${not #lists.isEmpty(dashboard.calendarHighlights.upcomingHolidays)}">
+                                    <article class="hrd-holiday-card"
+                                        th:each="holiday : ${dashboard.calendarHighlights.upcomingHolidays}">
+                                        <time class="hrd-holiday-date" th:datetime="${holiday.date}">
+                                            <strong th:text="${#temporals.format(holiday.date, 'dd')}">09</strong>
+                                            <span th:text="${#temporals.format(holiday.date, 'MMM')}">Oct</span>
+                                        </time>
+                                        <div class="hrd-holiday-content">
+                                            <h5 th:text="${holiday.name}">Holiday</h5>
+                                            <span th:text="${#temporals.format(holiday.date, 'EEEE')}">Friday</span>
+                                        </div>
+                                        <span class="hrd-holiday-relative"
+                                            th:text="${holiday.daysUntil == 0 ? 'Today' : (holiday.daysUntil == 1 ? 'Tomorrow' : 'In ' + holiday.daysUntil + ' days')}">
+                                            In 3 days
+                                        </span>
+                                    </article>
+                                </div>
+
+                                <div class="hrd-calendar-empty"
+                                    th:if="${#lists.isEmpty(dashboard.calendarHighlights.upcomingHolidays)}">
+                                    <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                    <div>
+                                        <strong>No holiday in the next 10 days</strong>
+                                        <span>The upcoming work schedule has no holiday.</span>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     </section>
 

@@ -1,15 +1,19 @@
 package com.maharecruitment.gov.in.web.service.dashboard.impl;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -27,6 +31,11 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceDesignationSum
 import com.maharecruitment.gov.in.attendance.repository.AttendanceEmployeeDetailProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryEntity;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryPhotoEntity;
+import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
+import com.maharecruitment.gov.in.attendance.service.CommonCalendarEntryService;
+import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.master.entity.CellMaster;
@@ -59,11 +68,14 @@ import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceGroupi
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceSummaryView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellAttendanceView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellReportView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRCalendarHighlightsView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRCurrentCalendarEntryView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRDepartmentAttendanceView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRDesignationAttendanceView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HREmployeeHierarchyView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRTodayAttendanceView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRUpcomingHolidayView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingDirectoryItemView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportsView;
@@ -85,6 +97,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     private static final LocalTime AFTER_ELEVEN_CUTOFF = LocalTime.of(11, 0);
     private static final int DEFAULT_ATTENDANCE_DETAIL_PAGE_SIZE = 25;
     private static final int MAX_ATTENDANCE_DETAIL_PAGE_SIZE = 50;
+    private static final int HOLIDAY_LOOKAHEAD_DAYS = 10;
     private static final String REPORTING_SOURCE_DIRECT = "DIRECT";
     private static final String REPORTING_SOURCE_CELL = "CELL";
     private static final String REPORTING_SOURCE_NONE = "NONE";
@@ -101,6 +114,8 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     private final DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
     private final DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
     private final AttendanceRegisterRepo attendanceRegisterRepo;
+    private final CommonCalendarEntryService calendarEntryService;
+    private final HolidayService holidayService;
 
     @Override
     @Transactional(readOnly = true)
@@ -120,6 +135,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
 
         LocalDate today = LocalDate.now();
         AttendanceSnapshot attendance = loadAttendanceSnapshot(today, totalEmployees);
+        HRCalendarHighlightsView calendarHighlights = loadCalendarHighlights(today);
 
         LocalDate firstDayOfMonth = today.withDayOfMonth(1);
         LocalDate lastDayOfMonth = today.withDayOfMonth(today.lengthOfMonth());
@@ -172,8 +188,68 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 externalPercent,
                 departmentOnboarding,
                 internalProjectList,
-                externalProjectList
+                externalProjectList,
+                calendarHighlights
         );
+    }
+
+    private HRCalendarHighlightsView loadCalendarHighlights(LocalDate today) {
+        LocalDate holidayWindowEnd = today.plusDays(HOLIDAY_LOOKAHEAD_DAYS);
+        List<CommonCalendarEntryEntity> activeEntries = calendarEntryService
+                .getEntriesBetween(today, holidayWindowEnd);
+        Map<Long, String> firstPhotoByEntryId = loadFirstPhotoTokens(activeEntries);
+        List<HRCurrentCalendarEntryView> currentEvents = activeEntries
+                .stream()
+                .sorted(Comparator
+                        .comparing(CommonCalendarEntryEntity::getEntryType)
+                        .thenComparing(CommonCalendarEntryEntity::getTitle, String.CASE_INSENSITIVE_ORDER))
+                .map(entry -> new HRCurrentCalendarEntryView(
+                        entry.getId(),
+                        entry.getTitle(),
+                        entry.getEntryType().getDisplayName(),
+                        entry.getEntryDate(),
+                        entry.getEndDate(),
+                        entry.getDescription(),
+                        firstPhotoByEntryId.get(entry.getId()),
+                        ChronoUnit.DAYS.between(today, entry.getEntryDate())))
+                .toList();
+
+        List<HRUpcomingHolidayView> upcomingHolidays = holidayService
+                .getHolidaysBetween(today, holidayWindowEnd)
+                .stream()
+                .sorted(Comparator
+                        .comparing(HolidayMasterEntity::getHolidayDate)
+                        .thenComparing(HolidayMasterEntity::getHolidayName, String.CASE_INSENSITIVE_ORDER))
+                .map(holiday -> new HRUpcomingHolidayView(
+                        holiday.getId(),
+                        holiday.getHolidayName(),
+                        holiday.getHolidayDate(),
+                        ChronoUnit.DAYS.between(today, holiday.getHolidayDate())))
+                .toList();
+
+        return new HRCalendarHighlightsView(today, holidayWindowEnd, currentEvents, upcomingHolidays);
+    }
+
+    private Map<Long, String> loadFirstPhotoTokens(List<CommonCalendarEntryEntity> entries) {
+        List<Long> entryIds = entries.stream()
+                .map(CommonCalendarEntryEntity::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (entryIds.isEmpty()) {
+            return Map.of();
+        }
+        return calendarEntryService.getPhotosForEntries(entryIds)
+                .stream()
+                .filter(photo -> photo.getCalendarEntryId() != null && hasText(photo.getFilePath()))
+                .collect(Collectors.toMap(
+                        CommonCalendarEntryPhotoEntity::getCalendarEntryId,
+                        photo -> encodeDocumentPath(photo.getFilePath()),
+                        (first, ignored) -> first,
+                        LinkedHashMap::new));
+    }
+
+    private String encodeDocumentPath(String filePath) {
+        return Base64.getEncoder().encodeToString(filePath.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override

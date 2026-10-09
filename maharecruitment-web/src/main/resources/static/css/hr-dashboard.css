@@ -1670,6 +1670,454 @@ button.kpi-card {
     color: var(--hr-warning);
 }
 
+.hrd-calendar {
+    min-width: 0;
+    padding: 1.1rem;
+    border: 1px solid var(--hr-line);
+    border-radius: 12px;
+    background: linear-gradient(145deg, #ffffff, #f7fafc);
+    box-shadow: var(--hr-shadow);
+}
+
+.hrd-calendar-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.hrd-calendar-eyebrow {
+    display: block;
+    margin-bottom: 0.18rem;
+    color: var(--hr-external);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.hrd-calendar-heading h3 {
+    margin: 0;
+    color: var(--hr-ink);
+    font-size: 1.08rem;
+    font-weight: 800;
+}
+
+.hrd-calendar-heading p {
+    margin: 0.3rem 0 0;
+    color: var(--hr-muted);
+    font-size: 0.82rem;
+}
+
+.hrd-calendar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    gap: 0.5rem;
+    min-height: 38px;
+    padding: 0.5rem 0.78rem;
+    border: 1px solid rgba(31, 79, 120, 0.24);
+    border-radius: 9px;
+    color: var(--hr-brand-strong);
+    background: #f0f6fb;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.hrd-calendar-link:hover {
+    color: var(--hr-brand-strong);
+    border-color: rgba(31, 79, 120, 0.5);
+    background: #e5f0f8;
+    transform: translateY(-1px);
+}
+
+.hrd-calendar-link:focus-visible {
+    outline: 3px solid rgba(31, 79, 120, 0.25);
+    outline-offset: 2px;
+}
+
+.hrd-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.hrd-calendar-panel {
+    min-width: 0;
+    padding: 0.95rem;
+    border: 1px solid #dce5ed;
+    border-radius: 11px;
+    background: #ffffff;
+}
+
+.hrd-calendar-current {
+    background: linear-gradient(150deg, #ffffff 65%, #f3faf8);
+}
+
+.hrd-calendar-upcoming {
+    background: linear-gradient(150deg, #ffffff 65%, #fff9ef);
+}
+
+.hrd-calendar-panel-title {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 0.8rem;
+}
+
+.hrd-calendar-title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    color: var(--hr-external);
+    background: #e9f7f6;
+}
+
+.hrd-calendar-upcoming .hrd-calendar-title-icon {
+    color: var(--hr-warning);
+    background: #fff3dc;
+}
+
+.hrd-calendar-panel-title h4 {
+    margin: 0;
+    color: var(--hr-ink);
+    font-size: 0.94rem;
+    font-weight: 800;
+}
+
+.hrd-calendar-panel-title time,
+.hrd-calendar-panel-title div > span {
+    display: block;
+    margin-top: 0.12rem;
+    color: var(--hr-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.hrd-calendar-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    color: var(--hr-brand-strong);
+    background: #edf3f8;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+}
+
+.hrd-event-list,
+.hrd-holiday-list {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.hrd-event-card,
+.hrd-holiday-card {
+    min-width: 0;
+    border: 1px solid #e2e9ef;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.hrd-event-card {
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.hrd-event-card:hover,
+.hrd-event-card:focus-visible {
+    border-color: rgba(15, 139, 141, 0.5);
+    box-shadow: 0 12px 24px rgba(18, 39, 67, 0.15);
+    transform: translateY(-2px);
+}
+
+.hrd-event-card:focus-visible {
+    outline: 3px solid rgba(15, 139, 141, 0.28);
+    outline-offset: 2px;
+}
+
+.hrd-event-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.75rem;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.hrd-event-card.has-background {
+    min-height: 164px;
+    align-content: end;
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(18, 39, 67, 0.16);
+}
+
+.hrd-event-background {
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 350ms ease, filter 250ms ease;
+}
+
+.hrd-event-card.has-background::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(9, 24, 38, 0.08) 0%, rgba(9, 24, 38, 0.38) 42%, rgba(9, 24, 38, 0.94) 100%);
+    transition: background 250ms ease;
+}
+
+.hrd-event-card.has-background:hover .hrd-event-background,
+.hrd-event-card.has-background:focus .hrd-event-background,
+.hrd-event-card.has-background:focus-within .hrd-event-background {
+    filter: saturate(0.9);
+    transform: scale(1.045);
+}
+
+.hrd-event-card.has-background:hover::after,
+.hrd-event-card.has-background:focus::after,
+.hrd-event-card.has-background:focus-within::after {
+    background: linear-gradient(180deg, rgba(9, 24, 38, 0.28) 0%, rgba(9, 24, 38, 0.68) 45%, rgba(9, 24, 38, 0.97) 100%);
+}
+
+.hrd-event-card.has-background .hrd-event-icon {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+}
+
+.hrd-event-card.has-background .hrd-event-meta,
+.hrd-event-card.has-background .hrd-event-content p {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.hrd-event-card.has-background .hrd-event-content p {
+    display: block;
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: max-height 250ms ease, margin-top 250ms ease, opacity 180ms ease, transform 250ms ease;
+}
+
+.hrd-event-card.has-background:hover .hrd-event-content p,
+.hrd-event-card.has-background:focus .hrd-event-content p,
+.hrd-event-card.has-background:focus-within .hrd-event-content p {
+    max-height: 6rem;
+    margin-top: 0.38rem;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hrd-event-card.has-background .hrd-event-content h5 {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.hrd-event-card.has-background .hrd-event-type {
+    color: #ffffff;
+    background: rgba(15, 139, 141, 0.82);
+}
+
+.hrd-event-card.has-background.is-festival .hrd-event-type {
+    background: rgba(155, 101, 23, 0.9);
+}
+
+.hrd-event-hover-hint {
+    display: none;
+}
+
+.hrd-event-card.has-background .hrd-event-hover-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.42rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.66rem;
+    font-weight: 700;
+    transition: opacity 150ms ease;
+}
+
+.hrd-event-card.has-background:hover .hrd-event-hover-hint,
+.hrd-event-card.has-background:focus .hrd-event-hover-hint,
+.hrd-event-card.has-background:focus-within .hrd-event-hover-hint {
+    opacity: 0;
+}
+
+.hrd-event-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    color: #28775a;
+    background: #e9f6ef;
+}
+
+.hrd-event-card.is-festival .hrd-event-icon {
+    color: #9b6517;
+    background: #fff1d7;
+}
+
+.hrd-event-content {
+    min-width: 0;
+}
+
+.hrd-event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.65rem;
+    color: var(--hr-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.hrd-event-type {
+    padding: 0.12rem 0.42rem;
+    border-radius: 999px;
+    color: #28775a;
+    background: #e9f6ef;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.is-festival .hrd-event-type {
+    color: #8a5915;
+    background: #fff1d7;
+}
+
+.hrd-event-content h5,
+.hrd-holiday-content h5 {
+    margin: 0.32rem 0 0;
+    overflow-wrap: anywhere;
+    color: var(--hr-ink);
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.hrd-event-content p {
+    display: -webkit-box;
+    margin: 0.28rem 0 0;
+    overflow: hidden;
+    color: var(--hr-muted);
+    font-size: 0.76rem;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.hrd-holiday-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.62rem 0.7rem;
+}
+
+.hrd-holiday-date {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 46px;
+    min-height: 48px;
+    border-radius: 9px;
+    color: #875814;
+    background: #fff1d7;
+    line-height: 1;
+}
+
+.hrd-holiday-date strong {
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.hrd-holiday-date span {
+    margin-top: 0.2rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.hrd-holiday-content {
+    min-width: 0;
+}
+
+.hrd-holiday-content h5 {
+    margin-top: 0;
+}
+
+.hrd-holiday-content > span {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--hr-muted);
+    font-size: 0.71rem;
+    font-weight: 700;
+}
+
+.hrd-holiday-relative {
+    padding: 0.22rem 0.48rem;
+    border-radius: 999px;
+    color: #875814;
+    background: #fff7e8;
+    font-size: 0.66rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.hrd-calendar-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-height: 84px;
+    padding: 0.8rem;
+    border: 1px dashed #ccd8e2;
+    border-radius: 10px;
+    color: var(--hr-muted);
+    background: rgba(248, 250, 252, 0.78);
+}
+
+.hrd-calendar-empty > i {
+    font-size: 1.3rem;
+}
+
+.hrd-calendar-empty strong,
+.hrd-calendar-empty span {
+    display: block;
+}
+
+.hrd-calendar-empty strong {
+    color: var(--hr-ink);
+    font-size: 0.8rem;
+}
+
+.hrd-calendar-empty span {
+    margin-top: 0.15rem;
+    font-size: 0.72rem;
+}
+
 button.hrd-chip {
     appearance: none;
     width: 100%;
@@ -1876,6 +2324,12 @@ button.hrd-chip:focus-visible,
         transition: none;
     }
 
+    .hrd-event-card,
+    .hrd-event-background,
+    .hrd-event-card.has-background .hrd-event-content p {
+        transition: none;
+    }
+
     .hrd-status-dot {
         animation: none;
     }
@@ -1893,6 +2347,10 @@ button.hrd-chip:focus-visible,
     .hrd-breakdown-grid {
         grid-template-columns: 1fr;
     }
+
+    .hrd-calendar-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 575.98px) {
@@ -1906,6 +2364,28 @@ button.hrd-chip:focus-visible,
 
     .attendance-panel-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hrd-calendar {
+        padding: 0.85rem;
+    }
+
+    .hrd-calendar-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .hrd-calendar-link {
+        width: 100%;
+    }
+
+    .hrd-holiday-card {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .hrd-holiday-relative {
+        grid-column: 2;
+        justify-self: start;
     }
 }
 

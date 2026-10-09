@@ -25,6 +25,7 @@ public record HRDashboardView(
         int externalPercent,
         List<DepartmentOnboardingView> departmentOnboarding,
         List<ProjectScopeListItemView> internalProjectList,
-        List<ProjectScopeListItemView> externalProjectList
+        List<ProjectScopeListItemView> externalProjectList,
+        HRCalendarHighlightsView calendarHighlights
 ) {
 }

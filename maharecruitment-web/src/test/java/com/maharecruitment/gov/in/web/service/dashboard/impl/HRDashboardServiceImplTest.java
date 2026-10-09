@@ -29,6 +29,12 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceDesignationSum
 import com.maharecruitment.gov.in.attendance.repository.AttendanceEmployeeDetailProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
+import com.maharecruitment.gov.in.attendance.entity.CalendarEntryType;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryEntity;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryPhotoEntity;
+import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
+import com.maharecruitment.gov.in.attendance.service.CommonCalendarEntryService;
+import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.master.entity.CellMaster;
@@ -91,6 +97,12 @@ class HRDashboardServiceImplTest {
     private AttendanceRegisterRepo attendanceRegisterRepo;
 
     @Mock
+    private CommonCalendarEntryService calendarEntryService;
+
+    @Mock
+    private HolidayService holidayService;
+
+    @Mock
     private AttendanceCheckInSummaryProjection attendanceSummary;
 
     @Mock
@@ -107,6 +119,22 @@ class HRDashboardServiceImplTest {
 
     @Test
     void getDashboardBuildsSingleQueryCheckInBreakdown() {
+        LocalDate today = LocalDate.now();
+        CommonCalendarEntryEntity festival = new CommonCalendarEntryEntity();
+        festival.setId(51L);
+        festival.setTitle("Navratri Celebration");
+        festival.setEntryType(CalendarEntryType.FESTIVAL);
+        festival.setEntryDate(today.plusDays(2));
+        festival.setEndDate(today.plusDays(4));
+        festival.setDescription("Cultural celebration");
+        HolidayMasterEntity holiday = new HolidayMasterEntity();
+        holiday.setId(61L);
+        holiday.setHolidayName("Dussehra");
+        holiday.setHolidayDate(today.plusDays(4));
+        CommonCalendarEntryPhotoEntity photo = new CommonCalendarEntryPhotoEntity();
+        photo.setCalendarEntryId(51L);
+        photo.setFilePath("uploads/calendar/navratri.jpg");
+
         when(projectMstRepository.findByProjectScopeTypeOrderByProjectNameAsc(any())).thenReturn(List.of());
         when(wingMasterRepository.countByActiveFlagIgnoreCase("Y")).thenReturn(3L);
         when(cellMasterRepository.countByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase("Y", "Y"))
@@ -131,6 +159,9 @@ class HRDashboardServiceImplTest {
         when(attendanceSummary.getLateCount()).thenReturn(1L);
         when(attendanceSummary.getAfterElevenCount()).thenReturn(1L);
         when(attendanceRegisterRepo.countExternalPresentByMonthYearDay(any(), any(), any())).thenReturn(2L);
+        when(calendarEntryService.getEntriesBetween(today, today.plusDays(10))).thenReturn(List.of(festival));
+        when(calendarEntryService.getPhotosForEntries(List.of(51L))).thenReturn(List.of(photo));
+        when(holidayService.getHolidaysBetween(today, today.plusDays(10))).thenReturn(List.of(holiday));
         HRDashboardView result = service().getDashboard();
 
         assertThat(result.presentEmployees()).isEqualTo(11);
@@ -147,6 +178,19 @@ class HRDashboardServiceImplTest {
         assertThat(result.attendanceSummary().afterElevenCheckIns()).isEqualTo(1);
         assertThat(result.totalWings()).isEqualTo(3);
         assertThat(result.totalCells()).isEqualTo(12);
+        assertThat(result.calendarHighlights().currentEvents())
+                .extracting(
+                        entry -> entry.title(),
+                        entry -> entry.type(),
+                        entry -> entry.endDate(),
+                        entry -> entry.backgroundPhotoToken(),
+                        entry -> entry.daysUntilStart())
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(
+                        "Navratri Celebration", "Festival", today.plusDays(4),
+                        "dXBsb2Fkcy9jYWxlbmRhci9uYXZyYXRyaS5qcGc=", 2L));
+        assertThat(result.calendarHighlights().upcomingHolidays())
+                .extracting(holidayView -> holidayView.name(), holidayView -> holidayView.daysUntil())
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("Dussehra", 4L));
         verify(dailyAttendanceInternalRepository).summarizeAttendanceByDate(
                 any(LocalDate.class),
                 eq(LocalTime.of(9, 45)),
@@ -498,7 +542,9 @@ class HRDashboardServiceImplTest {
                 cellReportingAuthorityMappingRepository,
                 departmentProjectApplicationRepository,
                 dailyAttendanceInternalRepository,
-                attendanceRegisterRepo);
+                attendanceRegisterRepo,
+                calendarEntryService,
+                holidayService);
     }
 
     private WingMaster wing(Long wingId, String wingName) {
