@@ -67,6 +67,12 @@ public interface InternalVacancyOpeningService {
             String search,
             Pageable pageable);
 
+    List<InternalVacancyInterviewAuthorityUserOptionView> getAvailableLevelTwoInterviewAuthorities();
+
+    Page<InternalVacancyInterviewAuthorityUserOptionView> getAvailableLevelTwoInterviewAuthoritiesPage(
+            String search,
+            Pageable pageable);
+
     List<InternalVacancyInterviewEmployeeOptionView> getAvailableInterviewEmployees();
 
     List<InternalVacancyInterviewEmployeeOptionView> getAvailableReplacementEmployees();

@@ -14,6 +14,13 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwo
 public interface RecruitmentInternalLevelTwoFeedbackRepository
         extends JpaRepository<RecruitmentInternalLevelTwoFeedbackEntity, Long> {
 
+    @Query("select case when count(feedback) > 0 then true else false end "
+            + "from RecruitmentInternalLevelTwoFeedbackEntity feedback "
+            + "where feedback.schedule.recruitmentInterviewDetail.recruitmentNotification.internalVacancyOpening."
+            + "internalVacancyOpeningId = :internalVacancyOpeningId")
+    boolean existsByInternalVacancyOpeningId(
+            @Param("internalVacancyOpeningId") Long internalVacancyOpeningId);
+
     @Query("select feedback "
             + "from RecruitmentInternalLevelTwoFeedbackEntity feedback "
             + "join fetch feedback.schedule schedule "

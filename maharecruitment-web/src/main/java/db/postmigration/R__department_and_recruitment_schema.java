@@ -217,6 +217,30 @@ public class R__department_and_recruitment_schema extends BaseJavaMigration {
                 "create index if not exists idx_internal_vacancy_interview_authority_user "
                         + "on internal_vacancy_interview_authority (user_id)");
 
+        jdbcTemplate.execute("""
+                create table if not exists internal_vacancy_level_two_authority (
+                    internal_vacancy_level_two_authority_id bigserial primary key,
+                    internal_vacancy_opening_id bigint not null,
+                    user_id bigint not null,
+                    created_date_time timestamp not null default current_timestamp,
+                    updated_date_time timestamp not null default current_timestamp,
+                    constraint uk_internal_vacancy_l2_authority
+                        unique (internal_vacancy_opening_id, user_id),
+                    constraint fk_internal_vacancy_l2_authority_opening
+                        foreign key (internal_vacancy_opening_id)
+                        references internal_vacancy_opening(internal_vacancy_opening_id)
+                        on delete cascade,
+                    constraint fk_internal_vacancy_l2_authority_user
+                        foreign key (user_id) references users(id)
+                )
+                """);
+        jdbcTemplate.execute(
+                "create index if not exists idx_internal_vacancy_l2_authority_opening "
+                        + "on internal_vacancy_level_two_authority (internal_vacancy_opening_id)");
+        jdbcTemplate.execute(
+                "create index if not exists idx_internal_vacancy_l2_authority_user "
+                        + "on internal_vacancy_level_two_authority (user_id)");
+
         if (tableExists(connection, "internal_vacancy_opening")) {
             List<String> allowedStatuses = Stream.of(InternalVacancyOpeningStatus.values())
                     .map(Enum::name)

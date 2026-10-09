@@ -22,20 +22,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.maharecruitment.gov.in.attendance.dto.WeekOffWorkingDayForm;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
 import com.maharecruitment.gov.in.attendance.entity.WeekOffWorkingDayEntity;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.attendance.service.WeekOffWorkingDayService;
 import com.maharecruitment.gov.in.audit.dto.AuditEventView;
-import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.admin.AdminHolidayCalendarDayView;
 import com.maharecruitment.gov.in.web.dto.admin.AdminHolidayForm;
-import com.maharecruitment.gov.in.web.dto.admin.AdminWeekOffWorkingDayForm;
 import com.maharecruitment.gov.in.web.dto.admin.AdminWeekOffWorkingDayView;
-import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
+import com.maharecruitment.gov.in.web.service.attendance.WeekOffWorkingDayPageService;
 
 import jakarta.validation.Valid;
 
@@ -43,19 +41,17 @@ import jakarta.validation.Valid;
 @RequestMapping("/admin/attendance/holidays")
 public class AdminHolidayCalendarPageController {
 
-    private static final String WORKING_DAY_UPLOAD_MODULE = "attendance/week-off-working-day-office-order";
-
     private final HolidayService holidayService;
     private final WeekOffWorkingDayService weekOffWorkingDayService;
-    private final FileStorageService fileStorageService;
+    private final WeekOffWorkingDayPageService workingDayPageService;
 
     public AdminHolidayCalendarPageController(
             HolidayService holidayService,
             WeekOffWorkingDayService weekOffWorkingDayService,
-            FileStorageService fileStorageService) {
+            WeekOffWorkingDayPageService workingDayPageService) {
         this.holidayService = holidayService;
         this.weekOffWorkingDayService = weekOffWorkingDayService;
-        this.fileStorageService = fileStorageService;
+        this.workingDayPageService = workingDayPageService;
     }
 
     @GetMapping
@@ -129,32 +125,12 @@ public class AdminHolidayCalendarPageController {
 
     @PostMapping("/working-days")
     public String saveWorkingDay(
-            @Valid @ModelAttribute("workingDayForm") AdminWeekOffWorkingDayForm workingDayForm,
+            @Valid @ModelAttribute("workingDayForm") WeekOffWorkingDayForm workingDayForm,
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
         YearMonth selectedMonth = resolveMonth(workingDayForm.getViewMonth());
-        String previousOfficeOrderOriginalName = workingDayForm.getOfficeOrderOriginalName();
-        String previousOfficeOrderStoredName = workingDayForm.getOfficeOrderStoredName();
-        String previousOfficeOrderPath = workingDayForm.getOfficeOrderPath();
-        String previousOfficeOrderContentType = workingDayForm.getOfficeOrderContentType();
-        Long previousOfficeOrderFileSize = workingDayForm.getOfficeOrderFileSize();
-        validateWorkingDayForm(workingDayForm, bindingResult);
-
-        FileUploadResult uploadedOfficeOrder = bindingResult.hasErrors()
-                ? null
-                : stageOfficeOrderUpload(workingDayForm, bindingResult);
         if (bindingResult.hasErrors()) {
-            if (uploadedOfficeOrder != null) {
-                fileStorageService.deleteQuietly(uploadedOfficeOrder.fullPath());
-            }
-            restoreOfficeOrderReference(
-                    workingDayForm,
-                    previousOfficeOrderOriginalName,
-                    previousOfficeOrderStoredName,
-                    previousOfficeOrderPath,
-                    previousOfficeOrderContentType,
-                    previousOfficeOrderFileSize);
             populateViewModel(
                     model,
                     selectedMonth,
@@ -166,40 +142,16 @@ public class AdminHolidayCalendarPageController {
                     true);
             return "admin/attendance/holidays";
         }
-        WeekOffWorkingDayEntity workingDay = new WeekOffWorkingDayEntity();
-        workingDay.setId(workingDayForm.getId());
-        workingDay.setWorkingDate(workingDayForm.getWorkingDate());
-        workingDay.setOfficeOrderOriginalName(workingDayForm.getOfficeOrderOriginalName());
-        workingDay.setOfficeOrderStoredName(workingDayForm.getOfficeOrderStoredName());
-        workingDay.setOfficeOrderPath(workingDayForm.getOfficeOrderPath());
-        workingDay.setOfficeOrderContentType(workingDayForm.getOfficeOrderContentType());
-        workingDay.setOfficeOrderFileSize(workingDayForm.getOfficeOrderFileSize());
 
         try {
-            weekOffWorkingDayService.saveWorkingDay(workingDay);
-            if (uploadedOfficeOrder != null
-                    && StringUtils.hasText(previousOfficeOrderPath)
-                    && !previousOfficeOrderPath.equals(uploadedOfficeOrder.fullPath())
-                    && fileStorageService.isManagedPath(previousOfficeOrderPath)) {
-                fileStorageService.deleteQuietly(previousOfficeOrderPath);
-            }
+            boolean created = workingDayPageService.save(workingDayForm);
             redirectAttributes.addFlashAttribute(
                     "successMessage",
-                    workingDayForm.getId() == null
+                    created
                             ? "Week off working day added. Internal attendance will now treat the weekend as a working day."
                             : "Week off working day updated. Internal attendance will use the latest office order immediately.");
             return "redirect:/admin/attendance/holidays?month=" + selectedMonth;
         } catch (RuntimeException ex) {
-            if (uploadedOfficeOrder != null) {
-                fileStorageService.deleteQuietly(uploadedOfficeOrder.fullPath());
-            }
-            restoreOfficeOrderReference(
-                    workingDayForm,
-                    previousOfficeOrderOriginalName,
-                    previousOfficeOrderStoredName,
-                    previousOfficeOrderPath,
-                    previousOfficeOrderContentType,
-                    previousOfficeOrderFileSize);
             model.addAttribute("errorMessage", ex.getMessage());
             populateViewModel(
                     model,
@@ -212,20 +164,6 @@ public class AdminHolidayCalendarPageController {
                     true);
             return "admin/attendance/holidays";
         }
-    }
-
-    private void restoreOfficeOrderReference(
-            AdminWeekOffWorkingDayForm workingDayForm,
-            String officeOrderOriginalName,
-            String officeOrderStoredName,
-            String officeOrderPath,
-            String officeOrderContentType,
-            Long officeOrderFileSize) {
-        workingDayForm.setOfficeOrderOriginalName(officeOrderOriginalName);
-        workingDayForm.setOfficeOrderStoredName(officeOrderStoredName);
-        workingDayForm.setOfficeOrderPath(officeOrderPath);
-        workingDayForm.setOfficeOrderContentType(officeOrderContentType);
-        workingDayForm.setOfficeOrderFileSize(officeOrderFileSize);
     }
 
     @PostMapping("/{holidayId}/archive")
@@ -264,7 +202,7 @@ public class AdminHolidayCalendarPageController {
             Long holidayId,
             Long workingDayId,
             AdminHolidayForm holidayForm,
-            AdminWeekOffWorkingDayForm workingDayForm,
+            WeekOffWorkingDayForm workingDayForm,
             boolean preserveHolidayForm,
             boolean preserveWorkingDayForm) {
         LocalDate monthStart = selectedMonth.atDay(1);
@@ -354,11 +292,11 @@ public class AdminHolidayCalendarPageController {
         return form;
     }
 
-    private AdminWeekOffWorkingDayForm buildWorkingDayForm(
+    private WeekOffWorkingDayForm buildWorkingDayForm(
             Long workingDayId,
             YearMonth selectedMonth,
             LocalDate selectedDate) {
-        AdminWeekOffWorkingDayForm form = new AdminWeekOffWorkingDayForm();
+        WeekOffWorkingDayForm form = new WeekOffWorkingDayForm();
         form.setViewMonth(selectedMonth.toString());
 
         WeekOffWorkingDayEntity workingDay = workingDayId == null ? null : weekOffWorkingDayService.getWorkingDayById(workingDayId);
@@ -431,63 +369,6 @@ public class AdminHolidayCalendarPageController {
         return weeks;
     }
 
-    private FileUploadResult stageOfficeOrderUpload(
-            AdminWeekOffWorkingDayForm workingDayForm,
-            BindingResult bindingResult) {
-        MultipartFile officeOrderFile = workingDayForm.getOfficeOrderFile();
-        if (!hasFile(officeOrderFile)) {
-            return null;
-        }
-
-        try {
-            FileUploadResult uploadedFile = fileStorageService.store(officeOrderFile, WORKING_DAY_UPLOAD_MODULE);
-            workingDayForm.setOfficeOrderOriginalName(uploadedFile.originalFileName());
-            workingDayForm.setOfficeOrderStoredName(uploadedFile.storedFileName());
-            workingDayForm.setOfficeOrderPath(uploadedFile.fullPath());
-            workingDayForm.setOfficeOrderContentType(uploadedFile.contentType());
-            workingDayForm.setOfficeOrderFileSize(uploadedFile.size());
-            return uploadedFile;
-        } catch (RuntimeException ex) {
-            bindingResult.rejectValue(
-                    "officeOrderFile",
-                    "workingDay.officeOrderFile",
-                    "Office order upload failed: " + resolveMessage(ex));
-            return null;
-        }
-    }
-
-    private void validateWorkingDayForm(
-            AdminWeekOffWorkingDayForm workingDayForm,
-            BindingResult bindingResult) {
-        if (workingDayForm.getWorkingDate() != null && !isWeekend(workingDayForm.getWorkingDate())) {
-            bindingResult.rejectValue(
-                    "workingDate",
-                    "workingDay.workingDate",
-                    "Only Saturday or Sunday can be converted into a working day.");
-        }
-
-        if (!hasFile(workingDayForm.getOfficeOrderFile())) {
-            if (!StringUtils.hasText(workingDayForm.getOfficeOrderPath())) {
-                bindingResult.rejectValue(
-                        "officeOrderFile",
-                        "workingDay.officeOrderFile",
-                        "Office order is required.");
-                return;
-            }
-
-            validateStoredOfficeOrderReference(workingDayForm.getOfficeOrderPath(), bindingResult);
-        }
-    }
-
-    private void validateStoredOfficeOrderReference(String officeOrderPath, BindingResult bindingResult) {
-        if (!fileStorageService.isManagedFileAllowed(officeOrderPath, WORKING_DAY_UPLOAD_MODULE)) {
-            bindingResult.rejectValue(
-                    "officeOrderFile",
-                    "workingDay.officeOrderFile",
-                    "Existing office order reference is invalid.");
-        }
-    }
-
     private String encodeDocumentPath(String fullPath) {
         if (!StringUtils.hasText(fullPath)) {
             return null;
@@ -515,14 +396,6 @@ public class AdminHolidayCalendarPageController {
             }
         }
         return null;
-    }
-
-    private boolean hasFile(MultipartFile file) {
-        return file != null && !file.isEmpty();
-    }
-
-    private String resolveMessage(RuntimeException ex) {
-        return ex.getMessage() == null ? "Upload failed." : ex.getMessage();
     }
 
     private boolean isWeekend(LocalDate date) {

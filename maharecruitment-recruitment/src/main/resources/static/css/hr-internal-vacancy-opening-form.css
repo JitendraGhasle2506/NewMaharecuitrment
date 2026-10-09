@@ -1,0 +1,380 @@
+.internal-vacancy-form-shell {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: clamp(0.25rem, 1vw, 0.75rem);
+}
+
+.internal-vacancy-form-card {
+    overflow: hidden;
+    border: 1px solid #dce6f0;
+    border-radius: 16px;
+    background: #f5f8fc;
+    box-shadow: 0 14px 34px rgba(26, 56, 91, 0.1);
+}
+
+.internal-vacancy-form-card .internal-vacancy-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem clamp(1rem, 2.5vw, 1.75rem);
+    border-bottom: 1px solid #d7e4f0;
+    background: linear-gradient(135deg, #f8fbff 0%, #edf5ff 100%);
+}
+
+.internal-vacancy-form-header h2 {
+    color: #17365d;
+    font-size: clamp(1.15rem, 2vw, 1.45rem);
+}
+
+.internal-vacancy-form-header p {
+    margin-top: 0.3rem;
+    color: #63758b;
+    font-size: 0.86rem;
+}
+
+.internal-vacancy-status {
+    flex: 0 0 auto;
+    padding: 0.42rem 0.72rem;
+    border: 1px solid #b9d3f3;
+    border-radius: 999px;
+    color: #1859a5;
+    background: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+}
+
+.internal-vacancy-form-card .internal-vacancy-form-body {
+    padding: clamp(0.85rem, 2vw, 1.5rem);
+}
+
+.validation-summary {
+    border: 1px solid #f2b8bd;
+    border-left: 4px solid #dc3545;
+    border-radius: 0.65rem;
+}
+
+.validation-summary:focus {
+    outline: 3px solid rgba(220, 53, 69, 0.18);
+    outline-offset: 2px;
+}
+
+.validation-group-invalid .dropdown-toggle,
+.authority-results.border-danger {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.08);
+}
+
+#internalVacancyOpeningForm {
+    display: grid;
+    gap: 1rem;
+}
+
+.vacancy-form-section {
+    padding: clamp(1rem, 2vw, 1.35rem);
+    border: 1px solid #dce5ef;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(25, 55, 88, 0.045);
+}
+
+.vacancy-section-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #e8eef5;
+}
+
+.vacancy-section-icon {
+    display: grid;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 10px;
+    color: #1767c0;
+    background: #e9f3ff;
+}
+
+.vacancy-section-heading h3 {
+    margin: 0;
+    color: #1b3555;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.vacancy-section-heading p {
+    margin: 0.2rem 0 0;
+    color: #6b7d91;
+    font-size: 0.82rem;
+}
+
+.internal-vacancy-form-card .form-label {
+    color: #294665;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.internal-vacancy-form-card .form-control,
+.internal-vacancy-form-card .form-select,
+.internal-vacancy-form-card .dropdown-toggle {
+    min-height: 42px;
+    border-color: #cfdbe8;
+    border-radius: 9px;
+}
+
+.internal-vacancy-form-card .form-control:focus,
+.internal-vacancy-form-card .form-select:focus,
+.internal-vacancy-form-card .dropdown-toggle:focus {
+    border-color: #5b9be1;
+    box-shadow: 0 0 0 0.2rem rgba(30, 111, 196, 0.12);
+}
+
+.internal-vacancy-form-card .form-text {
+    color: #728196;
+    font-size: 0.76rem;
+}
+
+.authority-round-card {
+    margin: 0;
+    padding: 1rem;
+    border: 1px solid #dbe6f2;
+    border-radius: 12px;
+    background: #f9fbfe;
+}
+
+.authority-round-card[data-locked="true"] {
+    border-color: #d6dbe2;
+    background: #f6f7f9;
+}
+
+.authority-field-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.authority-selection-count {
+    flex: 0 0 auto;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    color: #27557f;
+    background: #e8f2fc;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.authority-selection-count.is-complete {
+    color: #17633a;
+    background: #e2f5e9;
+}
+
+.authority-selection-count.is-over-limit {
+    color: #a52834;
+    background: #fde9eb;
+}
+
+.authority-role-list,
+.authority-results {
+    border: 1px solid #d2deea;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.authority-role-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    min-height: 120px;
+    margin-top: 0.55rem;
+    padding: 0.75rem;
+}
+
+.authority-results {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    min-height: 126px;
+    max-height: 285px;
+    padding: 0.65rem;
+}
+
+.authority-role-list .form-check,
+.authority-results .form-check {
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0.55rem 0.55rem 0.55rem 2rem;
+    border: 1px solid #e4ebf3;
+    border-radius: 8px;
+    background: #fff;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.authority-role-list .form-check:hover,
+.authority-results .form-check:hover {
+    border-color: #a8caed;
+    background: #f4f9ff;
+}
+
+.authority-results .form-check-label,
+.authority-role-list .form-check-label {
+    display: block;
+    overflow-wrap: anywhere;
+    color: #344e6b;
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.authority-results > .text-muted,
+.authority-results > .text-danger,
+.authority-results > .text-center {
+    grid-column: 1 / -1;
+    align-self: center;
+}
+
+.authority-round-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.7rem 0;
+    color: #8594a6;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.authority-round-divider::before,
+.authority-round-divider::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: #dce5ef;
+}
+
+.vacancy-requirement-table-wrap {
+    border: 1px solid #dce5ef;
+    border-radius: 10px;
+}
+
+#internalRequirementTable {
+    min-width: 640px;
+    margin-bottom: 0;
+}
+
+#internalRequirementTable thead th {
+    border-bottom-width: 1px;
+    color: #315270;
+    background: #edf4fb;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.vacancy-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    flex-wrap: wrap;
+    margin: 0 -0.25rem -0.25rem;
+    padding: 0.9rem;
+    border: 1px solid rgba(210, 222, 234, 0.9);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 -5px 18px rgba(28, 58, 91, 0.07);
+    backdrop-filter: blur(8px);
+}
+
+.vacancy-form-actions .btn {
+    min-height: 40px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+@media (max-width: 991.98px) {
+    .internal-vacancy-form-shell {
+        padding: 0;
+    }
+
+    .internal-vacancy-form-card {
+        border-radius: 12px;
+    }
+
+    .authority-results {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .internal-vacancy-form-card .internal-vacancy-form-header {
+        align-items: flex-start;
+    }
+
+    .authority-round-card {
+        padding: 0.85rem;
+    }
+
+    .authority-role-list {
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+
+    .authority-field-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .authority-results {
+        max-height: 250px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .internal-vacancy-form-card .internal-vacancy-form-header {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .internal-vacancy-status {
+        align-self: flex-start;
+    }
+
+    .internal-vacancy-form-card .internal-vacancy-form-body {
+        padding: 0.7rem;
+    }
+
+    .vacancy-form-section {
+        padding: 0.85rem;
+        border-radius: 11px;
+    }
+
+    .vacancy-section-heading p {
+        line-height: 1.4;
+    }
+
+    .authority-round-card > [class*="col-"] + [class*="col-"] {
+        margin-top: 0.3rem;
+    }
+
+    .vacancy-form-actions {
+        display: grid !important;
+        grid-template-columns: 1fr;
+    }
+
+    .vacancy-form-actions .btn {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .authority-role-list .form-check,
+    .authority-results .form-check {
+        transition: none;
+    }
+}

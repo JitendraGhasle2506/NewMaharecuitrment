@@ -13,6 +13,8 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentFeedba
 @Repository
 public interface RecruitmentAssessmentFeedbackRepository extends JpaRepository<RecruitmentAssessmentFeedbackEntity, Long> {
 
+    boolean existsByInternalVacancyOpeningId(Long internalVacancyOpeningId);
+
     Optional<RecruitmentAssessmentFeedbackEntity> findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(
             Long recruitmentInterviewDetailId);
 

@@ -54,4 +54,12 @@ public interface InternalVacancyPanelAssessmentRepository extends JpaRepository<
             @Param("interviewDetailIds") Set<Long> interviewDetailIds,
             @Param("userId") Long userId,
             @Param("employeeId") Long employeeId);
+
+    @Query("select case when count(assessment) > 0 then true else false end "
+            + "from InternalVacancyPanelAssessmentEntity assessment "
+            + "where assessment.interviewDetail.recruitmentNotification.internalVacancyOpening."
+            + "internalVacancyOpeningId = :internalVacancyOpeningId "
+            + "and upper(coalesce(assessment.status, 'SUBMITTED')) = 'SUBMITTED'")
+    boolean existsSubmittedByInternalVacancyOpeningId(
+            @Param("internalVacancyOpeningId") Long internalVacancyOpeningId);
 }

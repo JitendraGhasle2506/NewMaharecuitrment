@@ -581,6 +581,11 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
             if (schedule == null) {
                 schedule = new RecruitmentInternalLevelTwoScheduleEntity();
                 schedule.setRecruitmentInterviewDetail(candidate);
+                InternalVacancyLevelTwoPanelMapper.replaceWithOpeningAuthorities(
+                        schedule,
+                        candidate.getRecruitmentNotification() != null
+                                ? candidate.getRecruitmentNotification().getInternalVacancyOpening()
+                                : null);
             }
             if (schedule.getWorkflowStatus() == null
                     || schedule.getWorkflowStatus() == InternalVacancyLevelTwoWorkflowStatus.READY_FOR_L2) {

@@ -118,6 +118,11 @@ import db.postmigration.V138__internal_interview_optional_grade_recommendation;
 import db.postmigration.V139__internal_level_two_feedback_optional_grade_recommendation;
 import db.postmigration.V140__mahait_employee_leave_tour_approval_workflow;
 import db.postmigration.V141__leave_tour_approval_history_indexes;
+import db.postmigration.V142__employee_type_conversion_audit;
+import db.postmigration.V143__internal_conversion_department_optional;
+import db.postmigration.V144__employee_type_conversion_location_audit;
+import db.postmigration.V145__employee_type_conversion_department_nullable_reconciliation;
+import db.postmigration.V146__internal_vacancy_level_two_authority;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -278,6 +283,11 @@ public class PostSchemaFlywayRunner {
                 new V139__internal_level_two_feedback_optional_grade_recommendation(),
                 new V140__mahait_employee_leave_tour_approval_workflow(),
                 new V141__leave_tour_approval_history_indexes(),
+                new V142__employee_type_conversion_audit(),
+                new V143__internal_conversion_department_optional(),
+                new V144__employee_type_conversion_location_audit(),
+                new V145__employee_type_conversion_department_nullable_reconciliation(),
+                new V146__internal_vacancy_level_two_authority(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

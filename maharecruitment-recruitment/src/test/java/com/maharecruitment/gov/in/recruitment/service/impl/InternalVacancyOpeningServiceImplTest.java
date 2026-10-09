@@ -26,6 +26,8 @@ import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationMasterService;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationRateService;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyHiringRequestType;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewAuthorityEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyLevelTwoAuthorityEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
@@ -33,6 +35,10 @@ import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningRequi
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningRepository;
+import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyPanelAssessmentRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoFeedbackRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoScheduleRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyApprovalDocumentStorageService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentRequestIdGenerator;
@@ -47,6 +53,10 @@ class InternalVacancyOpeningServiceImplTest {
     private EmployeeRepository employeeRepository;
     private UserRepository userRepository;
     private InternalVacancyOpeningRepository internalVacancyOpeningRepository;
+    private InternalVacancyPanelAssessmentRepository panelAssessmentRepository;
+    private RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
+    private RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository;
+    private RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository;
     private InternalVacancyOpeningServiceImpl service;
 
     @BeforeEach
@@ -55,6 +65,10 @@ class InternalVacancyOpeningServiceImplTest {
         employeeRepository = mock(EmployeeRepository.class);
         userRepository = mock(UserRepository.class);
         internalVacancyOpeningRepository = mock(InternalVacancyOpeningRepository.class);
+        panelAssessmentRepository = mock(InternalVacancyPanelAssessmentRepository.class);
+        assessmentFeedbackRepository = mock(RecruitmentAssessmentFeedbackRepository.class);
+        levelTwoFeedbackRepository = mock(RecruitmentInternalLevelTwoFeedbackRepository.class);
+        levelTwoScheduleRepository = mock(RecruitmentInternalLevelTwoScheduleRepository.class);
         service = new InternalVacancyOpeningServiceImpl(
                 internalVacancyOpeningRepository,
                 projectRepository,
@@ -66,7 +80,11 @@ class InternalVacancyOpeningServiceImplTest {
                 employeeRepository,
                 mock(RecruitmentRequestIdGenerator.class),
                 mock(RecruitmentNotificationService.class),
-                mock(InternalVacancyApprovalDocumentStorageService.class));
+                mock(InternalVacancyApprovalDocumentStorageService.class),
+                panelAssessmentRepository,
+                assessmentFeedbackRepository,
+                levelTwoFeedbackRepository,
+                levelTwoScheduleRepository);
 
         when(projectRepository.findByProjectIdAndProjectScopeType(10L, ProjectScopeType.INTERNAL))
                 .thenReturn(Optional.of(mock(ProjectMst.class)));
@@ -252,6 +270,90 @@ class InternalVacancyOpeningServiceImplTest {
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(503L, "USER"),
                         org.assertj.core.groups.Tuple.tuple(1199L, "EMPLOYEE"));
+    }
+
+    @Test
+    void editFormLoadsBothAuthorityRoundsAndLocksThemIndependently() {
+        ProjectMst project = new ProjectMst();
+        project.setProjectId(10L);
+        User levelOneUser = new User();
+        levelOneUser.setId(101L);
+        User levelTwoUser = new User();
+        levelTwoUser.setId(202L);
+
+        InternalVacancyOpeningEntity opening = new InternalVacancyOpeningEntity();
+        opening.setInternalVacancyOpeningId(7L);
+        opening.setProjectMst(project);
+        opening.setStatus(InternalVacancyOpeningStatus.OPEN);
+        InternalVacancyInterviewAuthorityEntity levelOneAuthority =
+                new InternalVacancyInterviewAuthorityEntity();
+        levelOneAuthority.setUser(levelOneUser);
+        opening.addInterviewAuthority(levelOneAuthority);
+        InternalVacancyLevelTwoAuthorityEntity levelTwoAuthority =
+                new InternalVacancyLevelTwoAuthorityEntity();
+        levelTwoAuthority.setUser(levelTwoUser);
+        opening.replaceLevelTwoInterviewAuthorities(List.of(levelTwoAuthority));
+
+        when(internalVacancyOpeningRepository.findDetailedByInternalVacancyOpeningId(7L))
+                .thenReturn(Optional.of(opening));
+        when(panelAssessmentRepository.existsSubmittedByInternalVacancyOpeningId(7L)).thenReturn(true);
+        when(levelTwoFeedbackRepository.existsByInternalVacancyOpeningId(7L)).thenReturn(false);
+
+        var form = service.getOpeningForEdit(7L);
+
+        assertThat(form.getInterviewAuthorityUserIds()).containsExactly(101L);
+        assertThat(form.getLevelTwoInterviewAuthorityUserIds()).containsExactly(202L);
+        assertThat(form.isLevelOneInterviewAuthorityLocked()).isTrue();
+        assertThat(form.isLevelTwoInterviewAuthorityLocked()).isFalse();
+    }
+
+    @Test
+    void rejectsChangingOnlyTheRoundThatAlreadyHasFeedback() {
+        User levelOneUser = new User();
+        levelOneUser.setId(101L);
+        User levelTwoUser = new User();
+        levelTwoUser.setId(202L);
+        InternalVacancyOpeningEntity opening = new InternalVacancyOpeningEntity();
+        InternalVacancyInterviewAuthorityEntity levelOneAuthority =
+                new InternalVacancyInterviewAuthorityEntity();
+        levelOneAuthority.setUser(levelOneUser);
+        opening.addInterviewAuthority(levelOneAuthority);
+        InternalVacancyLevelTwoAuthorityEntity levelTwoAuthority =
+                new InternalVacancyLevelTwoAuthorityEntity();
+        levelTwoAuthority.setUser(levelTwoUser);
+        opening.replaceLevelTwoInterviewAuthorities(List.of(levelTwoAuthority));
+
+        InternalVacancyOpeningCommand changedLevelOne = InternalVacancyOpeningCommand.builder()
+                .interviewAuthorityRoleIds(List.of())
+                .interviewAuthorityUserIds(List.of(999L))
+                .interviewAuthorityEmployeeIds(List.of())
+                .levelTwoInterviewAuthorityUserIds(List.of(202L))
+                .build();
+        assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(
+                service,
+                "validateLockedAuthoritySelections",
+                opening,
+                changedLevelOne,
+                true,
+                false))
+                .isInstanceOf(RecruitmentNotificationException.class)
+                .hasMessageContaining("Round L1 interview authorities cannot be changed");
+
+        InternalVacancyOpeningCommand changedLevelTwo = InternalVacancyOpeningCommand.builder()
+                .interviewAuthorityRoleIds(List.of())
+                .interviewAuthorityUserIds(List.of(101L))
+                .interviewAuthorityEmployeeIds(List.of())
+                .levelTwoInterviewAuthorityUserIds(List.of(999L))
+                .build();
+        assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(
+                service,
+                "validateLockedAuthoritySelections",
+                opening,
+                changedLevelTwo,
+                false,
+                true))
+                .isInstanceOf(RecruitmentNotificationException.class)
+                .hasMessageContaining("Round L2 interview authorities cannot be changed");
     }
 
     private EmployeeEntity replacementEmployee(

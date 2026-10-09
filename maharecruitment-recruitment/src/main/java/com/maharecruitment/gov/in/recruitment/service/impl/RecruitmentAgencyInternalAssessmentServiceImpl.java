@@ -208,6 +208,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
         schedule.setHrTimeChangeRequestedAt(null);
         schedule.setHrTimeChangeRequestedByUserId(null);
         schedule.setWorkflowStatus(resolveScheduledWorkflowStatus(schedule));
+        InternalVacancyLevelTwoPanelMapper.activateConfiguredPanel(schedule, agencyUserId);
         levelTwoScheduleRepository.save(schedule);
     }
 

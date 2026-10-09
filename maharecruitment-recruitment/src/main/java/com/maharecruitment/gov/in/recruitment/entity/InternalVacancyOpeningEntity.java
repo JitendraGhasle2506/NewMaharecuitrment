@@ -115,6 +115,10 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
     @OrderBy("internalVacancyInterviewEmployeeId ASC")
     private List<InternalVacancyInterviewEmployeeEntity> interviewEmployees = new ArrayList<>();
 
+    @OneToMany(mappedBy = "opening", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("internalVacancyLevelTwoAuthorityId ASC")
+    private List<InternalVacancyLevelTwoAuthorityEntity> levelTwoInterviewAuthorities = new ArrayList<>();
+
     public void replaceRequirements(List<InternalVacancyOpeningRequirementEntity> requirementEntities) {
         requirements.clear();
         if (requirementEntities == null || requirementEntities.isEmpty()) {
@@ -189,6 +193,22 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
         }
         employeeAssignment.setOpening(this);
         interviewEmployees.add(employeeAssignment);
+    }
+
+    public void replaceLevelTwoInterviewAuthorities(
+            List<InternalVacancyLevelTwoAuthorityEntity> authorityAssignments) {
+        levelTwoInterviewAuthorities.clear();
+        if (authorityAssignments == null || authorityAssignments.isEmpty()) {
+            return;
+        }
+
+        for (InternalVacancyLevelTwoAuthorityEntity authorityAssignment : authorityAssignments) {
+            if (authorityAssignment == null) {
+                continue;
+            }
+            authorityAssignment.setOpening(this);
+            levelTwoInterviewAuthorities.add(authorityAssignment);
+        }
     }
 
     public void replaceReplacementEmployees(List<EmployeeEntity> employees) {

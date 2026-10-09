@@ -22,6 +22,14 @@ public interface RecruitmentInternalLevelTwoScheduleRepository
     List<RecruitmentInternalLevelTwoScheduleEntity> findByRecruitmentInterviewDetailRecruitmentInterviewDetailIdIn(
             List<Long> recruitmentInterviewDetailIds);
 
+    @Query("select distinct schedule from RecruitmentInternalLevelTwoScheduleEntity schedule "
+            + "join fetch schedule.recruitmentInterviewDetail candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "left join fetch schedule.panelMembers panelMember "
+            + "where notification.internalVacancyOpening.internalVacancyOpeningId = :internalVacancyOpeningId")
+    List<RecruitmentInternalLevelTwoScheduleEntity> findByInternalVacancyOpeningIdWithPanelMembers(
+            @Param("internalVacancyOpeningId") Long internalVacancyOpeningId);
+
     @Query(
             value = "select schedule from RecruitmentInternalLevelTwoScheduleEntity schedule "
                     + "join fetch schedule.recruitmentInterviewDetail candidate "

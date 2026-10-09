@@ -43,13 +43,19 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewAuthorityEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewEmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewRoleEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyLevelTwoAuthorityEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyHiringRequestType;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningRequirementEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoScheduleEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningRepository;
+import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyPanelAssessmentRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoFeedbackRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoScheduleRepository;
 import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyOpeningStatusCountProjection;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyApprovalDocumentStorageService;
@@ -79,6 +85,10 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
     private static final List<String> ALLOWED_INTERVIEW_AUTHORITY_ROLE_NAMES = java.util.Collections.unmodifiableList(
             java.util.Arrays.asList("ROLE_HOD", "ROLE_PM", "ROLE_STM")
     );
+    private static final List<String> ALLOWED_LEVEL_TWO_AUTHORITY_ROLE_NAMES =
+            List.of("ROLE_STM", "ROLE_COO", "ROLE_HOD");
+    private static final int MIN_LEVEL_TWO_AUTHORITY_COUNT = 2;
+    private static final int MAX_LEVEL_TWO_AUTHORITY_COUNT = 5;
 
     private final InternalVacancyOpeningRepository internalVacancyOpeningRepository;
     private final ProjectMstRepository projectRepository;
@@ -91,6 +101,10 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
     private final RecruitmentRequestIdGenerator recruitmentRequestIdGenerator;
     private final RecruitmentNotificationService recruitmentNotificationService;
     private final InternalVacancyApprovalDocumentStorageService approvalDocumentStorageService;
+    private final InternalVacancyPanelAssessmentRepository panelAssessmentRepository;
+    private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
+    private final RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository;
+    private final RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository;
 
     public InternalVacancyOpeningServiceImpl(
             InternalVacancyOpeningRepository internalVacancyOpeningRepository,
@@ -103,7 +117,11 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             EmployeeRepository employeeRepository,
             RecruitmentRequestIdGenerator recruitmentRequestIdGenerator,
             RecruitmentNotificationService recruitmentNotificationService,
-            InternalVacancyApprovalDocumentStorageService approvalDocumentStorageService) {
+            InternalVacancyApprovalDocumentStorageService approvalDocumentStorageService,
+            InternalVacancyPanelAssessmentRepository panelAssessmentRepository,
+            RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
+            RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository,
+            RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository) {
         this.internalVacancyOpeningRepository = internalVacancyOpeningRepository;
         this.projectRepository = projectRepository;
         this.designationRepository = designationRepository;
@@ -115,6 +133,10 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         this.recruitmentRequestIdGenerator = recruitmentRequestIdGenerator;
         this.recruitmentNotificationService = recruitmentNotificationService;
         this.approvalDocumentStorageService = approvalDocumentStorageService;
+        this.panelAssessmentRepository = panelAssessmentRepository;
+        this.assessmentFeedbackRepository = assessmentFeedbackRepository;
+        this.levelTwoFeedbackRepository = levelTwoFeedbackRepository;
+        this.levelTwoScheduleRepository = levelTwoScheduleRepository;
     }
 
     @Override
@@ -130,6 +152,13 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 ? findOpeningForUpdate(command.getInternalVacancyOpeningId())
                 : new InternalVacancyOpeningEntity();
         validateSaveTransition(entity, targetStatus);
+        boolean levelOneAuthorityLocked = isEdit && hasLevelOneInterviewFeedback(entity.getInternalVacancyOpeningId());
+        boolean levelTwoAuthorityLocked = isEdit && hasLevelTwoInterviewFeedback(entity.getInternalVacancyOpeningId());
+        validateLockedAuthoritySelections(
+                entity,
+                command,
+                levelOneAuthorityLocked,
+                levelTwoAuthorityLocked);
         InternalVacancyHiringRequestType hiringRequestType = resolveHiringRequestType(command.getHiringRequestType());
         List<EmployeeEntity> replacementEmployees = resolveReplacementEmployees(
                 command,
@@ -156,35 +185,23 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         List<InternalVacancyOpeningRequirementEntity> requirementEntities = buildRequirementEntities(
                 safeRequirements,
                 designationById);
-        List<Role> interviewRoles = List.of();
-        List<User> interviewAuthorities = List.of();
+        ResolvedInterviewAuthoritySelection levelOneSelection = levelOneAuthorityLocked
+                ? ResolvedInterviewAuthoritySelection.empty()
+                : resolveLevelOneAuthoritySelection(command, targetStatus == InternalVacancyOpeningStatus.OPEN);
+        List<User> levelTwoAuthorities = levelTwoAuthorityLocked
+                ? List.of()
+                : resolveLevelTwoAuthorities(
+                        command.getLevelTwoInterviewAuthorityUserIds(),
+                        targetStatus == InternalVacancyOpeningStatus.OPEN);
 
-        if (targetStatus == InternalVacancyOpeningStatus.OPEN) {
-            interviewRoles = resolveInterviewRoles(command.getInterviewAuthorityRoleIds());
-            interviewAuthorities = resolveInterviewAuthorities(
-                    command.getInterviewAuthorityUserIds(),
-                    interviewRoles);
-        } else {
-            // For DRAFT or PENDING_HR_APPROVAL, resolve if provided but don't force mandatory checks
-            List<Long> roleIds = normalizePositiveIds(command.getInterviewAuthorityRoleIds());
-            if (!roleIds.isEmpty()) {
-                interviewRoles = findAllowedInterviewAuthorityRoles(roleIds);
-                List<Long> userIds = normalizePositiveIds(command.getInterviewAuthorityUserIds());
-                if (!userIds.isEmpty() && !interviewRoles.isEmpty()) {
-                    interviewAuthorities = userRepository.findAllWithRolesByIdIn(userIds);
-                }
-            }
-        }
-
-        List<EmployeeEntity> interviewEmployees = resolveInterviewEmployees(
-                command.getInterviewAuthorityEmployeeIds(),
-                targetStatus == InternalVacancyOpeningStatus.OPEN);
-
-        List<InternalVacancyInterviewRoleEntity> interviewRoleEntities = buildInterviewRoleEntities(interviewRoles);
-        List<InternalVacancyInterviewAuthorityEntity> interviewAuthorityEntities = buildInterviewAuthorityEntities(
-                interviewAuthorities);
-        List<InternalVacancyInterviewEmployeeEntity> interviewEmployeeEntities = buildInterviewEmployeeEntities(
-                interviewEmployees);
+        List<InternalVacancyInterviewRoleEntity> interviewRoleEntities =
+                buildInterviewRoleEntities(levelOneSelection.roles());
+        List<InternalVacancyInterviewAuthorityEntity> interviewAuthorityEntities =
+                buildInterviewAuthorityEntities(levelOneSelection.users());
+        List<InternalVacancyInterviewEmployeeEntity> interviewEmployeeEntities =
+                buildInterviewEmployeeEntities(levelOneSelection.employees());
+        List<InternalVacancyLevelTwoAuthorityEntity> levelTwoAuthorityEntities =
+                buildLevelTwoAuthorityEntities(levelTwoAuthorities);
 
         String previousApprovalFilePath = entity.getEOfficeApprovalFilePath();
         StoredInternalVacancyApprovalDocument uploadedApproval = null;
@@ -210,14 +227,20 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 interviewRoleEntities,
                 interviewAuthorityEntities,
                 interviewEmployeeEntities,
+                levelTwoAuthorityEntities,
                 replacementEmployees,
-                isEdit);
+                isEdit,
+                levelOneAuthorityLocked,
+                levelTwoAuthorityLocked);
 
         InternalVacancyOpeningEntity saved;
         try {
             saved = internalVacancyOpeningRepository.saveAndFlush(entity);
             if (targetStatus == InternalVacancyOpeningStatus.OPEN) {
                 recruitmentNotificationService.upsertFromInternalVacancyOpening(saved.getInternalVacancyOpeningId());
+            }
+            if (!levelTwoAuthorityLocked) {
+                synchronizeLevelTwoPanels(saved, actorEmail);
             }
         } catch (RuntimeException ex) {
             if (uploadedApproval != null) {
@@ -236,7 +259,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .sum();
 
         log.info(
-                "Internal vacancy opening saved. operation={}, requestId={}, openingId={}, status={}, projectId={}, projectName={}, designationCount={}, totalVacancies={}, interviewRoleCount={}, interviewAuthorityCount={}, actor={}",
+                "Internal vacancy opening saved. operation={}, requestId={}, openingId={}, status={}, projectId={}, projectName={}, designationCount={}, totalVacancies={}, interviewRoleCount={}, levelOneAuthorityCount={}, levelTwoAuthorityCount={}, actor={}",
                 isEdit ? "UPDATE" : "CREATE",
                 saved.getRequestId(),
                 saved.getInternalVacancyOpeningId(),
@@ -246,8 +269,8 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 saved.getRequirements().size(),
                 totalVacancies,
                 saved.getInterviewRoles().size(),
-                saved.getInterviewAuthorities().size(),
-                saved.getInterviewEmployees().size(),
+                saved.getInterviewAuthorities().size() + saved.getInterviewEmployees().size(),
+                saved.getLevelTwoInterviewAuthorities().size(),
                 actorEmail);
 
         return InternalVacancyOpeningResult.builder()
@@ -366,6 +389,16 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .map(EmployeeEntity::getEmployeeId)
                 .distinct()
                 .toList());
+        form.setLevelTwoInterviewAuthorityUserIds(entity.getLevelTwoInterviewAuthorities().stream()
+                .map(InternalVacancyLevelTwoAuthorityEntity::getUser)
+                .filter(user -> user != null && user.getId() != null)
+                .map(User::getId)
+                .distinct()
+                .toList());
+        form.setLevelOneInterviewAuthorityLocked(
+                hasLevelOneInterviewFeedback(entity.getInternalVacancyOpeningId()));
+        form.setLevelTwoInterviewAuthorityLocked(
+                hasLevelTwoInterviewFeedback(entity.getInternalVacancyOpeningId()));
         return form;
     }
 
@@ -569,6 +602,40 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                     
             return new org.springframework.data.domain.PageImpl<>(pagedList, pageable, allResults.size());
         }
+    }
+
+    @Override
+    public List<InternalVacancyInterviewAuthorityUserOptionView> getAvailableLevelTwoInterviewAuthorities() {
+        return getAvailableLevelTwoInterviewAuthoritiesPage(null, Pageable.unpaged()).getContent();
+    }
+
+    @Override
+    public Page<InternalVacancyInterviewAuthorityUserOptionView> getAvailableLevelTwoInterviewAuthoritiesPage(
+            String search,
+            Pageable pageable) {
+        String normalizedSearch = normalizeOptionalText(search);
+        List<InternalVacancyInterviewAuthorityUserOptionView> options = userRepository
+                .findDistinctUsersByRoleNames(ALLOWED_LEVEL_TWO_AUTHORITY_ROLE_NAMES).stream()
+                .filter(user -> matchesAuthoritySearch(user, normalizedSearch))
+                .sorted(Comparator
+                        .comparing((User user) -> normalizeSortText(user.getName()))
+                        .thenComparing(user -> normalizeSortText(user.getEmail())))
+                .map(user -> InternalVacancyInterviewAuthorityUserOptionView.builder()
+                        .userId(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .mobileNo(user.getMobileNo())
+                        .displayLabel(buildInterviewAuthorityLabel(user))
+                        .type("USER")
+                        .build())
+                .toList();
+
+        if (pageable.isUnpaged()) {
+            return new org.springframework.data.domain.PageImpl<>(options);
+        }
+        int start = Math.toIntExact(Math.min(pageable.getOffset(), options.size()));
+        int end = Math.min(start + pageable.getPageSize(), options.size());
+        return new org.springframework.data.domain.PageImpl<>(options.subList(start, end), pageable, options.size());
     }
 
     @Override
@@ -1091,7 +1158,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
     private List<User> resolveInterviewAuthorities(List<Long> userIds, List<Role> selectedRoles) {
         List<Long> normalizedUserIds = normalizePositiveIds(userIds);
         if (normalizedUserIds.isEmpty()) {
-            throw new RecruitmentNotificationException("At least one interview authority is required.");
+            return List.of();
         }
 
         Map<Long, User> usersById = userRepository.findAllWithRolesByIdIn(normalizedUserIds).stream()
@@ -1128,6 +1195,170 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         return users;
     }
 
+    private ResolvedInterviewAuthoritySelection resolveLevelOneAuthoritySelection(
+            InternalVacancyOpeningCommand command,
+            boolean mandatory) {
+        List<Long> selectedRoleIds = normalizePositiveIds(command.getInterviewAuthorityRoleIds());
+        List<Role> roles = resolveInterviewRoles(selectedRoleIds);
+        List<User> users = resolveInterviewAuthorities(command.getInterviewAuthorityUserIds(), roles);
+        List<EmployeeEntity> employees = resolveInterviewEmployees(
+                command.getInterviewAuthorityEmployeeIds(),
+                mandatory);
+
+        if (!employees.isEmpty() && !selectedRoleIds.contains(EMPLOYEE_ROLE_ID)) {
+            throw new RecruitmentNotificationException(
+                    "Select the Employee role before assigning employees as Round L1 authorities.");
+        }
+        if (mandatory && users.isEmpty() && employees.isEmpty()) {
+            throw new RecruitmentNotificationException(
+                    "At least one Round L1 interview authority is required.");
+        }
+        return new ResolvedInterviewAuthoritySelection(roles, users, employees);
+    }
+
+    private List<User> resolveLevelTwoAuthorities(List<Long> userIds, boolean mandatory) {
+        List<Long> normalizedUserIds = userIds == null
+                ? List.of()
+                : userIds.stream()
+                        .filter(id -> id != null && id > 0)
+                        .distinct()
+                        .toList();
+        if (mandatory && normalizedUserIds.size() < MIN_LEVEL_TWO_AUTHORITY_COUNT) {
+            throw new RecruitmentNotificationException(
+                    "Select at least two Round L2 interview authorities.");
+        }
+        if (normalizedUserIds.size() > MAX_LEVEL_TWO_AUTHORITY_COUNT) {
+            throw new RecruitmentNotificationException(
+                    "A maximum of five Round L2 interview authorities can be selected.");
+        }
+        if (normalizedUserIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, User> usersById = userRepository.findAllWithRolesByIdIn(normalizedUserIds).stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        user -> user,
+                        (left, right) -> left,
+                        LinkedHashMap::new));
+        if (usersById.size() != normalizedUserIds.size()) {
+            Set<Long> missingIds = new LinkedHashSet<>(normalizedUserIds);
+            missingIds.removeAll(usersById.keySet());
+            throw new RecruitmentNotificationException(
+                    "Round L2 interview authorities not found for user ids: " + missingIds);
+        }
+
+        List<User> users = normalizedUserIds.stream().map(usersById::get).toList();
+        for (User user : users) {
+            boolean eligible = user.getRoles() != null && user.getRoles().stream()
+                    .map(Role::getName)
+                    .filter(StringUtils::hasText)
+                    .map(roleName -> roleName.trim().toUpperCase(Locale.ROOT))
+                    .anyMatch(ALLOWED_LEVEL_TWO_AUTHORITY_ROLE_NAMES::contains);
+            if (!eligible) {
+                throw new RecruitmentNotificationException(
+                        "Only STM, COO, and HOD users can be selected as Round L2 authorities: "
+                                + buildInterviewAuthorityLabel(user));
+            }
+        }
+        return users;
+    }
+
+    private void validateLockedAuthoritySelections(
+            InternalVacancyOpeningEntity entity,
+            InternalVacancyOpeningCommand command,
+            boolean levelOneAuthorityLocked,
+            boolean levelTwoAuthorityLocked) {
+        if (levelOneAuthorityLocked) {
+            boolean unchanged = sameIds(
+                    resolveEditInterviewAuthorityRoleIds(entity),
+                    command.getInterviewAuthorityRoleIds())
+                    && sameIds(
+                            entity.getInterviewAuthorities().stream()
+                                    .map(InternalVacancyInterviewAuthorityEntity::getUser)
+                                    .filter(java.util.Objects::nonNull)
+                                    .map(User::getId)
+                                    .toList(),
+                            command.getInterviewAuthorityUserIds())
+                    && sameIds(
+                            entity.getInterviewEmployees().stream()
+                                    .map(InternalVacancyInterviewEmployeeEntity::getEmployee)
+                                    .filter(java.util.Objects::nonNull)
+                                    .map(EmployeeEntity::getEmployeeId)
+                                    .toList(),
+                            command.getInterviewAuthorityEmployeeIds());
+            if (!unchanged) {
+                throw new RecruitmentNotificationException(
+                        "Round L1 interview authorities cannot be changed after Round L1 feedback is submitted.");
+            }
+        }
+
+        if (levelTwoAuthorityLocked && !sameIds(
+                entity.getLevelTwoInterviewAuthorities().stream()
+                        .map(InternalVacancyLevelTwoAuthorityEntity::getUser)
+                        .filter(java.util.Objects::nonNull)
+                        .map(User::getId)
+                        .toList(),
+                command.getLevelTwoInterviewAuthorityUserIds())) {
+            throw new RecruitmentNotificationException(
+                    "Round L2 interview authorities cannot be changed after Round L2 feedback is submitted.");
+        }
+    }
+
+    private boolean sameIds(List<Long> existingIds, List<Long> submittedIds) {
+        Set<Long> existing = existingIds == null
+                ? Set.of()
+                : existingIds.stream().filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+        Set<Long> submitted = submittedIds == null
+                ? Set.of()
+                : submittedIds.stream().filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+        return existing.equals(submitted);
+    }
+
+    private boolean hasLevelOneInterviewFeedback(Long internalVacancyOpeningId) {
+        return panelAssessmentRepository.existsSubmittedByInternalVacancyOpeningId(internalVacancyOpeningId)
+                || assessmentFeedbackRepository.existsByInternalVacancyOpeningId(internalVacancyOpeningId);
+    }
+
+    private boolean hasLevelTwoInterviewFeedback(Long internalVacancyOpeningId) {
+        return levelTwoFeedbackRepository.existsByInternalVacancyOpeningId(internalVacancyOpeningId);
+    }
+
+    private void synchronizeLevelTwoPanels(InternalVacancyOpeningEntity opening, String actorEmail) {
+        if (opening.getInternalVacancyOpeningId() == null) {
+            return;
+        }
+        List<RecruitmentInternalLevelTwoScheduleEntity> schedules = levelTwoScheduleRepository
+                .findByInternalVacancyOpeningIdWithPanelMembers(opening.getInternalVacancyOpeningId());
+        if (schedules.isEmpty()) {
+            return;
+        }
+
+        Long actorUserId = userRepository.findByEmailIgnoreCase(actorEmail)
+                .map(User::getId)
+                .orElse(null);
+        for (RecruitmentInternalLevelTwoScheduleEntity schedule : schedules) {
+            InternalVacancyLevelTwoPanelMapper.replaceWithOpeningAuthorities(schedule, opening);
+            if (schedule.getInterviewDateTime() == null) {
+                schedule.setPanelAssignedAt(null);
+                schedule.setPanelAssignedByUserId(null);
+            } else {
+                InternalVacancyLevelTwoPanelMapper.activateConfiguredPanel(schedule, actorUserId);
+            }
+        }
+        levelTwoScheduleRepository.saveAll(schedules);
+    }
+
+    private boolean matchesAuthoritySearch(User user, String search) {
+        if (!StringUtils.hasText(search)) {
+            return true;
+        }
+        String searchValue = search.toLowerCase(Locale.ROOT);
+        return normalizeSortText(user.getName()).contains(searchValue)
+                || normalizeSortText(user.getEmail()).contains(searchValue)
+                || normalizeSortText(user.getMobileNo()).contains(searchValue);
+    }
+
     private List<InternalVacancyInterviewRoleEntity> buildInterviewRoleEntities(List<Role> roles) {
         return roles.stream()
                 .map(role -> {
@@ -1142,6 +1373,17 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         return users.stream()
                 .map(user -> {
                     InternalVacancyInterviewAuthorityEntity entity = new InternalVacancyInterviewAuthorityEntity();
+                    entity.setUser(user);
+                    return entity;
+                })
+                .toList();
+    }
+
+    private List<InternalVacancyLevelTwoAuthorityEntity> buildLevelTwoAuthorityEntities(List<User> users) {
+        return users.stream()
+                .map(user -> {
+                    InternalVacancyLevelTwoAuthorityEntity entity =
+                            new InternalVacancyLevelTwoAuthorityEntity();
                     entity.setUser(user);
                     return entity;
                 })
@@ -1223,25 +1465,39 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             List<InternalVacancyInterviewRoleEntity> interviewRoleEntities,
             List<InternalVacancyInterviewAuthorityEntity> interviewAuthorityEntities,
             List<InternalVacancyInterviewEmployeeEntity> interviewEmployeeEntities,
+            List<InternalVacancyLevelTwoAuthorityEntity> levelTwoAuthorityEntities,
             List<EmployeeEntity> replacementEmployees,
-            boolean isEdit) {
+            boolean isEdit,
+            boolean levelOneAuthorityLocked,
+            boolean levelTwoAuthorityLocked) {
         if (isEdit) {
             entity.replaceRequirements(List.of());
-            entity.replaceInterviewRoles(List.of());
-            entity.replaceInterviewAuthorities(List.of());
-            entity.replaceInterviewEmployees(List.of());
+            if (!levelOneAuthorityLocked) {
+                entity.replaceInterviewRoles(List.of());
+                entity.replaceInterviewAuthorities(List.of());
+                entity.replaceInterviewEmployees(List.of());
+            }
+            if (!levelTwoAuthorityLocked) {
+                entity.replaceLevelTwoInterviewAuthorities(List.of());
+            }
             entity.replaceReplacementEmployees(List.of());
             internalVacancyOpeningRepository.saveAndFlush(entity);
             entity.replaceRequirements(requirementEntities);
-            entity.replaceInterviewRoles(interviewRoleEntities);
-            entity.replaceInterviewAuthorities(interviewAuthorityEntities);
-            entity.replaceInterviewEmployees(interviewEmployeeEntities);
+            if (!levelOneAuthorityLocked) {
+                entity.replaceInterviewRoles(interviewRoleEntities);
+                entity.replaceInterviewAuthorities(interviewAuthorityEntities);
+                entity.replaceInterviewEmployees(interviewEmployeeEntities);
+            }
+            if (!levelTwoAuthorityLocked) {
+                entity.replaceLevelTwoInterviewAuthorities(levelTwoAuthorityEntities);
+            }
             entity.replaceReplacementEmployees(replacementEmployees);
         } else {
             entity.replaceRequirements(requirementEntities);
             entity.replaceInterviewRoles(interviewRoleEntities);
             entity.replaceInterviewAuthorities(interviewAuthorityEntities);
             entity.replaceInterviewEmployees(interviewEmployeeEntities);
+            entity.replaceLevelTwoInterviewAuthorities(levelTwoAuthorityEntities);
             entity.replaceReplacementEmployees(replacementEmployees);
         }
     }
@@ -1358,5 +1614,15 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
 
     private String normalizeSortText(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private record ResolvedInterviewAuthoritySelection(
+            List<Role> roles,
+            List<User> users,
+            List<EmployeeEntity> employees) {
+
+        private static ResolvedInterviewAuthoritySelection empty() {
+            return new ResolvedInterviewAuthoritySelection(List.of(), List.of(), List.of());
+        }
     }
 }

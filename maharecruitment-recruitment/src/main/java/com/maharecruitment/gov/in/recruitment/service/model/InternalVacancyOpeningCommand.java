@@ -26,4 +26,5 @@ public class InternalVacancyOpeningCommand {
     private List<Long> interviewAuthorityRoleIds;
     private List<Long> interviewAuthorityUserIds;
     private List<Long> interviewAuthorityEmployeeIds;
+    private List<Long> levelTwoInterviewAuthorityUserIds;
 }

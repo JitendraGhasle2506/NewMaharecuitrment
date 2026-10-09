@@ -246,11 +246,15 @@
 
             event.preventDefault();
             clientError?.classList.remove("d-none");
+            clientError?.classList.add("d-block");
+            replacementContainer.classList.add("validation-group-invalid");
             replacementContainer.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
         function clearSelectionError() {
             clientError?.classList.add("d-none");
+            clientError?.classList.remove("d-block");
+            replacementContainer.classList.remove("validation-group-invalid");
         }
     });
 })();

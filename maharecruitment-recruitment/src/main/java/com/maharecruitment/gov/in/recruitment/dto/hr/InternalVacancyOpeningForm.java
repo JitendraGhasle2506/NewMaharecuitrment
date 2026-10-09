@@ -45,4 +45,11 @@ public class InternalVacancyOpeningForm {
     private List<Long> interviewAuthorityUserIds = new ArrayList<>();
 
     private List<Long> interviewAuthorityEmployeeIds = new ArrayList<>();
+
+    @Size(max = 5, message = "A maximum of five Round L2 interview authorities can be selected.")
+    private List<Long> levelTwoInterviewAuthorityUserIds = new ArrayList<>();
+
+    private boolean levelOneInterviewAuthorityLocked;
+
+    private boolean levelTwoInterviewAuthorityLocked;
 }

@@ -31,6 +31,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyOpeningForm;
+import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyRequirementForm;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyHiringRequestType;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
@@ -60,6 +62,7 @@ public class HRInternalVacancyOpeningController {
     private static final Logger log = LoggerFactory.getLogger(HRInternalVacancyOpeningController.class);
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 50;
+    private static final long MAX_APPROVAL_DOCUMENT_SIZE_BYTES = 2L * 1024 * 1024;
 
     private final InternalVacancyOpeningService internalVacancyOpeningService;
     private final InternalVacancyCandidateReviewService internalVacancyCandidateReviewService;
@@ -211,13 +214,23 @@ public class HRInternalVacancyOpeningController {
         String actorEmail = resolveActorEmail(principal);
         boolean editMode = openingForm.getInternalVacancyOpeningId() != null;
 
+        InternalVacancyOpeningStatus targetStatus;
+        try {
+            targetStatus = resolveTargetStatus(action);
+        } catch (RecruitmentNotificationException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            populateFormModel(model, openingForm, editMode);
+            return "hr/internal-vacancy-opening-form";
+        }
+
+        validateFormForAction(openingForm, targetStatus, bindingResult);
+
         if (bindingResult.hasErrors()) {
             populateFormModel(model, openingForm, editMode);
             return "hr/internal-vacancy-opening-form";
         }
 
         try {
-            InternalVacancyOpeningStatus targetStatus = resolveTargetStatus(action);
             InternalVacancyOpeningResult result = internalVacancyOpeningService.saveOpening(
                     toCommand(openingForm, actorEmail, targetStatus));
             redirectAttributes.addFlashAttribute(
@@ -301,6 +314,16 @@ public class HRInternalVacancyOpeningController {
         return internalVacancyOpeningService.getAvailableInterviewAuthoritiesPage(roleIds, search, pageable);
     }
 
+    @GetMapping("/level-two-interview-authorities")
+    @ResponseBody
+    public Page<InternalVacancyInterviewAuthorityUserOptionView> getLevelTwoInterviewAuthorities(
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), resolvePageSize(size));
+        return internalVacancyOpeningService.getAvailableLevelTwoInterviewAuthoritiesPage(search, pageable);
+    }
+
     private void populateFormModel(Model model, InternalVacancyOpeningForm openingForm, boolean isEdit) {
         model.addAttribute("openingForm", openingForm);
         model.addAttribute("isEdit", isEdit);
@@ -315,6 +338,9 @@ public class HRInternalVacancyOpeningController {
                         openingForm.getInterviewAuthorityRoleIds() == null
                                 ? List.of()
                                 : openingForm.getInterviewAuthorityRoleIds()));
+        model.addAttribute(
+                "levelTwoInterviewAuthorityOptions",
+                internalVacancyOpeningService.getAvailableLevelTwoInterviewAuthorities());
         List<InternalVacancyInterviewEmployeeOptionView> employeeOptions =
                 internalVacancyOpeningService.getAvailableInterviewEmployees();
         model.addAttribute("interviewEmployeeOptions", employeeOptions);
@@ -338,7 +364,9 @@ public class HRInternalVacancyOpeningController {
                 .remarks(openingForm.getRemarks())
                 .actorEmail(actorEmail)
                 .targetStatus(targetStatus)
-                .requirements(openingForm.getRequirements().stream()
+                .requirements((openingForm.getRequirements() == null
+                        ? List.<InternalVacancyRequirementForm>of()
+                        : openingForm.getRequirements()).stream()
                         .map(requirement -> InternalVacancyRequirementCommand.builder()
                                 .designationId(requirement.getDesignationId())
                                 .levelCode(requirement.getLevelCode())
@@ -357,7 +385,109 @@ public class HRInternalVacancyOpeningController {
                         openingForm.getInterviewAuthorityEmployeeIds() == null
                                 ? List.of()
                                 : new ArrayList<>(openingForm.getInterviewAuthorityEmployeeIds()))
+                .levelTwoInterviewAuthorityUserIds(
+                        openingForm.getLevelTwoInterviewAuthorityUserIds() == null
+                                ? List.of()
+                                : new ArrayList<>(openingForm.getLevelTwoInterviewAuthorityUserIds()))
                 .build();
+    }
+
+    private void validateFormForAction(
+            InternalVacancyOpeningForm openingForm,
+            InternalVacancyOpeningStatus targetStatus,
+            BindingResult bindingResult) {
+        if (openingForm.getEOfficeApprovalDocument() != null
+                && !openingForm.getEOfficeApprovalDocument().isEmpty()) {
+            String originalFileName = openingForm.getEOfficeApprovalDocument().getOriginalFilename();
+            if (originalFileName == null
+                    || !originalFileName.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+                bindingResult.rejectValue(
+                        "eOfficeApprovalDocument",
+                        "approval.invalidType",
+                        "Upload the e-office approval document in PDF format only.");
+            }
+            if (openingForm.getEOfficeApprovalDocument().getSize() > MAX_APPROVAL_DOCUMENT_SIZE_BYTES) {
+                bindingResult.rejectValue(
+                        "eOfficeApprovalDocument",
+                        "approval.tooLarge",
+                        "E-office approval document must not exceed 2 MB.");
+            }
+        }
+
+        boolean submission = targetStatus == InternalVacancyOpeningStatus.PENDING_HR_APPROVAL
+                || targetStatus == InternalVacancyOpeningStatus.OPEN;
+        if (!submission) {
+            return;
+        }
+
+        if (openingForm.getHiringRequestType() == InternalVacancyHiringRequestType.NEW_CANDIDATE) {
+            boolean hasUploadedApproval = openingForm.getEOfficeApprovalDocument() != null
+                    && !openingForm.getEOfficeApprovalDocument().isEmpty();
+            if (!hasUploadedApproval
+                    && (openingForm.getExistingEOfficeApprovalFileName() == null
+                            || openingForm.getExistingEOfficeApprovalFileName().isBlank())) {
+                bindingResult.rejectValue(
+                        "eOfficeApprovalDocument",
+                        "approval.required",
+                        "E-office approval document is required for a new candidate request.");
+            }
+            if (openingForm.getRequirements() == null || openingForm.getRequirements().isEmpty()) {
+                bindingResult.rejectValue(
+                        "requirements",
+                        "requirements.required",
+                        "Add at least one designation and level requirement.");
+            }
+        } else if (openingForm.getHiringRequestType() == InternalVacancyHiringRequestType.EMPLOYEE_REPLACEMENT
+                && (openingForm.getReplacementEmployeeIds() == null
+                        || openingForm.getReplacementEmployeeIds().stream()
+                                .filter(id -> id != null && id > 0)
+                                .findAny()
+                                .isEmpty())) {
+            bindingResult.rejectValue(
+                    "replacementEmployeeIds",
+                    "replacement.required",
+                    "Select at least one employee to be replaced.");
+        }
+
+        if (targetStatus != InternalVacancyOpeningStatus.OPEN) {
+            return;
+        }
+
+        long levelOneAuthorityCount = java.util.stream.Stream.concat(
+                        openingForm.getInterviewAuthorityUserIds() == null
+                                ? java.util.stream.Stream.empty()
+                                : openingForm.getInterviewAuthorityUserIds().stream(),
+                        openingForm.getInterviewAuthorityEmployeeIds() == null
+                                ? java.util.stream.Stream.empty()
+                                : openingForm.getInterviewAuthorityEmployeeIds().stream())
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .count();
+        if (levelOneAuthorityCount == 0) {
+            bindingResult.rejectValue(
+                    "interviewAuthorityUserIds",
+                    "levelOneAuthority.required",
+                    "Select at least one Round L1 interview authority.");
+        }
+
+        long levelTwoAuthorityCount = openingForm.getLevelTwoInterviewAuthorityUserIds() == null
+                ? 0
+                : openingForm.getLevelTwoInterviewAuthorityUserIds().stream()
+                        .filter(id -> id != null && id > 0)
+                        .distinct()
+                        .count();
+        if (levelTwoAuthorityCount < 2) {
+            bindingResult.rejectValue(
+                    "levelTwoInterviewAuthorityUserIds",
+                    "levelTwoAuthority.minimum",
+                    "Select at least two Round L2 interview authorities.");
+        } else if (levelTwoAuthorityCount > 5
+                && !bindingResult.hasFieldErrors("levelTwoInterviewAuthorityUserIds")) {
+            bindingResult.rejectValue(
+                    "levelTwoInterviewAuthorityUserIds",
+                    "levelTwoAuthority.maximum",
+                    "A maximum of five Round L2 interview authorities can be selected.");
+        }
     }
 
     private ResponseEntity<Resource> approvalDocumentResponse(InternalVacancyApprovalDocumentView document) {

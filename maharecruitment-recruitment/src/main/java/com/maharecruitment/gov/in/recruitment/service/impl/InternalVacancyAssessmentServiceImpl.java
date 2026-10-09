@@ -197,6 +197,11 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
                     if (criteriaMet) {
                         RecruitmentInternalLevelTwoScheduleEntity newSchedule = new RecruitmentInternalLevelTwoScheduleEntity();
                         newSchedule.setRecruitmentInterviewDetail(candidate);
+                        InternalVacancyLevelTwoPanelMapper.replaceWithOpeningAuthorities(
+                                newSchedule,
+                                candidate.getRecruitmentNotification() != null
+                                        ? candidate.getRecruitmentNotification().getInternalVacancyOpening()
+                                        : null);
                         return newSchedule;
                     }
                     return null;

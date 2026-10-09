@@ -5,17 +5,23 @@
     <meta charset="UTF-8">
     <title>Internal Vacancy Opening</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-internal-vacancy-opening-form.css(v='20261008-2')}">
 </head>
 
 <body class="department-shell" th:attr="data-context-path=${contextPath}">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Internal Vacancy Opening', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header">
-                    <h2 th:text="${isPendingApproval ? 'Review HOD Resource Request' : (isSubmittedEdit ? 'Update Internal Vacancy Opening' : (isEdit ? 'Edit Internal Vacancy Draft' : 'Create Internal Vacancy Opening'))}"></h2>
+        <section class="internal-vacancy-form-shell">
+            <div class="card add-emp-card internal-vacancy-form-card">
+                <div class="header internal-vacancy-form-header">
+                    <div>
+                        <h2 th:text="${isPendingApproval ? 'Review HOD Resource Request' : (isSubmittedEdit ? 'Update Internal Vacancy Opening' : (isEdit ? 'Edit Internal Vacancy Draft' : 'Create Internal Vacancy Opening'))}"></h2>
+                        <p class="mb-0">Configure the vacancy, assign both interview rounds, and review the requirement before saving.</p>
+                    </div>
+                    <span class="internal-vacancy-status"
+                        th:text="${openingForm.currentStatus != null ? #strings.replace(openingForm.currentStatus.name(), '_', ' ') : 'NEW'}">OPEN</span>
                 </div>
 
-                <div class="card-body">
+                <div class="card-body internal-vacancy-form-body">
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
                     <div class="alert alert-warning" th:if="${#lists.isEmpty(projectOptions)}">
                         No internal projects are available in Project Master. Create an internal project first.
@@ -25,26 +31,49 @@
                         th:action="@{/hr/internal-vacancies}"
                         th:object="${openingForm}"
                         method="post"
-                        enctype="multipart/form-data">
+                        enctype="multipart/form-data"
+                        novalidate>
                         <input autocomplete="off" type="hidden" th:if="${_csrf != null}"
                             th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <input type="hidden" th:field="*{internalVacancyOpeningId}">
                         <input type="hidden" th:field="*{currentStatus}">
                         <input type="hidden" th:field="*{existingEOfficeApprovalFileName}">
+                        <input type="hidden" th:field="*{levelOneInterviewAuthorityLocked}">
+                        <input type="hidden" th:field="*{levelTwoInterviewAuthorityLocked}">
+
+                        <div id="formValidationSummary" class="alert alert-danger validation-summary"
+                            th:classappend="${#fields.hasAnyErrors()} ? '' : ' d-none'"
+                            role="alert" tabindex="-1" aria-live="assertive">
+                            <div class="fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Please correct the highlighted fields.</div>
+                            <ul class="mb-0 mt-2" id="formValidationSummaryList">
+                                <li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li>
+                            </ul>
+                        </div>
+
+                        <section class="vacancy-form-section" aria-labelledby="vacancyDetailsHeading">
+                            <div class="vacancy-section-heading">
+                                <span class="vacancy-section-icon"><i class="fas fa-briefcase"></i></span>
+                                <div>
+                                    <h3 id="vacancyDetailsHeading">Vacancy details</h3>
+                                    <p>Choose the project and provide the supporting request information.</p>
+                                </div>
+                            </div>
 
                         <div class="row g-3">
                             <div class="col-md-12">
                                 <label class="form-label">Project Name <span class="text-danger">*</span></label>
-                                <select class="form-select" th:field="*{projectId}">
+                                <select class="form-select" th:field="*{projectId}" required
+                                    aria-describedby="projectIdHelp projectIdError"
+                                    th:classappend="${#fields.hasErrors('projectId') ? ' is-invalid' : ''}">
                                     <option value="">Select Internal Project</option>
                                     <option th:each="project : ${projectOptions}"
                                             th:value="${project.projectId}"
                                             th:text="${project.projectName}"></option>
                                 </select>
-                                <div class="form-text">
+                                <div class="form-text" id="projectIdHelp">
                                     Projects are loaded from Project Master entries that are not linked to department applications.
                                 </div>
-                                <div class="text-danger small" th:errors="*{projectId}"></div>
+                                <div class="invalid-feedback d-block" id="projectIdError" th:errors="*{projectId}"></div>
                             </div>
                         </div>
 
@@ -67,10 +96,11 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="text-danger small" th:errors="*{hiringRequestType}"></div>
+                                <div class="invalid-feedback d-block" id="hiringRequestTypeError" th:errors="*{hiringRequestType}"></div>
                             </div>
 
-                            <div class="col-md-12" id="replacementEmployeeContainer">
+                            <div class="col-md-12" id="replacementEmployeeContainer"
+                                th:classappend="${#fields.hasErrors('replacementEmployeeIds') ? ' validation-group-invalid' : ''}">
                                 <label class="form-label">
                                     Employees to be Replaced <span class="text-danger">*</span>
                                 </label>
@@ -102,10 +132,10 @@
                                     </div>
                                 </div>
                                 <div class="form-text">Select one or more active employees. Vacancies are grouped automatically by designation and level.</div>
-                                <div id="replacementEmployeeClientError" class="text-danger small d-none">
+                                <div id="replacementEmployeeClientError" class="invalid-feedback d-none">
                                     Select at least one employee to be replaced.
                                 </div>
-                                <div class="text-danger small" th:errors="*{replacementEmployeeIds}"></div>
+                                <div class="invalid-feedback d-block" th:errors="*{replacementEmployeeIds}"></div>
                             </div>
 
                             <div class="col-md-12" id="eOfficeApprovalContainer">
@@ -113,8 +143,9 @@
                                     E-office Approval Document <span class="text-danger">*</span>
                                 </label>
                                 <input type="file" class="form-control" th:field="*{eOfficeApprovalDocument}"
-                                    accept="application/pdf,.pdf">
-                                <div class="form-text">Upload one PDF approval document (maximum 2 MB).</div>
+                                    accept="application/pdf,.pdf" aria-describedby="eOfficeApprovalHelp eOfficeApprovalError"
+                                    th:classappend="${#fields.hasErrors('eOfficeApprovalDocument') ? ' is-invalid' : ''}">
+                                <div class="form-text" id="eOfficeApprovalHelp">Upload one PDF approval document (maximum 2 MB).</div>
                                 <div class="mt-2"
                                     th:if="${openingForm.internalVacancyOpeningId != null and !#strings.isEmpty(openingForm.existingEOfficeApprovalFileName)}">
                                     <span class="text-muted small">Current document:</span>
@@ -122,28 +153,49 @@
                                         th:href="@{/hr/internal-vacancies/{id}/e-office-approval(id=${openingForm.internalVacancyOpeningId})}"
                                         th:text="${openingForm.existingEOfficeApprovalFileName}">View approval</a>
                                 </div>
-                                <div class="text-danger small" th:errors="*{eOfficeApprovalDocument}"></div>
+                                <div id="eOfficeApprovalError" class="invalid-feedback d-block" th:errors="*{eOfficeApprovalDocument}"></div>
+                                <div id="eOfficeApprovalClientError" class="invalid-feedback d-none"></div>
                             </div>
                         </div>
 
                         <div class="row g-3 mt-1">
                             <div class="col-md-12">
                                 <label class="form-label">Remarks</label>
-                                <textarea class="form-control" th:field="*{remarks}" maxlength="1000" rows="3"></textarea>
-                                <div class="text-danger small" th:errors="*{remarks}"></div>
+                                <textarea class="form-control" th:field="*{remarks}" maxlength="1000" rows="3"
+                                    aria-describedby="remarksHelp remarksError"
+                                    th:classappend="${#fields.hasErrors('remarks') ? ' is-invalid' : ''}"></textarea>
+                                <div class="form-text" id="remarksHelp"><span id="remarksCharacterCount">0</span> / 1000 characters</div>
+                                <div class="invalid-feedback d-block" id="remarksError" th:errors="*{remarks}"></div>
                             </div>
                         </div>
 
-                        <div class="row g-3 mt-1">
+                        </section>
+
+                        <section class="vacancy-form-section" aria-labelledby="interviewAuthoritiesHeading">
+                            <div class="vacancy-section-heading">
+                                <span class="vacancy-section-icon"><i class="fas fa-user-check"></i></span>
+                                <div>
+                                    <h3 id="interviewAuthoritiesHeading">Interview authorities</h3>
+                                    <p>Assign L1 and L2 panels together. Each round locks only after its feedback is submitted.</p>
+                                </div>
+                            </div>
+
+                        <div class="row g-3 authority-round-card" id="levelOneAuthoritySection"
+                            th:attr="data-locked=${openingForm.levelOneInterviewAuthorityLocked}">
                             <div class="col-md-5">
-                                <label class="form-label d-block">Interview Authority Roles <span class="text-danger">*</span></label>
+                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <label class="form-label d-block mb-0">Round L1 Authority Roles <span class="text-danger">*</span></label>
+                                    <span class="badge text-bg-secondary"
+                                        th:if="${openingForm.levelOneInterviewAuthorityLocked}">Locked after L1 feedback</span>
+                                </div>
                                 <div id="interviewAuthorityRoleIds"
-                                    class="border rounded p-3 bg-light-subtle"
+                                    class="authority-role-list"
                                     th:classappend="${#fields.hasErrors('interviewAuthorityRoleIds') ? ' border-danger' : ''}">
                                     <div class="form-check mb-2" th:each="role : ${interviewAuthorityRoleOptions}">
                                         <input class="form-check-input" type="checkbox"
                                             th:field="*{interviewAuthorityRoleIds}"
-                                            th:value="${role.roleId}">
+                                            th:value="${role.roleId}"
+                                            th:disabled="${openingForm.levelOneInterviewAuthorityLocked}">
                                         <label class="form-check-label"
                                             th:for="${#ids.prev('interviewAuthorityRoleIds')}"
                                             th:text="${role.roleLabel + ' (' + role.roleName + ')'}"></label>
@@ -153,23 +205,30 @@
                                 <div class="text-danger small" th:errors="*{interviewAuthorityRoleIds}"></div>
                             </div>
                             <div class="col-md-7">
-                                <label class="form-label d-block">Assign Interview Authorities <span class="text-danger">*</span></label>
+                                <div class="authority-field-heading">
+                                    <label class="form-label d-block mb-0">Assign Round L1 Interview Authorities <span class="text-danger">*</span></label>
+                                    <span class="authority-selection-count" id="levelOneAuthoritySelectionCount">0 selected</span>
+                                </div>
                                 
                                 <div id="interviewAuthoritySearchContainer" class="mb-2 d-none">
                                     <div class="input-group input-group-sm">
-                                        <input type="text" id="authoritySearchInput" class="form-control" placeholder="Search by name, email or mobile...">
-                                        <button class="btn btn-outline-primary" type="button" id="authoritySearchBtn">
+                                        <input type="text" id="authoritySearchInput" class="form-control" placeholder="Search by name, email or mobile..."
+                                            th:disabled="${openingForm.levelOneInterviewAuthorityLocked}">
+                                        <button class="btn btn-outline-primary" type="button" id="authoritySearchBtn"
+                                            aria-label="Search Round L1 authorities" title="Search"
+                                            th:disabled="${openingForm.levelOneInterviewAuthorityLocked}">
                                             <i class="fas fa-search"></i>
                                         </button>
-                                        <button class="btn btn-outline-secondary" type="button" id="authorityClearBtn">
+                                        <button class="btn btn-outline-secondary" type="button" id="authorityClearBtn"
+                                            aria-label="Clear Round L1 authority search" title="Clear search"
+                                            th:disabled="${openingForm.levelOneInterviewAuthorityLocked}">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     </div>
                                 </div>
 
                                 <div id="interviewAuthorityUserIds"
-                                    class="border rounded p-3 bg-light-subtle overflow-auto"
-                                    style="max-height: 300px;"
+                                    class="authority-results overflow-auto"
                                     th:classappend="${#fields.hasErrors('interviewAuthorityUserIds') or #fields.hasErrors('interviewAuthorityEmployeeIds') ? ' border-danger' : ''}">
                                     
                                     <div th:if="${#lists.isEmpty(interviewAuthorityUserOptions) and #lists.isEmpty(interviewEmployeeOptions)}" class="text-muted small" id="noAuthorityPlaceholder">
@@ -182,7 +241,8 @@
                                             th:name="${authority.type == 'EMPLOYEE' ? 'interviewAuthorityEmployeeIds' : 'interviewAuthorityUserIds'}"
                                             th:value="${authority.userId}"
                                             th:id="${'authority_' + authority.type + '_' + authority.userId}"
-                                            th:checked="${authority.type == 'EMPLOYEE' ? (openingForm.interviewAuthorityEmployeeIds != null and openingForm.interviewAuthorityEmployeeIds.contains(authority.userId)) : (openingForm.interviewAuthorityUserIds != null and openingForm.interviewAuthorityUserIds.contains(authority.userId))}">
+                                            th:checked="${authority.type == 'EMPLOYEE' ? (openingForm.interviewAuthorityEmployeeIds != null and openingForm.interviewAuthorityEmployeeIds.contains(authority.userId)) : (openingForm.interviewAuthorityUserIds != null and openingForm.interviewAuthorityUserIds.contains(authority.userId))}"
+                                            th:disabled="${openingForm.levelOneInterviewAuthorityLocked}">
                                         <label class="form-check-label"
                                             th:for="${'authority_' + authority.type + '_' + authority.userId}"
                                             th:text="${authority.displayLabel}"></label>
@@ -209,8 +269,17 @@
                                     <!-- Hidden inputs for selected IDs that are NOT on the current page will be added here via JS -->
                                 </div>
 
+                                <th:block th:if="${openingForm.levelOneInterviewAuthorityLocked}">
+                                    <input type="hidden" name="interviewAuthorityRoleIds"
+                                        th:each="roleId : ${openingForm.interviewAuthorityRoleIds}" th:value="${roleId}">
+                                    <input type="hidden" name="interviewAuthorityUserIds"
+                                        th:each="userId : ${openingForm.interviewAuthorityUserIds}" th:value="${userId}">
+                                    <input type="hidden" name="interviewAuthorityEmployeeIds"
+                                        th:each="employeeId : ${openingForm.interviewAuthorityEmployeeIds}" th:value="${employeeId}">
+                                </th:block>
+
                                 <div class="form-text">Choose the users or employees who will conduct the interview.</div>
-                                <div id="interviewAuthorityUserIdsClientError" class="text-danger small mt-2 d-none">
+                                <div id="interviewAuthorityUserIdsClientError" class="invalid-feedback mt-2 d-none">
                                     Select at least one interview authority.
                                 </div>
                                 <div class="text-danger small" th:errors="*{interviewAuthorityUserIds}"></div>
@@ -218,7 +287,104 @@
                             </div>
                         </div>
 
-                        <hr class="my-4">
+                        <div class="authority-round-divider" aria-hidden="true"><span>then</span></div>
+
+                        <div class="row g-3 authority-round-card" id="levelTwoAuthoritySection"
+                            th:attr="data-locked=${openingForm.levelTwoInterviewAuthorityLocked}">
+                            <div class="col-12">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <div>
+                                        <label class="form-label d-block mb-0">
+                                            Round L2 Interview Authorities <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="form-text mt-1">Select 2 to 5 STM, COO, or HOD users.</div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="authority-selection-count" id="levelTwoAuthoritySelectionCount">0 / 5 selected</span>
+                                        <span class="badge text-bg-secondary"
+                                            th:if="${openingForm.levelTwoInterviewAuthorityLocked}">Locked after L2 feedback</span>
+                                    </div>
+                                </div>
+
+                                <div id="levelTwoAuthoritySearchContainer" class="mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" id="levelTwoAuthoritySearchInput" class="form-control"
+                                            placeholder="Search L2 authority by name, email or mobile..."
+                                            th:disabled="${openingForm.levelTwoInterviewAuthorityLocked}">
+                                        <button class="btn btn-outline-primary" type="button" id="levelTwoAuthoritySearchBtn"
+                                            aria-label="Search Round L2 authorities" title="Search"
+                                            th:disabled="${openingForm.levelTwoInterviewAuthorityLocked}">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" id="levelTwoAuthorityClearBtn"
+                                            aria-label="Clear Round L2 authority search" title="Clear search"
+                                            th:disabled="${openingForm.levelTwoInterviewAuthorityLocked}">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="levelTwoInterviewAuthorityUserIds"
+                                    class="authority-results overflow-auto"
+                                    th:classappend="${#fields.hasErrors('levelTwoInterviewAuthorityUserIds') ? ' border-danger' : ''}">
+                                    <div class="text-muted small"
+                                        th:if="${#lists.isEmpty(levelTwoInterviewAuthorityOptions)}">
+                                        No eligible STM, COO, or HOD users are available.
+                                    </div>
+                                    <div class="form-check mb-2" th:each="authority : ${levelTwoInterviewAuthorityOptions}">
+                                        <input class="form-check-input" type="checkbox"
+                                            name="levelTwoInterviewAuthorityUserIds"
+                                            th:value="${authority.userId}"
+                                            th:id="${'levelTwoAuthority_' + authority.userId}"
+                                            th:checked="${openingForm.levelTwoInterviewAuthorityUserIds != null and openingForm.levelTwoInterviewAuthorityUserIds.contains(authority.userId)}"
+                                            th:disabled="${openingForm.levelTwoInterviewAuthorityLocked}">
+                                        <label class="form-check-label"
+                                            th:for="${'levelTwoAuthority_' + authority.userId}"
+                                            th:text="${authority.displayLabel}"></label>
+                                    </div>
+                                </div>
+
+                                <div id="levelTwoAuthorityPagination" class="d-none mt-2">
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                        <div class="small text-muted" id="levelTwoAuthorityPageInfo">Page 1 of 1</div>
+                                        <nav aria-label="Round L2 authority pagination">
+                                            <ul class="pagination pagination-sm mb-0">
+                                                <li class="page-item" id="levelTwoAuthorityPrevPage">
+                                                    <a class="page-link" href="javascript:void(0)" tabindex="-1">Previous</a>
+                                                </li>
+                                                <li class="page-item" id="levelTwoAuthorityNextPage">
+                                                    <a class="page-link" href="javascript:void(0)">Next</a>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+
+                                <div id="selectedLevelTwoAuthoritiesHiddenContainer"></div>
+                                <th:block th:if="${openingForm.levelTwoInterviewAuthorityLocked}">
+                                    <input type="hidden" name="levelTwoInterviewAuthorityUserIds"
+                                        th:each="userId : ${openingForm.levelTwoInterviewAuthorityUserIds}"
+                                        th:value="${userId}">
+                                </th:block>
+
+                                <div id="levelTwoInterviewAuthorityUserIdsClientError"
+                                    class="invalid-feedback mt-2 d-none">
+                                    Select between two and five Round L2 interview authorities.
+                                </div>
+                                <div class="text-danger small" th:errors="*{levelTwoInterviewAuthorityUserIds}"></div>
+                            </div>
+                        </div>
+
+                        </section>
+
+                        <section class="vacancy-form-section" aria-labelledby="vacancyRequirementsHeading">
+                            <div class="vacancy-section-heading">
+                                <span class="vacancy-section-icon"><i class="fas fa-list"></i></span>
+                                <div>
+                                    <h3 id="vacancyRequirementsHeading">Vacancy requirements</h3>
+                                    <p>Review the designation, level, and number of vacancies included in this request.</p>
+                                </div>
+                            </div>
 
                         <div class="row g-3 align-items-end" id="manualRequirementControls"
                             th:if="${!isPendingApproval and !isSubmittedEdit}">
@@ -243,8 +409,11 @@
                         </div>
 
                         <div class="text-danger small mt-2" th:if="${#fields.hasErrors('requirements')}" th:errors="*{requirements}"></div>
+                        <div id="requirementsClientError" class="invalid-feedback d-none mt-2">
+                            Add at least one designation and level requirement.
+                        </div>
 
-                        <div class="table-responsive mt-3">
+                        <div class="table-responsive vacancy-requirement-table-wrap mt-3">
                             <table class="table table-bordered align-middle" id="internalRequirementTable">
                                 <thead>
                                     <tr>
@@ -277,7 +446,8 @@
                                                 th:value="${requirement.levelName}">
                                         </td>
                                         <td>
-                                            <input type="number" min="1" class="form-control numberOfVacancyInput"
+                                            <input type="number" min="1" step="1" required inputmode="numeric"
+                                                aria-label="Number of vacancies" class="form-control numberOfVacancyInput"
                                                 data-field="numberOfVacancy"
                                                 th:name="${'requirements[' + stat.index + '].numberOfVacancy'}"
                                                 th:value="${requirement.numberOfVacancy}">
@@ -291,25 +461,30 @@
                             </table>
                         </div>
 
-                        <div class="mt-4 d-flex justify-content-center gap-2">
+                        </section>
+
+                        <div class="vacancy-form-actions d-flex justify-content-end gap-2">
                             <button type="submit" name="action" value="submit" class="btn btn-primary"
-                                th:if="${isSubmittedEdit}"
-                                th:text="'Update Vacancy Opening'"></button>
+                                th:if="${isSubmittedEdit}">
+                                <i class="fas fa-save me-1"></i> Update Vacancy Opening
+                            </button>
                             
                             <!-- HOD Request Specific Actions -->
                             <button type="submit" name="action" value="approve" class="btn btn-success"
                                 th:if="${isPendingApproval}"
                                 onclick="return confirm('Approve this resource request and open the vacancy? Ensure interview authorities are assigned.');">
-                                Approve & Open Vacancy
+                                <i class="fas fa-check me-1"></i> Approve & Open Vacancy
                             </button>
                             <button type="submit" name="action" value="reject" class="btn btn-outline-danger"
                                 th:if="${isPendingApproval}"
                                 formnovalidate
                                 onclick="return confirm('Reject this resource request?');">
-                                Reject Request
+                                <i class="fas fa-times me-1"></i> Reject Request
                             </button>
                             
-                            <a class="btn btn-secondary" th:href="@{/hr/internal-vacancies}">Back to List</a>
+                            <a class="btn btn-outline-secondary" th:href="@{/hr/internal-vacancies}">
+                                <i class="fas fa-arrow-left me-1"></i> Back to List
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -317,8 +492,8 @@
         </section>
     </th:block>
 
-    <script th:src="@{/js/hr-internal-vacancy-opening.js}"></script>
-    <script th:src="@{/js/internal-vacancy-replacement.js(v='20260825-4')}"></script>
+    <script th:src="@{/js/hr-internal-vacancy-opening.js(v='20261008-2')}"></script>
+    <script th:src="@{/js/internal-vacancy-replacement.js(v='20261008-5')}"></script>
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function() {
             const typeInputs = document.querySelectorAll('.hiring-request-type');
