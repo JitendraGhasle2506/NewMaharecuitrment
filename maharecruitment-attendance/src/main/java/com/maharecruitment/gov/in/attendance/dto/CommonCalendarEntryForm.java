@@ -22,6 +22,7 @@ public class CommonCalendarEntryForm {
     private Long id;
     private String source;
     private String viewMonth;
+    private CalendarDateMode dateMode = CalendarDateMode.SINGLE;
 
     @NotNull(message = "Entry type is required.")
     private CalendarEntryType entryType = CalendarEntryType.HOLIDAY;
@@ -29,6 +30,9 @@ public class CommonCalendarEntryForm {
     @NotNull(message = "Date is required.")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate entryDate;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
 
     @NotBlank(message = "Title is required.")
     @Size(max = 150, message = "Title must be 150 characters or less.")

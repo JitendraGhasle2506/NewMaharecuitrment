@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${pageTitle}">Holiday, Festival, Event &amp; Working Day Calendar</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/common-calendar.css(v='20261009-3')}">
+    <link rel="stylesheet" th:href="@{/css/common-calendar.css(v='20261009-4')}">
 </head>
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Common', 'Holiday Calendar', ~{::section})}">
@@ -163,11 +163,25 @@
                                         <div class="invalid-feedback d-block" th:errors="*{entryType}"></div>
                                     </fieldset>
 
+                                    <fieldset class="mb-3" id="calendarDateModeField">
+                                        <legend class="form-label">Date selection <span class="text-danger">*</span></legend>
+                                        <div class="date-mode-options">
+                                            <label><input type="radio" th:field="*{dateMode}" value="SINGLE"> <span>Single date</span></label>
+                                            <label><input type="radio" th:field="*{dateMode}" value="RANGE"> <span>From date to date</span></label>
+                                        </div>
+                                    </fieldset>
+
                                     <div class="mb-3">
-                                        <label for="entryDate" class="form-label">Date <span class="text-danger">*</span></label>
+                                        <label for="entryDate" class="form-label"><span id="entryDateLabel">Date</span> <span class="text-danger">*</span></label>
                                         <input type="date" id="entryDate" class="form-control" th:field="*{entryDate}"
                                             th:classappend="${#fields.hasErrors('entryDate') ? ' is-invalid' : ''}" required>
                                         <div class="invalid-feedback" th:errors="*{entryDate}"></div>
+                                    </div>
+
+                                    <div class="mb-3" id="calendarEndDateField">
+                                        <label for="endDate" class="form-label">To date <span class="text-danger">*</span></label>
+                                        <input type="date" id="endDate" class="form-control" th:field="*{endDate}">
+                                        <div class="form-text">The festival or event will appear on every date in this range.</div>
                                     </div>
 
                                     <div class="mb-3">
@@ -195,7 +209,7 @@
                                         <input type="file" id="calendarPhotos" class="form-control" th:field="*{photos}"
                                             accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple
                                             th:attr="data-existing-count=${#lists.size(selectedPhotos)}">
-                                        <div class="form-text">Add JPG, JPEG or PNG photos. Maximum 10 photos per festival or event.</div>
+                                        <div class="form-text">Select multiple JPG, JPEG or PNG files at once. Maximum 10 photos per festival or event.</div>
                                         <div id="calendarPhotoFeedback" class="text-danger small mt-1" aria-live="polite"></div>
                                         <div id="calendarPhotoPreview" class="calendar-photo-preview" aria-label="Selected photo previews"></div>
                                     </div>
@@ -273,7 +287,10 @@
                                                 th:classappend="${selectedItem.entryType.name() == 'HOLIDAY' ? ' type-holiday' : (selectedItem.entryType.name() == 'FESTIVAL' ? ' type-festival' : ' type-event')}"
                                                 th:text="${selectedItem.entryType.displayName}">Event</span>
                                             <h4 th:text="${selectedItem.title}">Entry title</h4>
-                                            <p th:text="${#temporals.format(selectedItem.date, 'dd MMMM yyyy, EEEE')}">09 October 2026</p>
+                                            <p>
+                                                <span th:text="${#temporals.format(selectedItem.date, 'dd MMMM yyyy, EEEE')}">09 October 2026</span>
+                                                <span th:if="${selectedItem.dateRange}" th:text="${' to ' + #temporals.format(selectedItem.endDate, 'dd MMMM yyyy, EEEE')}"></span>
+                                            </p>
                                         </div>
                                     </div>
                                     <div class="selected-photo-gallery" th:if="${!#lists.isEmpty(selectedPhotos)}">
@@ -318,7 +335,11 @@
                                 <tbody>
                                     <tr th:if="${#lists.isEmpty(monthItems)}"><td colspan="5" class="text-center text-muted py-4">No entries configured for this month.</td></tr>
                                     <tr th:each="item : ${monthItems}" class="calendar-entry-row">
-                                        <td><strong th:text="${#temporals.format(item.date, 'dd MMM yyyy')}">09 Oct 2026</strong><div class="small text-muted" th:text="${#temporals.format(item.date, 'EEEE')}">Friday</div></td>
+                                        <td>
+                                            <strong th:text="${#temporals.format(item.date, 'dd MMM yyyy')}">09 Oct 2026</strong>
+                                            <span th:if="${item.dateRange}" class="d-block small fw-semibold" th:text="${'to ' + #temporals.format(item.endDate, 'dd MMM yyyy')}">to 11 Oct 2026</span>
+                                            <div class="small text-muted" th:text="${item.dateRange ? 'Date range' : #temporals.format(item.date, 'EEEE')}">Friday</div>
+                                        </td>
                                         <td><span class="entry-type-badge" th:classappend="${item.entryType.name() == 'HOLIDAY' ? ' type-holiday' : (item.entryType.name() == 'FESTIVAL' ? ' type-festival' : ' type-event')}" th:text="${item.entryType.displayName}">Holiday</span></td>
                                         <td>
                                             <div class="fw-semibold" th:text="${item.title}">Title</div>
@@ -389,6 +410,6 @@
             </div>
         </section>
     </th:block>
-    <script th:src="@{/js/common-calendar.js(v='20261009-3')}"></script>
+    <script th:src="@{/js/common-calendar.js(v='20261009-4')}"></script>
 </body>
 </html>

@@ -28,6 +28,9 @@ public class CommonCalendarEntryEntity {
     @Column(name = "entry_date", nullable = false)
     private LocalDate entryDate;
 
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
     @Column(name = "title", nullable = false, length = 150)
     private String title;
 

@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarDayView;
+import com.maharecruitment.gov.in.attendance.dto.CalendarDateMode;
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarEntryForm;
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarItemView;
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarPhotoView;
@@ -127,6 +128,7 @@ public class HolidayMasterController {
                 CommonCalendarEntryEntity entry = new CommonCalendarEntryEntity();
                 entry.setId(form.getId());
                 entry.setEntryDate(form.getEntryDate());
+                entry.setEndDate(form.getDateMode() == CalendarDateMode.RANGE ? form.getEndDate() : null);
                 entry.setTitle(form.getTitle());
                 entry.setEntryType(form.getEntryType());
                 entry.setDescription(form.getDescription());
@@ -194,7 +196,7 @@ public class HolidayMasterController {
                 .thenComparing(CommonCalendarItemView::title, String.CASE_INSENSITIVE_ORDER));
 
         Map<LocalDate, List<CommonCalendarItemView>> itemsByDate = new LinkedHashMap<>();
-        items.forEach(item -> itemsByDate.computeIfAbsent(item.date(), ignored -> new ArrayList<>()).add(item));
+        items.forEach(item -> addItemToDates(itemsByDate, item, monthStart, monthEnd));
         Map<LocalDate, WeekOffWorkingDayEntity> workingDaysByDate = new LinkedHashMap<>();
         workingDays.forEach(workingDay -> workingDaysByDate.put(workingDay.getWorkingDate(), workingDay));
 
@@ -267,6 +269,8 @@ public class HolidayMasterController {
                 form.setSource(COMMON_SOURCE);
                 form.setEntryType(entry.getEntryType());
                 form.setEntryDate(entry.getEntryDate());
+                form.setEndDate(entry.getEndDate());
+                form.setDateMode(entry.getEndDate() == null ? CalendarDateMode.SINGLE : CalendarDateMode.RANGE);
                 form.setTitle(entry.getTitle());
                 form.setDescription(entry.getDescription());
             }
@@ -321,20 +325,34 @@ public class HolidayMasterController {
 
     private CommonCalendarItemView toItem(HolidayMasterEntity holiday) {
         return new CommonCalendarItemView(
-                holiday.getId(), HOLIDAY_SOURCE, holiday.getHolidayDate(), holiday.getHolidayName(),
+                holiday.getId(), HOLIDAY_SOURCE, holiday.getHolidayDate(), null, holiday.getHolidayName(),
                 CalendarEntryType.HOLIDAY, "Affects internal attendance.");
     }
 
     private CommonCalendarItemView toItem(CommonCalendarEntryEntity entry) {
         return new CommonCalendarItemView(
-                entry.getId(), COMMON_SOURCE, entry.getEntryDate(), entry.getTitle(),
+                entry.getId(), COMMON_SOURCE, entry.getEntryDate(), entry.getEndDate(), entry.getTitle(),
                 entry.getEntryType(), entry.getDescription());
     }
 
     private CommonCalendarItemView itemFromForm(CommonCalendarEntryForm form) {
         return new CommonCalendarItemView(
-                form.getId(), form.getSource(), form.getEntryDate(), form.getTitle(),
+                form.getId(), form.getSource(), form.getEntryDate(),
+                form.getDateMode() == CalendarDateMode.RANGE ? form.getEndDate() : null, form.getTitle(),
                 form.getEntryType(), form.getDescription());
+    }
+
+    private void addItemToDates(
+            Map<LocalDate, List<CommonCalendarItemView>> itemsByDate,
+            CommonCalendarItemView item,
+            LocalDate monthStart,
+            LocalDate monthEnd) {
+        LocalDate cursor = item.date().isBefore(monthStart) ? monthStart : item.date();
+        LocalDate lastDate = item.effectiveEndDate().isAfter(monthEnd) ? monthEnd : item.effectiveEndDate();
+        while (!cursor.isAfter(lastDate)) {
+            itemsByDate.computeIfAbsent(cursor, ignored -> new ArrayList<>()).add(item);
+            cursor = cursor.plusDays(1);
+        }
     }
 
     private WeekOffWorkingDayEntity findWorkingDay(List<WeekOffWorkingDayEntity> workingDays, Long selectedId) {

@@ -47,7 +47,8 @@ class CommonCalendarEntryServiceImplTest {
     @Test
     void savesFestivalWithoutCreatingAttendanceHoliday() {
         CommonCalendarEntryEntity festival = entry(null, CalendarEntryType.FESTIVAL, "Diwali Celebration");
-        when(repository.existsDuplicate(festival.getEntryDate(), festival.getEntryType(), festival.getTitle(), null))
+        when(repository.existsDuplicate(festival.getEntryDate(), festival.getEntryDate(),
+                festival.getEntryType(), festival.getTitle(), null))
                 .thenReturn(false);
         when(repository.save(any(CommonCalendarEntryEntity.class))).thenAnswer(invocation -> {
             CommonCalendarEntryEntity saved = invocation.getArgument(0);
@@ -78,7 +79,8 @@ class CommonCalendarEntryServiceImplTest {
     @Test
     void rejectsDuplicateFestivalOnSameDate() {
         CommonCalendarEntryEntity festival = entry(null, CalendarEntryType.FESTIVAL, "Foundation Festival");
-        when(repository.existsDuplicate(festival.getEntryDate(), festival.getEntryType(), festival.getTitle(), null))
+        when(repository.existsDuplicate(festival.getEntryDate(), festival.getEntryDate(),
+                festival.getEntryType(), festival.getTitle(), null))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> service.saveEntry(festival))
@@ -101,7 +103,8 @@ class CommonCalendarEntryServiceImplTest {
     @Test
     void savesAllUploadedPhotosAgainstTheCreatedEvent() {
         CommonCalendarEntryEntity event = entry(null, CalendarEntryType.EVENT, "Town Hall");
-        when(repository.existsDuplicate(event.getEntryDate(), event.getEntryType(), event.getTitle(), null))
+        when(repository.existsDuplicate(event.getEntryDate(), event.getEntryDate(),
+                event.getEntryType(), event.getTitle(), null))
                 .thenReturn(false);
         when(repository.save(any(CommonCalendarEntryEntity.class))).thenAnswer(invocation -> {
             CommonCalendarEntryEntity saved = invocation.getArgument(0);

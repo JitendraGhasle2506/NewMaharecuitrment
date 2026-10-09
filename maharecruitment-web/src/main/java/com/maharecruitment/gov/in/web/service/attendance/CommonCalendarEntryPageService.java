@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.service.attendance;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarEntryForm;
+import com.maharecruitment.gov.in.attendance.dto.CalendarDateMode;
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarPhotoUpload;
 import com.maharecruitment.gov.in.attendance.entity.CalendarEntryType;
 import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryEntity;
@@ -43,6 +45,9 @@ public class CommonCalendarEntryPageService {
         List<MultipartFile> photos = nonEmptyPhotos(form.getPhotos());
         if (form.getEntryType() == CalendarEntryType.HOLIDAY) {
             requireSource(form, HOLIDAY_SOURCE);
+            if (form.getDateMode() == CalendarDateMode.RANGE) {
+                throw new IllegalArgumentException("Attendance holidays must use a single date.");
+            }
             if (!photos.isEmpty()) {
                 throw new IllegalArgumentException("Photos can be added only to festivals and events.");
             }
@@ -55,12 +60,14 @@ public class CommonCalendarEntryPageService {
         }
 
         requireSource(form, COMMON_SOURCE);
+        LocalDate endDate = resolveEndDate(form);
         validatePhotoLimit(form.getId(), photos.size());
         List<FileUploadResult> uploadedFiles = storePhotos(photos);
         try {
             CommonCalendarEntryEntity entry = new CommonCalendarEntryEntity();
             entry.setId(form.getId());
             entry.setEntryDate(form.getEntryDate());
+            entry.setEndDate(endDate);
             entry.setTitle(form.getTitle());
             entry.setEntryType(form.getEntryType());
             entry.setDescription(form.getDescription());
@@ -87,7 +94,23 @@ public class CommonCalendarEntryPageService {
         }
     }
 
+    private LocalDate resolveEndDate(CommonCalendarEntryForm form) {
+        if (form.getDateMode() != CalendarDateMode.RANGE) {
+            return null;
+        }
+        if (form.getEndDate() == null) {
+            throw new IllegalArgumentException("To date is required for a date range.");
+        }
+        if (form.getEntryDate() != null && form.getEndDate().isBefore(form.getEntryDate())) {
+            throw new IllegalArgumentException("To date must be on or after the from date.");
+        }
+        return form.getEndDate();
+    }
+
     private void validatePhotoLimit(Long entryId, int newPhotoCount) {
+        if (newPhotoCount == 0) {
+            return;
+        }
         long existingCount = calendarEntryService.countActivePhotos(entryId);
         if (existingCount + newPhotoCount > MAX_PHOTOS_PER_ENTRY) {
             throw new IllegalArgumentException(

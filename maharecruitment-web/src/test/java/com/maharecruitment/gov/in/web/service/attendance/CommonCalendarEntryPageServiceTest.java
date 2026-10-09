@@ -19,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarEntryForm;
+import com.maharecruitment.gov.in.attendance.dto.CalendarDateMode;
 import com.maharecruitment.gov.in.attendance.dto.CommonCalendarPhotoUpload;
 import com.maharecruitment.gov.in.attendance.entity.CalendarEntryType;
 import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryEntity;
@@ -91,6 +92,33 @@ class CommonCalendarEntryPageServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("only to festivals and events");
         verify(holidayService, never()).saveHoliday(any());
+    }
+
+    @Test
+    void savesFestivalDateRangeWithItsEndDate() {
+        CommonCalendarEntryForm form = eventForm();
+        form.setEntryType(CalendarEntryType.FESTIVAL);
+        form.setDateMode(CalendarDateMode.RANGE);
+        form.setEndDate(LocalDate.of(2026, 10, 24));
+
+        service.save(form);
+
+        ArgumentCaptor<CommonCalendarEntryEntity> entry =
+                ArgumentCaptor.forClass(CommonCalendarEntryEntity.class);
+        verify(calendarEntryService).saveEntryWithPhotos(entry.capture(), anyList());
+        assertThat(entry.getValue().getEntryDate()).isEqualTo(LocalDate.of(2026, 10, 20));
+        assertThat(entry.getValue().getEndDate()).isEqualTo(LocalDate.of(2026, 10, 24));
+    }
+
+    @Test
+    void rejectsRangeWithoutToDate() {
+        CommonCalendarEntryForm form = eventForm();
+        form.setDateMode(CalendarDateMode.RANGE);
+
+        assertThatThrownBy(() -> service.save(form))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("To date is required");
+        verify(calendarEntryService, never()).saveEntryWithPhotos(any(), anyList());
     }
 
     private CommonCalendarEntryForm eventForm() {

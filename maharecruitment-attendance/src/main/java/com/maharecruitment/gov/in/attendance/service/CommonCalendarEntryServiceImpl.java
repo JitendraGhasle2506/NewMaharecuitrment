@@ -71,18 +71,20 @@ public class CommonCalendarEntryServiceImpl implements CommonCalendarEntryServic
             CommonCalendarEntryEntity entry,
             List<CommonCalendarPhotoUpload> photos) {
         LocalDate entryDate = requireDate(entry);
+        LocalDate endDate = normalizeEndDate(entryDate, entry.getEndDate());
         String title = requireTitle(entry);
         CalendarEntryType entryType = requireInformationType(entry);
         String description = normalizeDescription(entry.getDescription());
 
-        if (repository.existsDuplicate(entryDate, entryType, title, entry.getId())) {
+        if (repository.existsDuplicate(entryDate, endDate == null ? entryDate : endDate,
+                entryType, title, entry.getId())) {
             throw new IllegalArgumentException(
                     "This " + entryType.getDisplayName().toLowerCase() + " is already configured for " + entryDate + ".");
         }
 
         if (entry.getId() == null) {
             CommonCalendarEntryEntity created = new CommonCalendarEntryEntity();
-            copyValues(created, entryDate, title, entryType, description);
+            copyValues(created, entryDate, endDate, title, entryType, description);
             CommonCalendarEntryEntity saved = repository.save(created);
             recordAudit(saved, "CREATE", "created", null);
             appendPhotos(saved, photos);
@@ -93,10 +95,11 @@ public class CommonCalendarEntryServiceImpl implements CommonCalendarEntryServic
                 .orElseThrow(() -> new IllegalArgumentException("Calendar entry not found."));
         Map<String, Object> previousValues = snapshot(existing);
         boolean changed = !Objects.equals(existing.getEntryDate(), entryDate)
+                || !Objects.equals(existing.getEndDate(), endDate)
                 || !Objects.equals(existing.getTitle(), title)
                 || existing.getEntryType() != entryType
                 || !Objects.equals(existing.getDescription(), description);
-        copyValues(existing, entryDate, title, entryType, description);
+        copyValues(existing, entryDate, endDate, title, entryType, description);
         CommonCalendarEntryEntity saved = repository.save(existing);
         if (changed) {
             recordAudit(saved, "UPDATE", "updated", previousValues);
@@ -153,10 +156,12 @@ public class CommonCalendarEntryServiceImpl implements CommonCalendarEntryServic
     private void copyValues(
             CommonCalendarEntryEntity target,
             LocalDate date,
+            LocalDate endDate,
             String title,
             CalendarEntryType type,
             String description) {
         target.setEntryDate(date);
+        target.setEndDate(endDate);
         target.setTitle(title);
         target.setEntryType(type);
         target.setDescription(description);
@@ -212,6 +217,16 @@ public class CommonCalendarEntryServiceImpl implements CommonCalendarEntryServic
         return title;
     }
 
+    private LocalDate normalizeEndDate(LocalDate startDate, LocalDate endDate) {
+        if (endDate == null || endDate.equals(startDate)) {
+            return null;
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("To date must be on or after the from date.");
+        }
+        return endDate;
+    }
+
     private CalendarEntryType requireInformationType(CommonCalendarEntryEntity entry) {
         CalendarEntryType type = entry == null ? null : entry.getEntryType();
         if (type != CalendarEntryType.FESTIVAL && type != CalendarEntryType.EVENT) {
@@ -234,6 +249,7 @@ public class CommonCalendarEntryServiceImpl implements CommonCalendarEntryServic
     private Map<String, Object> snapshot(CommonCalendarEntryEntity entry) {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("entryDate", entry.getEntryDate());
+        values.put("endDate", entry.getEndDate());
         values.put("title", entry.getTitle());
         values.put("entryType", entry.getEntryType());
         values.put("description", entry.getDescription());
@@ -258,9 +274,16 @@ public class CommonCalendarEntryServiceImpl implements CommonCalendarEntryServic
                 .actorUserId(currentActorProvider.getCurrentUserId())
                 .actorLoginId(currentActorProvider.getCurrentActorEmail())
                 .activitySummary(entry.getEntryType().getDisplayName() + " " + actionLabel)
-                .activityDetails("\"" + entry.getTitle() + "\" was " + actionLabel + " for " + entry.getEntryDate() + ".")
+                .activityDetails("\"" + entry.getTitle() + "\" was " + actionLabel + " for "
+                        + describeDates(entry) + ".")
                 .metadata(metadata)
                 .build());
+    }
+
+    private String describeDates(CommonCalendarEntryEntity entry) {
+        return entry.getEndDate() == null
+                ? entry.getEntryDate().toString()
+                : entry.getEntryDate() + " to " + entry.getEndDate();
     }
 
     private void recordPhotoAudit(

@@ -4,6 +4,12 @@
     const form = document.getElementById("commonCalendarForm");
     const typeInputs = Array.from(document.querySelectorAll('input[name="entryType"]'));
     const descriptionField = document.getElementById("calendarDescriptionField");
+    const dateModeField = document.getElementById("calendarDateModeField");
+    const dateModeInputs = Array.from(document.querySelectorAll('input[name="dateMode"]'));
+    const entryDate = document.getElementById("entryDate");
+    const entryDateLabel = document.getElementById("entryDateLabel");
+    const endDateField = document.getElementById("calendarEndDateField");
+    const endDate = document.getElementById("endDate");
     const description = document.getElementById("description");
     const descriptionCount = document.getElementById("descriptionCount");
     const impactNote = document.getElementById("calendarImpactNote");
@@ -18,6 +24,9 @@
     const workingDate = document.getElementById("workingDate");
 
     typeInputs.forEach(input => input.addEventListener("change", updateTypeHelp));
+    dateModeInputs.forEach(input => input.addEventListener("change", updateDateModeUi));
+    entryDate?.addEventListener("change", validateDateRange);
+    endDate?.addEventListener("change", validateDateRange);
     description?.addEventListener("input", updateDescriptionCount);
     photoInput?.addEventListener("change", updatePhotoPreview);
     searchInput?.addEventListener("input", filterEntries);
@@ -33,11 +42,21 @@
         return typeInputs.find(input => input.checked)?.value || "";
     }
 
+    function selectedDateMode() {
+        return dateModeInputs.find(input => input.checked)?.value || "SINGLE";
+    }
+
     function updateTypeHelp() {
         const type = selectedType();
         const holiday = type === "HOLIDAY";
         descriptionField?.classList.toggle("d-none", holiday);
         photosField?.classList.toggle("d-none", holiday);
+        dateModeField?.classList.toggle("d-none", holiday);
+        if (holiday) {
+            const singleDate = dateModeInputs.find(input => input.value === "SINGLE");
+            if (singleDate) singleDate.checked = true;
+        }
+        updateDateModeUi();
         if (holiday && photoInput?.files?.length) {
             photoInput.value = "";
             updatePhotoPreview();
@@ -47,6 +66,27 @@
                 ? '<i class="fas fa-exclamation-circle me-1"></i> This date will be treated as <strong>HOLIDAY</strong> in internal attendance.'
                 : '<i class="fas fa-info-circle me-1"></i> Festivals and events are informational and do not change attendance.';
         }
+    }
+
+    function updateDateModeUi() {
+        const range = selectedType() !== "HOLIDAY" && selectedDateMode() === "RANGE";
+        endDateField?.classList.toggle("d-none", !range);
+        if (entryDateLabel) entryDateLabel.textContent = range ? "From date" : "Date";
+        if (endDate) {
+            endDate.required = range;
+            if (!range) {
+                endDate.value = "";
+                endDate.setCustomValidity("");
+            }
+        }
+        validateDateRange();
+    }
+
+    function validateDateRange() {
+        if (!endDate || selectedDateMode() !== "RANGE" || selectedType() === "HOLIDAY") return true;
+        const invalid = Boolean(entryDate?.value && endDate.value && endDate.value < entryDate.value);
+        endDate.setCustomValidity(invalid ? "To date must be on or after the from date." : "");
+        return !invalid;
     }
 
     function updateDescriptionCount() {
@@ -63,12 +103,18 @@
     function validateForm(event) {
         if (!form) return;
         form.querySelectorAll(".is-invalid").forEach(element => element.classList.remove("is-invalid"));
-        const requiredFields = [document.getElementById("entryDate"), document.getElementById("title")];
+        const requiredFields = [entryDate, document.getElementById("title")];
+        if (selectedType() !== "HOLIDAY" && selectedDateMode() === "RANGE") requiredFields.push(endDate);
         const invalidField = requiredFields.find(field => !field?.value?.trim());
         if (!selectedType() || invalidField) {
             event.preventDefault();
             invalidField?.classList.add("is-invalid");
             invalidField?.focus();
+            return;
+        }
+        if (!validateDateRange()) {
+            event.preventDefault();
+            endDate?.reportValidity();
             return;
         }
         if (photoInput && !photoInput.checkValidity()) {

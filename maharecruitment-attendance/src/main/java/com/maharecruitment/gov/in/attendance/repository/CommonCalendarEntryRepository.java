@@ -17,7 +17,8 @@ public interface CommonCalendarEntryRepository extends JpaRepository<CommonCalen
             select entry
             from CommonCalendarEntryEntity entry
             where entry.active = true
-              and entry.entryDate between :startDate and :endDate
+              and entry.entryDate <= :endDate
+              and coalesce(entry.endDate, entry.entryDate) >= :startDate
             order by entry.entryDate asc, entry.entryType asc, entry.title asc
             """)
     List<CommonCalendarEntryEntity> findActiveBetween(
@@ -30,13 +31,15 @@ public interface CommonCalendarEntryRepository extends JpaRepository<CommonCalen
             select count(entry) > 0
             from CommonCalendarEntryEntity entry
             where entry.active = true
-              and entry.entryDate = :entryDate
+              and entry.entryDate <= :endDate
+              and coalesce(entry.endDate, entry.entryDate) >= :entryDate
               and entry.entryType = :entryType
               and lower(entry.title) = lower(:title)
               and (:excludedId is null or entry.id <> :excludedId)
             """)
     boolean existsDuplicate(
             @Param("entryDate") LocalDate entryDate,
+            @Param("endDate") LocalDate endDate,
             @Param("entryType") CalendarEntryType entryType,
             @Param("title") String title,
             @Param("excludedId") Long excludedId);
