@@ -40,7 +40,6 @@ import com.maharecruitment.gov.in.attendance.entity.WeekOffWorkingDayEntity;
 import com.maharecruitment.gov.in.attendance.service.CommonCalendarEntryService;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.attendance.service.WeekOffWorkingDayService;
-import com.maharecruitment.gov.in.audit.dto.AuditEventView;
 
 import jakarta.validation.Valid;
 
@@ -200,14 +199,11 @@ public class HolidayMasterController {
         Map<LocalDate, WeekOffWorkingDayEntity> workingDaysByDate = new LinkedHashMap<>();
         workingDays.forEach(workingDay -> workingDaysByDate.put(workingDay.getWorkingDate(), workingDay));
 
-        List<AuditEventView> activityTimeline = List.of();
         CommonCalendarItemView selectedItem = null;
         if (selectedHolidayId != null) {
             selectedItem = itemFromForm(form);
-            activityTimeline = holidayService.getHolidayAuditTrail(selectedHolidayId);
         } else if (selectedCalendarEntryId != null) {
             selectedItem = itemFromForm(form);
-            activityTimeline = calendarEntryService.getEntryAuditTrail(selectedCalendarEntryId);
         }
 
         WeekOffWorkingDayEntity selectedWorkingDay = findWorkingDay(workingDays, selectedWorkingDayId);
@@ -237,7 +233,6 @@ public class HolidayMasterController {
         model.addAttribute("monthlyEventCount", countType(items, CalendarEntryType.EVENT));
         model.addAttribute("monthlyWorkingDayCount", workingDays.size());
         model.addAttribute("selectedItem", selectedItem);
-        model.addAttribute("activityTimeline", activityTimeline);
         model.addAttribute("today", LocalDate.now());
         model.addAttribute("pageTitle", "Holiday, Festival, Event & Working Day Calendar");
     }

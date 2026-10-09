@@ -32,8 +32,13 @@ class CommonCalendarTemplateTest {
                 .contains("/common/holidays/working-days/{id}/archive")
                 .contains("th:field=\"*{officeOrderFile}\"")
                 .contains("monthlyWorkingDayCount")
+                .contains("class=\"calendar-workspace\"")
+                .contains("<details class=\"working-day-form-section\"")
+                .contains("class=\"working-day-summary\"")
                 .contains("/common/holidays/holidays/{id}/archive")
                 .contains("/common/holidays/entries/{id}/archive")
+                .doesNotContain("activityTimeline")
+                .doesNotContain("class=\"audit-list\"")
                 .doesNotContain("href=\"@{/common/holidays/archive/");
 
         int formStart = template.indexOf(

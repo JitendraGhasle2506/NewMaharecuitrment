@@ -22,6 +22,7 @@
     const archiveForms = Array.from(document.querySelectorAll(".archive-entry-form"));
     const workingDayForm = document.getElementById("workingDayForm");
     const workingDate = document.getElementById("workingDate");
+    const workingDaySection = workingDayForm?.closest("details");
 
     typeInputs.forEach(input => input.addEventListener("change", updateTypeHelp));
     dateModeInputs.forEach(input => input.addEventListener("change", updateDateModeUi));
@@ -37,9 +38,18 @@
 
     updateTypeHelp();
     updateDescriptionCount();
+    openHashTarget();
+
+    window.addEventListener("hashchange", openHashTarget);
 
     function selectedType() {
         return typeInputs.find(input => input.checked)?.value || "";
+    }
+
+    function openHashTarget() {
+        if (window.location.hash !== "#workingDayForm" || !workingDaySection) return;
+        workingDaySection.open = true;
+        window.requestAnimationFrame(() => workingDaySection.scrollIntoView({ block: "nearest" }));
     }
 
     function selectedDateMode() {

@@ -134,6 +134,9 @@ class HRDashboardServiceImplTest {
         CommonCalendarEntryPhotoEntity photo = new CommonCalendarEntryPhotoEntity();
         photo.setCalendarEntryId(51L);
         photo.setFilePath("uploads/calendar/navratri.jpg");
+        CommonCalendarEntryPhotoEntity secondPhoto = new CommonCalendarEntryPhotoEntity();
+        secondPhoto.setCalendarEntryId(51L);
+        secondPhoto.setFilePath("uploads/calendar/navratri-stage.jpg");
 
         when(projectMstRepository.findByProjectScopeTypeOrderByProjectNameAsc(any())).thenReturn(List.of());
         when(wingMasterRepository.countByActiveFlagIgnoreCase("Y")).thenReturn(3L);
@@ -160,7 +163,7 @@ class HRDashboardServiceImplTest {
         when(attendanceSummary.getAfterElevenCount()).thenReturn(1L);
         when(attendanceRegisterRepo.countExternalPresentByMonthYearDay(any(), any(), any())).thenReturn(2L);
         when(calendarEntryService.getEntriesBetween(today, today.plusDays(10))).thenReturn(List.of(festival));
-        when(calendarEntryService.getPhotosForEntries(List.of(51L))).thenReturn(List.of(photo));
+        when(calendarEntryService.getPhotosForEntries(List.of(51L))).thenReturn(List.of(photo, secondPhoto));
         when(holidayService.getHolidaysBetween(today, today.plusDays(10))).thenReturn(List.of(holiday));
         HRDashboardView result = service().getDashboard();
 
@@ -183,11 +186,14 @@ class HRDashboardServiceImplTest {
                         entry -> entry.title(),
                         entry -> entry.type(),
                         entry -> entry.endDate(),
-                        entry -> entry.backgroundPhotoToken(),
+                        entry -> entry.photoTokens(),
                         entry -> entry.daysUntilStart())
                 .containsExactly(org.assertj.core.groups.Tuple.tuple(
                         "Navratri Celebration", "Festival", today.plusDays(4),
-                        "dXBsb2Fkcy9jYWxlbmRhci9uYXZyYXRyaS5qcGc=", 2L));
+                        List.of(
+                                "dXBsb2Fkcy9jYWxlbmRhci9uYXZyYXRyaS5qcGc=",
+                                "dXBsb2Fkcy9jYWxlbmRhci9uYXZyYXRyaS1zdGFnZS5qcGc="),
+                        2L));
         assertThat(result.calendarHighlights().upcomingHolidays())
                 .extracting(holidayView -> holidayView.name(), holidayView -> holidayView.daysUntil())
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("Dussehra", 4L));

@@ -197,11 +197,12 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         LocalDate holidayWindowEnd = today.plusDays(HOLIDAY_LOOKAHEAD_DAYS);
         List<CommonCalendarEntryEntity> activeEntries = calendarEntryService
                 .getEntriesBetween(today, holidayWindowEnd);
-        Map<Long, String> firstPhotoByEntryId = loadFirstPhotoTokens(activeEntries);
+        Map<Long, List<String>> photoTokensByEntryId = loadPhotoTokens(activeEntries);
         List<HRCurrentCalendarEntryView> currentEvents = activeEntries
                 .stream()
                 .sorted(Comparator
-                        .comparing(CommonCalendarEntryEntity::getEntryType)
+                        .comparing(CommonCalendarEntryEntity::getEntryDate)
+                        .thenComparing(CommonCalendarEntryEntity::getEntryType)
                         .thenComparing(CommonCalendarEntryEntity::getTitle, String.CASE_INSENSITIVE_ORDER))
                 .map(entry -> new HRCurrentCalendarEntryView(
                         entry.getId(),
@@ -210,7 +211,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                         entry.getEntryDate(),
                         entry.getEndDate(),
                         entry.getDescription(),
-                        firstPhotoByEntryId.get(entry.getId()),
+                        photoTokensByEntryId.getOrDefault(entry.getId(), List.of()),
                         ChronoUnit.DAYS.between(today, entry.getEntryDate())))
                 .toList();
 
@@ -230,7 +231,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         return new HRCalendarHighlightsView(today, holidayWindowEnd, currentEvents, upcomingHolidays);
     }
 
-    private Map<Long, String> loadFirstPhotoTokens(List<CommonCalendarEntryEntity> entries) {
+    private Map<Long, List<String>> loadPhotoTokens(List<CommonCalendarEntryEntity> entries) {
         List<Long> entryIds = entries.stream()
                 .map(CommonCalendarEntryEntity::getId)
                 .filter(Objects::nonNull)
@@ -238,14 +239,16 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         if (entryIds.isEmpty()) {
             return Map.of();
         }
-        return calendarEntryService.getPhotosForEntries(entryIds)
-                .stream()
-                .filter(photo -> photo.getCalendarEntryId() != null && hasText(photo.getFilePath()))
-                .collect(Collectors.toMap(
-                        CommonCalendarEntryPhotoEntity::getCalendarEntryId,
-                        photo -> encodeDocumentPath(photo.getFilePath()),
-                        (first, ignored) -> first,
-                        LinkedHashMap::new));
+        Map<Long, List<String>> photoTokensByEntryId = new LinkedHashMap<>();
+        for (CommonCalendarEntryPhotoEntity photo : calendarEntryService.getPhotosForEntries(entryIds)) {
+            if (photo.getCalendarEntryId() == null || !hasText(photo.getFilePath())) {
+                continue;
+            }
+            photoTokensByEntryId
+                    .computeIfAbsent(photo.getCalendarEntryId(), ignored -> new ArrayList<>())
+                    .add(encodeDocumentPath(photo.getFilePath()));
+        }
+        return photoTokensByEntryId;
     }
 
     private String encodeDocumentPath(String filePath) {

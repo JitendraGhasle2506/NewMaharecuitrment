@@ -43,10 +43,11 @@ class HRDashboardTemplateTest {
                         List.of(
                                 new HRCurrentCalendarEntryView(
                                         1L, "Current Celebration", "Event", TODAY.minusDays(1),
-                                        TODAY.plusDays(1), "Cultural celebration", "ZmVzdGl2YWwuanBn", -1),
+                                        TODAY.plusDays(1), "Cultural celebration",
+                                        List.of("ZmVzdGl2YWwuanBn", "c2Vjb25kLmpwZw=="), -1),
                                 new HRCurrentCalendarEntryView(
                                         2L, "Navratri Celebration", "Festival", TODAY.plusDays(2),
-                                        TODAY.plusDays(4), "Festival celebration", null, 2)),
+                                        TODAY.plusDays(4), "Festival celebration", List.of(), 2)),
                         List.of(new HRUpcomingHolidayView(2L, "Dussehra", TODAY.plusDays(3), 3)))));
 
         assertThat(rendered)
@@ -76,6 +77,10 @@ class HRDashboardTemplateTest {
                 .contains("Hover or focus to view details")
                 .contains("class=\"hrd-event-background\"")
                 .contains("documents/view?path=ZmVzdGl2YWwuanBn")
+                .contains("documents/view?path=c2Vjb25kLmpwZw==")
+                .contains("data-event-previous")
+                .contains("data-event-next")
+                .contains("data-photo-slide=\"1\"")
                 .contains("Runs until")
                 .contains("Upcoming Holidays")
                 .contains("Dussehra")
@@ -116,8 +121,8 @@ class HRDashboardTemplateTest {
         String template = Files.readString(DASHBOARD_TEMPLATE_PATH)
                 .replaceAll("(?s)<!--.*?-->", "")
                 .replace(
-                        "th:src=\"@{/documents/view(path=${entry.backgroundPhotoToken})}\"",
-                        "th:src=\"${'/documents/view?path=' + entry.backgroundPhotoToken}\"");
+                        "th:src=\"@{/documents/view(path=${photoToken})}\"",
+                        "th:src=\"${'/documents/view?path=' + photoToken}\"");
         int start = template.indexOf("<section class=\"hrd-kpi-grid\"");
         int end = template.lastIndexOf("</th:block>", template.indexOf("<script>", start));
         String page = template.substring(start, end)

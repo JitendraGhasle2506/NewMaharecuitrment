@@ -5,8 +5,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ui.ConcurrentModel;
@@ -51,6 +53,27 @@ class HolidayMasterControllerTest {
 
         verify(holidayService).saveHoliday(any(HolidayMasterEntity.class));
         verify(calendarEntryService, never()).saveEntry(any());
+    }
+
+    @Test
+    void selectedFestivalDoesNotLoadAuditTimelineForCalendarScreen() {
+        CommonCalendarEntryEntity festival = new CommonCalendarEntryEntity();
+        festival.setId(31L);
+        festival.setEntryDate(LocalDate.of(2026, 10, 11));
+        festival.setTitle("Navratri");
+        festival.setEntryType(CalendarEntryType.FESTIVAL);
+        when(calendarEntryService.getEntryById(31L)).thenReturn(festival);
+        when(calendarEntryService.getEntriesBetween(any(), any())).thenReturn(List.of(festival));
+        when(holidayService.getHolidaysBetween(any(), any())).thenReturn(List.of());
+        when(workingDayService.getWorkingDaysBetween(any(), any())).thenReturn(List.of());
+
+        ConcurrentModel model = new ConcurrentModel();
+        String view = controller.view("2026-10", null, 31L, null, null, null,
+                CalendarEntryType.FESTIVAL, model);
+
+        assertThat(view).isEqualTo("attendance/holiday-list");
+        assertThat(model).doesNotContainKey("activityTimeline");
+        verify(calendarEntryService, never()).getEntryAuditTrail(any());
     }
 
     private CommonCalendarEntryForm validForm(CalendarEntryType type) {

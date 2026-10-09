@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${pageTitle}">Holiday, Festival, Event &amp; Working Day Calendar</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/common-calendar.css(v='20261009-4')}">
+    <link rel="stylesheet" th:href="@{/css/common-calendar.css(v='20261009-5')}">
 </head>
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Common', 'Holiday Calendar', ~{::section})}">
@@ -55,8 +55,8 @@
                         </article>
                     </div>
 
-                    <div class="row g-4 align-items-start">
-                        <div class="col-xl-8">
+                    <div class="calendar-workspace">
+                        <div class="calendar-board-column">
                             <div class="calendar-panel">
                                 <div class="calendar-toolbar">
                                     <a class="calendar-nav-button" th:href="@{/common/holidays(month=${previousMonth})}"
@@ -126,7 +126,7 @@
                             </div>
                         </div>
 
-                        <div class="col-xl-4">
+                        <div class="calendar-editor-column">
                             <aside class="calendar-form-panel">
                                 <div class="form-panel-heading">
                                     <span class="form-panel-icon"><i class="fas fa-calendar-plus"></i></span>
@@ -225,18 +225,21 @@
                                     </div>
                                 </form>
 
-                                <div class="working-day-form-section">
-                                    <div class="form-panel-heading">
+                                <details class="working-day-form-section"
+                                    th:open="${workingDayForm.id != null or workingDayForm.workingDate != null}">
+                                    <summary class="working-day-summary">
                                         <span class="form-panel-icon working-day-icon"><i class="fas fa-briefcase"></i></span>
                                         <div>
                                             <h3 th:text="${workingDayForm.id != null ? 'Update weekend working day' : 'Add weekend working day'}">Add weekend working day</h3>
                                             <p>Convert a Saturday or Sunday using an approved PDF office order.</p>
                                         </div>
-                                    </div>
+                                        <i class="fas fa-chevron-down working-day-chevron" aria-hidden="true"></i>
+                                    </summary>
 
-                                    <form autocomplete="off" th:action="@{/common/holidays/working-days}"
-                                        th:object="${workingDayForm}" method="post" enctype="multipart/form-data"
-                                        id="workingDayForm">
+                                    <div class="working-day-form-body">
+                                        <form autocomplete="off" th:action="@{/common/holidays/working-days}"
+                                            th:object="${workingDayForm}" method="post" enctype="multipart/form-data"
+                                            id="workingDayForm">
                                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                         <input type="hidden" th:field="*{id}">
                                         <input type="hidden" th:field="*{viewMonth}">
@@ -277,8 +280,9 @@
                                                 <span th:text="${workingDayForm.id != null ? 'Update working day' : 'Add working day'}">Add working day</span>
                                             </button>
                                         </div>
-                                    </form>
-                                </div>
+                                        </form>
+                                    </div>
+                                </details>
 
                                 <div class="selected-entry-audit" th:if="${selectedItem != null}">
                                     <div class="selected-entry-heading">
@@ -307,16 +311,6 @@
                                                 <input type="hidden" name="type" th:value="${selectedItem.entryType.name()}">
                                                 <button type="submit" class="photo-remove-button" aria-label="Remove photo" title="Remove photo"><i class="fas fa-times"></i></button>
                                             </form>
-                                        </div>
-                                    </div>
-                                    <div class="audit-list">
-                                        <div class="text-muted small" th:if="${#lists.isEmpty(activityTimeline)}">No activity recorded yet.</div>
-                                        <div class="audit-item" th:each="activity : ${activityTimeline}">
-                                            <span class="audit-dot"></span>
-                                            <div>
-                                                <strong th:text="${activity.activitySummary}">Entry updated</strong>
-                                                <span th:text="${#temporals.format(activity.occurredAt, 'dd-MM-yyyy hh:mm a')}">09-10-2026</span>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -410,6 +404,6 @@
             </div>
         </section>
     </th:block>
-    <script th:src="@{/js/common-calendar.js(v='20261009-4')}"></script>
+    <script th:src="@{/js/common-calendar.js(v='20261009-5')}"></script>
 </body>
 </html>

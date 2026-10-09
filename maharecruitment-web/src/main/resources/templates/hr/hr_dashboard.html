@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261009-3')}">
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261009-4')}">
 </head>
 
 <body class="hr-shell">
@@ -198,44 +198,75 @@
                                         th:text="${#lists.size(dashboard.calendarHighlights.currentEvents)}">0</span>
                                 </div>
 
-                                <div class="hrd-event-list"
+                                <div class="hrd-event-carousel" data-event-carousel
                                     th:if="${not #lists.isEmpty(dashboard.calendarHighlights.currentEvents)}">
-                                    <article class="hrd-event-card"
-                                        th:each="entry : ${dashboard.calendarHighlights.currentEvents}"
-                                        tabindex="0"
-                                        th:classappend="${(entry.type == 'Festival' ? ' is-festival' : ' is-event') + (entry.backgroundPhotoToken != null ? ' has-background' : '')}">
-                                        <img class="hrd-event-background" th:if="${entry.backgroundPhotoToken != null}"
-                                            th:src="@{/documents/view(path=${entry.backgroundPhotoToken})}"
-                                            th:alt="${entry.title + ' background'}" loading="lazy">
-                                        <div class="hrd-event-icon" aria-hidden="true">
-                                            <i th:class="${entry.type == 'Festival'} ? 'fa-solid fa-star' : 'fa-solid fa-calendar-check'"></i>
-                                        </div>
-                                        <div class="hrd-event-content">
-                                            <div class="hrd-event-meta">
-                                                <span class="hrd-event-type" th:text="${entry.type}">Festival</span>
-                                                <span th:if="${entry.daysUntilStart > 0}">
-                                                    <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-                                                    Starts
-                                                    <time th:datetime="${entry.startDate}"
-                                                        th:text="${#temporals.format(entry.startDate, 'dd MMM')}">11 Oct</time>
+                                    <div class="hrd-event-list">
+                                        <article class="hrd-event-card"
+                                            th:each="entry, entryStat : ${dashboard.calendarHighlights.currentEvents}"
+                                            th:attr="data-event-slide=${entryStat.index}"
+                                            th:hidden="${!entryStat.first}"
+                                            tabindex="0"
+                                            th:classappend="${(entry.type == 'Festival' ? ' is-festival' : ' is-event') + (entry.backgroundPhotoToken != null ? ' has-background' : '')}">
+                                            <th:block th:if="${not #lists.isEmpty(entry.photoTokens)}">
+                                                <img class="hrd-event-background"
+                                                    th:each="photoToken, photoStat : ${entry.photoTokens}"
+                                                    th:classappend="${photoStat.first} ? ' is-active'"
+                                                    th:attr="data-photo-slide=${photoStat.index}"
+                                                    th:src="@{/documents/view(path=${photoToken})}"
+                                                    alt="" aria-hidden="true" loading="lazy">
+                                                <span class="hrd-photo-count" th:if="${#lists.size(entry.photoTokens) > 1}">
+                                                    <i class="fa-regular fa-images" aria-hidden="true"></i>
+                                                    <span data-photo-current>1</span>/<span th:text="${#lists.size(entry.photoTokens)}">2</span>
                                                 </span>
-                                                <span th:if="${entry.daysUntilStart <= 0 and entry.spansMultipleDays()}">
-                                                    <i class="fa-regular fa-clock" aria-hidden="true"></i>
-                                                    Runs until
-                                                    <time th:datetime="${entry.endDate}"
-                                                        th:text="${#temporals.format(entry.endDate, 'dd MMM')}">10 Oct</time>
+                                            </th:block>
+                                            <div class="hrd-event-icon" aria-hidden="true">
+                                                <i th:class="${entry.type == 'Festival'} ? 'fa-solid fa-star' : 'fa-solid fa-calendar-check'"></i>
+                                            </div>
+                                            <div class="hrd-event-content">
+                                                <div class="hrd-event-meta">
+                                                    <span class="hrd-event-type" th:text="${entry.type}">Festival</span>
+                                                    <span th:if="${entry.daysUntilStart > 0}">
+                                                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                                        Starts
+                                                        <time th:datetime="${entry.startDate}"
+                                                            th:text="${#temporals.format(entry.startDate, 'dd MMM')}">11 Oct</time>
+                                                    </span>
+                                                    <span th:if="${entry.daysUntilStart <= 0 and entry.spansMultipleDays()}">
+                                                        <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                                                        Runs until
+                                                        <time th:datetime="${entry.endDate}"
+                                                            th:text="${#temporals.format(entry.endDate, 'dd MMM')}">10 Oct</time>
+                                                    </span>
+                                                </div>
+                                                <h5 th:text="${entry.title}">Calendar entry</h5>
+                                                <p th:if="${entry.description != null and not #strings.isEmpty(entry.description)}"
+                                                    th:text="${entry.description}">Description</p>
+                                                <span class="hrd-event-hover-hint"
+                                                    th:if="${entry.backgroundPhotoToken != null and entry.description != null and not #strings.isEmpty(entry.description)}">
+                                                    <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                                    Hover or focus to view details
                                                 </span>
                                             </div>
-                                            <h5 th:text="${entry.title}">Calendar entry</h5>
-                                            <p th:if="${entry.description != null and not #strings.isEmpty(entry.description)}"
-                                                th:text="${entry.description}">Description</p>
-                                            <span class="hrd-event-hover-hint"
-                                                th:if="${entry.backgroundPhotoToken != null and entry.description != null and not #strings.isEmpty(entry.description)}">
-                                                <i class="fa-regular fa-eye" aria-hidden="true"></i>
-                                                Hover or focus to view details
-                                            </span>
+                                        </article>
+                                    </div>
+
+                                    <div class="hrd-event-carousel-controls"
+                                        th:if="${#lists.size(dashboard.calendarHighlights.currentEvents) > 1}">
+                                        <button type="button" data-event-previous aria-label="Show previous event or festival">
+                                            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="hrd-event-carousel-dots" aria-label="Choose event or festival">
+                                            <button type="button"
+                                                th:each="entry, entryStat : ${dashboard.calendarHighlights.currentEvents}"
+                                                th:attr="data-event-target=${entryStat.index},aria-label=${'Show ' + entry.title},aria-current=${entryStat.first ? 'true' : 'false'}"
+                                                th:classappend="${entryStat.first} ? ' is-active'">
+                                            </button>
                                         </div>
-                                    </article>
+                                        <button type="button" data-event-next aria-label="Show next event or festival">
+                                            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <span class="visually-hidden" data-event-status aria-live="polite"></span>
                                 </div>
 
                                 <div class="hrd-calendar-empty"
@@ -517,6 +548,118 @@
                         button.setAttribute('aria-expanded', 'false');
                     });
                 });
+            }
+
+            const eventCarousel = document.querySelector('[data-event-carousel]');
+            if (eventCarousel) {
+                const eventSlides = Array.from(eventCarousel.querySelectorAll('[data-event-slide]'));
+                const eventDots = Array.from(eventCarousel.querySelectorAll('[data-event-target]'));
+                const previousEvent = eventCarousel.querySelector('[data-event-previous]');
+                const nextEvent = eventCarousel.querySelector('[data-event-next]');
+                const eventStatus = eventCarousel.querySelector('[data-event-status]');
+                const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                let activeEventIndex = 0;
+                let eventTimer;
+                let photoTimer;
+
+                function normalizedIndex(index, length) {
+                    return ((index % length) + length) % length;
+                }
+
+                function resetPhotos(eventSlide) {
+                    const photos = Array.from(eventSlide.querySelectorAll('[data-photo-slide]'));
+                    photos.forEach((photo, index) => photo.classList.toggle('is-active', index === 0));
+                    const photoCurrent = eventSlide.querySelector('[data-photo-current]');
+                    if (photoCurrent) {
+                        photoCurrent.textContent = '1';
+                    }
+                }
+
+                function showEvent(index, announce) {
+                    if (!eventSlides.length) {
+                        return;
+                    }
+                    activeEventIndex = normalizedIndex(index, eventSlides.length);
+                    eventSlides.forEach((slide, slideIndex) => {
+                        const selected = slideIndex === activeEventIndex;
+                        slide.hidden = !selected;
+                        if (selected) {
+                            resetPhotos(slide);
+                        }
+                    });
+                    eventDots.forEach((dot, dotIndex) => {
+                        const selected = dotIndex === activeEventIndex;
+                        dot.classList.toggle('is-active', selected);
+                        dot.setAttribute('aria-current', String(selected));
+                    });
+                    if (announce && eventStatus) {
+                        const title = eventSlides[activeEventIndex].querySelector('h5');
+                        eventStatus.textContent = title
+                            ? `Showing ${title.textContent.trim()}`
+                            : `Showing item ${activeEventIndex + 1}`;
+                    }
+                }
+
+                function showNextPhoto() {
+                    const activeEvent = eventSlides[activeEventIndex];
+                    if (!activeEvent) {
+                        return;
+                    }
+                    const photos = Array.from(activeEvent.querySelectorAll('[data-photo-slide]'));
+                    if (photos.length < 2) {
+                        return;
+                    }
+                    const currentIndex = Math.max(0, photos.findIndex((photo) => photo.classList.contains('is-active')));
+                    const nextIndex = normalizedIndex(currentIndex + 1, photos.length);
+                    photos.forEach((photo, index) => photo.classList.toggle('is-active', index === nextIndex));
+                    const photoCurrent = activeEvent.querySelector('[data-photo-current]');
+                    if (photoCurrent) {
+                        photoCurrent.textContent = String(nextIndex + 1);
+                    }
+                }
+
+                function stopCarousel() {
+                    window.clearInterval(eventTimer);
+                    window.clearInterval(photoTimer);
+                }
+
+                function startCarousel() {
+                    stopCarousel();
+                    if (reduceMotion || document.hidden) {
+                        return;
+                    }
+                    photoTimer = window.setInterval(showNextPhoto, 3500);
+                    if (eventSlides.length > 1) {
+                        eventTimer = window.setInterval(() => showEvent(activeEventIndex + 1, false), 6500);
+                    }
+                }
+
+                previousEvent?.addEventListener('click', () => {
+                    showEvent(activeEventIndex - 1, true);
+                    startCarousel();
+                });
+                nextEvent?.addEventListener('click', () => {
+                    showEvent(activeEventIndex + 1, true);
+                    startCarousel();
+                });
+                eventDots.forEach((dot) => {
+                    dot.addEventListener('click', () => {
+                        showEvent(Number(dot.dataset.eventTarget), true);
+                        startCarousel();
+                    });
+                });
+                eventCarousel.addEventListener('pointerenter', stopCarousel);
+                eventCarousel.addEventListener('pointerleave', startCarousel);
+                eventCarousel.addEventListener('focusin', stopCarousel);
+                eventCarousel.addEventListener('focusout', (event) => {
+                    if (!eventCarousel.contains(event.relatedTarget)) {
+                        startCarousel();
+                    }
+                });
+                document.addEventListener('visibilitychange', startCarousel);
+
+                showEvent(0, false);
+                startCarousel();
             }
 
         })();
