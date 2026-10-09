@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261009-4')}">
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261009-10')}">
 </head>
 
 <body class="hr-shell">
@@ -205,15 +205,16 @@
                                             th:each="entry, entryStat : ${dashboard.calendarHighlights.currentEvents}"
                                             th:attr="data-event-slide=${entryStat.index}"
                                             th:hidden="${!entryStat.first}"
-                                            tabindex="0"
                                             th:classappend="${(entry.type == 'Festival' ? ' is-festival' : ' is-event') + (entry.backgroundPhotoToken != null ? ' has-background' : '')}">
                                             <th:block th:if="${not #lists.isEmpty(entry.photoTokens)}">
-                                                <img class="hrd-event-background"
+                                                <div class="hrd-event-photo"
                                                     th:each="photoToken, photoStat : ${entry.photoTokens}"
                                                     th:classappend="${photoStat.first} ? ' is-active'"
-                                                    th:attr="data-photo-slide=${photoStat.index}"
-                                                    th:src="@{/documents/view(path=${photoToken})}"
-                                                    alt="" aria-hidden="true" loading="lazy">
+                                                    th:attr="data-photo-slide=${photoStat.index}">
+                                                    <img class="hrd-event-background"
+                                                        th:src="@{/documents/view(path=${photoToken})}"
+                                                        alt="" aria-hidden="true" loading="lazy">
+                                                </div>
                                                 <span class="hrd-photo-count" th:if="${#lists.size(entry.photoTokens) > 1}">
                                                     <i class="fa-regular fa-images" aria-hidden="true"></i>
                                                     <span data-photo-current>1</span>/<span th:text="${#lists.size(entry.photoTokens)}">2</span>
@@ -223,46 +224,24 @@
                                                 <i th:class="${entry.type == 'Festival'} ? 'fa-solid fa-star' : 'fa-solid fa-calendar-check'"></i>
                                             </div>
                                             <div class="hrd-event-content">
-                                                <div class="hrd-event-meta">
-                                                    <span class="hrd-event-type" th:text="${entry.type}">Festival</span>
-                                                    <span th:if="${entry.daysUntilStart > 0}">
-                                                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-                                                        Starts
-                                                        <time th:datetime="${entry.startDate}"
-                                                            th:text="${#temporals.format(entry.startDate, 'dd MMM')}">11 Oct</time>
-                                                    </span>
-                                                    <span th:if="${entry.daysUntilStart <= 0 and entry.spansMultipleDays()}">
-                                                        <i class="fa-regular fa-clock" aria-hidden="true"></i>
-                                                        Runs until
-                                                        <time th:datetime="${entry.endDate}"
-                                                            th:text="${#temporals.format(entry.endDate, 'dd MMM')}">10 Oct</time>
-                                                    </span>
-                                                </div>
                                                 <h5 th:text="${entry.title}">Calendar entry</h5>
-                                                <p th:if="${entry.description != null and not #strings.isEmpty(entry.description)}"
-                                                    th:text="${entry.description}">Description</p>
-                                                <span class="hrd-event-hover-hint"
-                                                    th:if="${entry.backgroundPhotoToken != null and entry.description != null and not #strings.isEmpty(entry.description)}">
-                                                    <i class="fa-regular fa-eye" aria-hidden="true"></i>
-                                                    Hover or focus to view details
-                                                </span>
                                             </div>
                                         </article>
                                     </div>
 
-                                    <div class="hrd-event-carousel-controls"
-                                        th:if="${#lists.size(dashboard.calendarHighlights.currentEvents) > 1}">
-                                        <button type="button" data-event-previous aria-label="Show previous event or festival">
+                                    <div class="hrd-event-carousel-controls" data-carousel-controls>
+                                        <button type="button" data-event-previous aria-label="Show previous festival image or event">
                                             <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
                                         </button>
-                                        <div class="hrd-event-carousel-dots" aria-label="Choose event or festival">
+                                        <div class="hrd-event-carousel-dots" aria-label="Choose event or festival"
+                                            th:if="${#lists.size(dashboard.calendarHighlights.currentEvents) > 1}">
                                             <button type="button"
                                                 th:each="entry, entryStat : ${dashboard.calendarHighlights.currentEvents}"
                                                 th:attr="data-event-target=${entryStat.index},aria-label=${'Show ' + entry.title},aria-current=${entryStat.first ? 'true' : 'false'}"
                                                 th:classappend="${entryStat.first} ? ' is-active'">
                                             </button>
                                         </div>
-                                        <button type="button" data-event-next aria-label="Show next event or festival">
+                                        <button type="button" data-event-next aria-label="Show next festival image or event">
                                             <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
                                         </button>
                                     </div>
@@ -558,24 +537,32 @@
                 const nextEvent = eventCarousel.querySelector('[data-event-next]');
                 const eventStatus = eventCarousel.querySelector('[data-event-status]');
                 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const totalFrames = eventSlides.reduce((count, slide) => {
+                    const photoCount = slide.querySelectorAll('[data-photo-slide]').length;
+                    return count + Math.max(1, photoCount);
+                }, 0);
                 let activeEventIndex = 0;
-                let eventTimer;
-                let photoTimer;
+                let carouselTimer;
 
                 function normalizedIndex(index, length) {
                     return ((index % length) + length) % length;
                 }
 
-                function resetPhotos(eventSlide) {
+                function showPhoto(eventSlide, requestedIndex) {
                     const photos = Array.from(eventSlide.querySelectorAll('[data-photo-slide]'));
-                    photos.forEach((photo, index) => photo.classList.toggle('is-active', index === 0));
+                    if (!photos.length) {
+                        return 0;
+                    }
+                    const photoIndex = normalizedIndex(requestedIndex, photos.length);
+                    photos.forEach((photo, index) => photo.classList.toggle('is-active', index === photoIndex));
                     const photoCurrent = eventSlide.querySelector('[data-photo-current]');
                     if (photoCurrent) {
-                        photoCurrent.textContent = '1';
+                        photoCurrent.textContent = String(photoIndex + 1);
                     }
+                    return photoIndex;
                 }
 
-                function showEvent(index, announce) {
+                function showEvent(index, announce, requestedPhotoIndex = 0) {
                     if (!eventSlides.length) {
                         return;
                     }
@@ -584,7 +571,7 @@
                         const selected = slideIndex === activeEventIndex;
                         slide.hidden = !selected;
                         if (selected) {
-                            resetPhotos(slide);
+                            showPhoto(slide, requestedPhotoIndex);
                         }
                     });
                     eventDots.forEach((dot, dotIndex) => {
@@ -593,53 +580,66 @@
                         dot.setAttribute('aria-current', String(selected));
                     });
                     if (announce && eventStatus) {
-                        const title = eventSlides[activeEventIndex].querySelector('h5');
-                        eventStatus.textContent = title
-                            ? `Showing ${title.textContent.trim()}`
-                            : `Showing item ${activeEventIndex + 1}`;
+                        announceActiveItem();
                     }
                 }
 
-                function showNextPhoto() {
+                function announceActiveItem() {
+                    const activeEvent = eventSlides[activeEventIndex];
+                    if (!activeEvent || !eventStatus) {
+                        return;
+                    }
+                    const title = activeEvent.querySelector('h5');
+                    const photos = Array.from(activeEvent.querySelectorAll('[data-photo-slide]'));
+                    const currentIndex = Math.max(0, photos.findIndex((photo) => photo.classList.contains('is-active')));
+                    const photoDetails = photos.length > 1 ? `, photo ${currentIndex + 1} of ${photos.length}` : '';
+                    eventStatus.textContent = title
+                        ? `Showing ${title.textContent.trim()}${photoDetails}`
+                        : `Showing item ${activeEventIndex + 1}${photoDetails}`;
+                }
+
+                function stepCarousel(direction, announce) {
                     const activeEvent = eventSlides[activeEventIndex];
                     if (!activeEvent) {
                         return;
                     }
                     const photos = Array.from(activeEvent.querySelectorAll('[data-photo-slide]'));
-                    if (photos.length < 2) {
+                    const currentPhotoIndex = Math.max(0, photos.findIndex((photo) => photo.classList.contains('is-active')));
+                    const nextPhotoIndex = currentPhotoIndex + direction;
+
+                    if (photos.length && nextPhotoIndex >= 0 && nextPhotoIndex < photos.length) {
+                        showPhoto(activeEvent, nextPhotoIndex);
+                        if (announce) {
+                            announceActiveItem();
+                        }
                         return;
                     }
-                    const currentIndex = Math.max(0, photos.findIndex((photo) => photo.classList.contains('is-active')));
-                    const nextIndex = normalizedIndex(currentIndex + 1, photos.length);
-                    photos.forEach((photo, index) => photo.classList.toggle('is-active', index === nextIndex));
-                    const photoCurrent = activeEvent.querySelector('[data-photo-current]');
-                    if (photoCurrent) {
-                        photoCurrent.textContent = String(nextIndex + 1);
-                    }
+
+                    const nextEventIndex = normalizedIndex(activeEventIndex + direction, eventSlides.length);
+                    const nextEventPhotos = eventSlides[nextEventIndex].querySelectorAll('[data-photo-slide]');
+                    const targetPhotoIndex = direction < 0 && nextEventPhotos.length ? nextEventPhotos.length - 1 : 0;
+                    showEvent(nextEventIndex, announce, targetPhotoIndex);
                 }
 
                 function stopCarousel() {
-                    window.clearInterval(eventTimer);
-                    window.clearInterval(photoTimer);
+                    window.clearInterval(carouselTimer);
                 }
 
                 function startCarousel() {
                     stopCarousel();
-                    if (reduceMotion || document.hidden) {
+                    if (reduceMotion || document.hidden || totalFrames <= 1
+                        || eventCarousel.matches(':hover') || eventCarousel.contains(document.activeElement)) {
                         return;
                     }
-                    photoTimer = window.setInterval(showNextPhoto, 3500);
-                    if (eventSlides.length > 1) {
-                        eventTimer = window.setInterval(() => showEvent(activeEventIndex + 1, false), 6500);
-                    }
+                    carouselTimer = window.setInterval(() => stepCarousel(1, false), 5500);
                 }
 
                 previousEvent?.addEventListener('click', () => {
-                    showEvent(activeEventIndex - 1, true);
+                    stepCarousel(-1, true);
                     startCarousel();
                 });
                 nextEvent?.addEventListener('click', () => {
-                    showEvent(activeEventIndex + 1, true);
+                    stepCarousel(1, true);
                     startCarousel();
                 });
                 eventDots.forEach((dot) => {
@@ -658,8 +658,11 @@
                 });
                 document.addEventListener('visibilitychange', startCarousel);
 
+                eventCarousel.classList.toggle('is-static', totalFrames <= 1);
                 showEvent(0, false);
-                startCarousel();
+                if (totalFrames > 1) {
+                    startCarousel();
+                }
             }
 
         })();

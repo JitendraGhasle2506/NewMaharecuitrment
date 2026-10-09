@@ -33,7 +33,13 @@ class EmployeeDashboardCommunityTemplateTest {
                 .contains("class=\"celebration-action-button birthday-wish-composer\"")
                 .contains("th:title=\"${celebration.employeeName}\"")
                 .contains("class=\"dashboard-dialog birthday-compose-dialog\"")
-                .contains("@{/css/employee-dashboard.css(v='20260903')}")
+                .contains("@{/css/employee-dashboard.css(v='20261009-1')}")
+                .contains("data-employee-festival-carousel")
+                .contains("th:each=\"festival, festivalStatus : ${dashboardContent.festivals}\"")
+                .contains("th:src=\"@{/documents/view(path=${photoToken})}\"")
+                .contains("data-employee-festival-previous")
+                .contains("data-employee-festival-next")
+                .contains("@{/js/employee-dashboard-community.js(v='20261009-1')}")
                 .contains("th:action=\"@{/employee/birthday-wishes}\"")
                 .contains("Birthday message")
                 .contains("Wishes for You")
@@ -58,13 +64,18 @@ class EmployeeDashboardCommunityTemplateTest {
                 .contains("dialog.showModal()")
                 .contains("[data-dashboard-dialog-target]")
                 .contains("[data-dashboard-dialog-close]")
-                .contains("event.target === dialog");
+                .contains("event.target === dialog")
+                .contains("[data-employee-festival-carousel]")
+                .contains("window.setInterval(() => moveFestival(1), 5500)")
+                .contains("prefers-reduced-motion: reduce");
 
         assertThat(stylesheet)
                 .contains("Modern employee dashboard skin")
                 .contains("max-width: 1440px")
                 .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
                 .contains(".employee-dashboard-home .employee-dashboard .dashboard-community-grid")
+                .contains(".employee-dashboard-home .employee-dashboard .employee-festival-stage")
+                .contains("aspect-ratio: 3 / 1")
                 .contains("@media (max-width: 420px)");
     }
 }

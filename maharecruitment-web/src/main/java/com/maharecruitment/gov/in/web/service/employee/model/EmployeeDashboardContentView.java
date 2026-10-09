@@ -6,6 +6,7 @@ import java.util.List;
 public record EmployeeDashboardContentView(
         LocalDate today,
         String todayLabel,
+        List<FestivalView> festivals,
         List<CelebrationView> todaysCelebrations,
         List<UpcomingEventView> upcomingEvents,
         List<AnnouncementView> announcements,
@@ -13,11 +14,22 @@ public record EmployeeDashboardContentView(
         List<BirthdayWishView> birthdayReplies) {
 
     public EmployeeDashboardContentView {
+        festivals = List.copyOf(festivals);
         todaysCelebrations = List.copyOf(todaysCelebrations);
         upcomingEvents = List.copyOf(upcomingEvents);
         announcements = List.copyOf(announcements);
         receivedBirthdayWishes = List.copyOf(receivedBirthdayWishes);
         birthdayReplies = List.copyOf(birthdayReplies);
+    }
+
+    public record FestivalView(
+            Long id,
+            String title,
+            List<String> photoTokens) {
+
+        public FestivalView {
+            photoTokens = List.copyOf(photoTokens);
+        }
     }
 
     public record CelebrationView(

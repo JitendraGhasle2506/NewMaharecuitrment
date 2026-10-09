@@ -1742,7 +1742,7 @@ button.kpi-card {
 
 .hrd-calendar-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
 }
 
@@ -1755,7 +1755,9 @@ button.kpi-card {
 }
 
 .hrd-calendar-current {
-    background: linear-gradient(150deg, #ffffff 65%, #f3faf8);
+    border-color: #e2e9ef;
+    background: linear-gradient(145deg, #ffffff, #f6fafb);
+    box-shadow: 0 10px 28px rgba(18, 39, 67, 0.07);
 }
 
 .hrd-calendar-upcoming {
@@ -1824,7 +1826,15 @@ button.kpi-card {
 }
 
 .hrd-event-carousel {
+    position: relative;
+    width: 100%;
+    margin-inline: auto;
     min-width: 0;
+}
+
+.hrd-calendar-current .hrd-calendar-panel-title {
+    width: 100%;
+    margin-inline: auto;
 }
 
 .hrd-event-card[hidden] {
@@ -1882,26 +1892,51 @@ button.kpi-card {
 }
 
 .hrd-event-card.has-background {
-    min-height: 164px;
-    align-content: end;
-    border-color: rgba(255, 255, 255, 0.22);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 1;
+    padding: 0;
+    border-color: transparent;
+    border-radius: 14px;
     color: #ffffff;
-    box-shadow: 0 8px 18px rgba(18, 39, 67, 0.16);
+    background: transparent;
+    box-shadow: 0 10px 26px rgba(18, 39, 67, 0.11);
+}
+
+.hrd-event-card:not(.has-background) {
+    min-height: 92px;
+    padding-right: 3.3rem;
+    padding-left: 3.3rem;
+}
+
+.hrd-event-card.has-background:hover,
+.hrd-event-card.has-background:focus-visible {
+    transform: none;
+}
+
+.hrd-event-photo {
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 500ms ease;
+}
+
+.hrd-event-photo.is-active {
+    opacity: 1;
 }
 
 .hrd-event-background {
     position: absolute;
-    z-index: -2;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    opacity: 0;
-    transition: opacity 500ms ease, transform 350ms ease, filter 250ms ease;
 }
 
-.hrd-event-background.is-active {
-    opacity: 1;
+.hrd-event-background {
+    z-index: 1;
+    object-fit: contain;
 }
 
 .hrd-event-card.has-background::after {
@@ -1909,70 +1944,45 @@ button.kpi-card {
     position: absolute;
     z-index: -1;
     inset: 0;
-    background: linear-gradient(180deg, rgba(9, 24, 38, 0.08) 0%, rgba(9, 24, 38, 0.38) 42%, rgba(9, 24, 38, 0.94) 100%);
-    transition: background 250ms ease;
-}
-
-.hrd-event-card.has-background:hover .hrd-event-background,
-.hrd-event-card.has-background:focus .hrd-event-background,
-.hrd-event-card.has-background:focus-within .hrd-event-background {
-    filter: saturate(0.9);
-    transform: scale(1.045);
+    background: transparent;
 }
 
 .hrd-event-card.has-background:hover::after,
 .hrd-event-card.has-background:focus::after,
 .hrd-event-card.has-background:focus-within::after {
-    background: linear-gradient(180deg, rgba(9, 24, 38, 0.28) 0%, rgba(9, 24, 38, 0.68) 45%, rgba(9, 24, 38, 0.97) 100%);
+    background: transparent;
 }
 
 .hrd-event-card.has-background .hrd-event-icon {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(4px);
+    display: none;
 }
 
-.hrd-event-card.has-background .hrd-event-meta,
-.hrd-event-card.has-background .hrd-event-content p {
-    color: rgba(255, 255, 255, 0.86);
-}
-
-.hrd-event-card.has-background .hrd-event-content p {
-    display: block;
-    max-height: 0;
-    margin-top: 0;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: max-height 250ms ease, margin-top 250ms ease, opacity 180ms ease, transform 250ms ease;
-}
-
-.hrd-event-card.has-background:hover .hrd-event-content p,
-.hrd-event-card.has-background:focus .hrd-event-content p,
-.hrd-event-card.has-background:focus-within .hrd-event-content p {
-    max-height: 6rem;
-    margin-top: 0.38rem;
-    opacity: 1;
-    transform: translateY(0);
+.hrd-event-card.has-background .hrd-event-content {
+    position: absolute;
+    z-index: 2;
+    left: 0.85rem;
+    bottom: 0.85rem;
+    width: auto;
+    max-width: calc(100% - 5.5rem);
+    padding: 0.52rem 0.78rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 9px;
+    background: rgba(8, 21, 31, 0.74);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(6px);
 }
 
 .hrd-event-card.has-background .hrd-event-content h5 {
+    margin: 0;
     color: #ffffff;
+    font-size: clamp(1rem, 1.8vw, 1.3rem);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-
-.hrd-event-card.has-background .hrd-event-type {
-    color: #ffffff;
-    background: rgba(15, 139, 141, 0.82);
-}
-
-.hrd-event-card.has-background.is-festival .hrd-event-type {
-    background: rgba(155, 101, 23, 0.9);
 }
 
 .hrd-photo-count {
     position: absolute;
     z-index: 2;
-    top: 0.65rem;
+    bottom: 0.7rem;
     right: 0.65rem;
     display: inline-flex;
     align-items: center;
@@ -1989,32 +1999,42 @@ button.kpi-card {
 }
 
 .hrd-event-carousel-controls {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    display: flex;
     align-items: center;
-    gap: 0.6rem;
-    margin-top: 0.7rem;
+    justify-content: space-between;
+    padding: 0 0.55rem;
+    pointer-events: none;
+}
+
+.hrd-event-carousel.is-static .hrd-event-carousel-controls {
+    display: none;
 }
 
 .hrd-event-carousel-controls > button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 42px;
     padding: 0;
-    border: 1px solid #d7e2eb;
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 9px;
-    color: var(--hr-brand-strong);
-    background: #ffffff;
+    color: #ffffff;
+    background: rgba(5, 19, 30, 0.52);
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(5px);
     cursor: pointer;
+    pointer-events: auto;
     transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
 }
 
 .hrd-event-carousel-controls > button:hover {
-    border-color: rgba(15, 139, 141, 0.5);
-    background: #eef9f8;
-    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.7);
+    background: rgba(5, 19, 30, 0.78);
+    transform: scale(1.04);
 }
 
 .hrd-event-carousel-controls button:focus-visible {
@@ -2023,11 +2043,20 @@ button.kpi-card {
 }
 
 .hrd-event-carousel-dots {
+    position: absolute;
+    top: 0.7rem;
+    left: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
     gap: 0.38rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(5, 19, 30, 0.42);
+    backdrop-filter: blur(5px);
+    pointer-events: auto;
+    transform: translateX(-50%);
 }
 
 .hrd-event-carousel-dots button {
@@ -2036,35 +2065,14 @@ button.kpi-card {
     padding: 0;
     border: 0;
     border-radius: 999px;
-    background: #bdcbd7;
+    background: rgba(255, 255, 255, 0.58);
     cursor: pointer;
     transition: width 180ms ease, background-color 180ms ease;
 }
 
 .hrd-event-carousel-dots button.is-active {
     width: 24px;
-    background: var(--hr-external);
-}
-
-.hrd-event-hover-hint {
-    display: none;
-}
-
-.hrd-event-card.has-background .hrd-event-hover-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    margin-top: 0.42rem;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.66rem;
-    font-weight: 700;
-    transition: opacity 150ms ease;
-}
-
-.hrd-event-card.has-background:hover .hrd-event-hover-hint,
-.hrd-event-card.has-background:focus .hrd-event-hover-hint,
-.hrd-event-card.has-background:focus-within .hrd-event-hover-hint {
-    opacity: 0;
+    background: #ffffff;
 }
 
 .hrd-event-icon {
@@ -2087,32 +2095,6 @@ button.kpi-card {
     min-width: 0;
 }
 
-.hrd-event-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem 0.65rem;
-    color: var(--hr-muted);
-    font-size: 0.7rem;
-    font-weight: 700;
-}
-
-.hrd-event-type {
-    padding: 0.12rem 0.42rem;
-    border-radius: 999px;
-    color: #28775a;
-    background: #e9f6ef;
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-.is-festival .hrd-event-type {
-    color: #8a5915;
-    background: #fff1d7;
-}
-
 .hrd-event-content h5,
 .hrd-holiday-content h5 {
     margin: 0.32rem 0 0;
@@ -2120,17 +2102,6 @@ button.kpi-card {
     color: var(--hr-ink);
     font-size: 0.86rem;
     font-weight: 800;
-}
-
-.hrd-event-content p {
-    display: -webkit-box;
-    margin: 0.28rem 0 0;
-    overflow: hidden;
-    color: var(--hr-muted);
-    font-size: 0.76rem;
-    line-height: 1.4;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
 }
 
 .hrd-holiday-card {
@@ -2431,8 +2402,7 @@ button.hrd-chip:focus-visible,
     }
 
     .hrd-event-card,
-    .hrd-event-background,
-    .hrd-event-card.has-background .hrd-event-content p {
+    .hrd-event-photo {
         transition: none;
     }
 
@@ -2487,6 +2457,40 @@ button.hrd-chip:focus-visible,
 
     .hrd-calendar-link {
         width: 100%;
+    }
+
+    .hrd-event-card.has-background {
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 3 / 1;
+    }
+
+    .hrd-event-card.has-background .hrd-event-content {
+        right: 0.7rem;
+        bottom: 0.7rem;
+        left: 0.7rem;
+        width: auto;
+        max-width: none;
+        padding: 0.55rem 0.65rem;
+    }
+
+    .hrd-event-carousel-controls {
+        padding: 0 0.35rem;
+    }
+
+    .hrd-event-carousel-controls > button {
+        width: 34px;
+        height: 42px;
+    }
+
+    .hrd-photo-count {
+        top: 0.65rem;
+        right: 0.6rem;
+        bottom: auto;
+    }
+
+    .hrd-event-carousel-dots {
+        top: 0.65rem;
     }
 
     .hrd-holiday-card {

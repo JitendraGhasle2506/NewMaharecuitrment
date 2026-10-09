@@ -7,15 +7,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
+import com.maharecruitment.gov.in.attendance.entity.CalendarEntryType;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryEntity;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryPhotoEntity;
+import com.maharecruitment.gov.in.attendance.service.CommonCalendarEntryService;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeBirthdayWishRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeProfileRepository;
@@ -35,6 +41,7 @@ class EmployeeDashboardContentServiceTest {
             context.registerBean(EmployeeRepository.class, () -> mock(EmployeeRepository.class));
             context.registerBean(EmployeeProfileRepository.class, () -> mock(EmployeeProfileRepository.class));
             context.registerBean(HolidayService.class, () -> mock(HolidayService.class));
+            context.registerBean(CommonCalendarEntryService.class, () -> mock(CommonCalendarEntryService.class));
             context.registerBean(
                     EmployeeBirthdayWishRepository.class,
                     () -> mock(EmployeeBirthdayWishRepository.class));
@@ -51,6 +58,7 @@ class EmployeeDashboardContentServiceTest {
         EmployeeRepository employeeRepository = mock(EmployeeRepository.class);
         EmployeeProfileRepository profileRepository = mock(EmployeeProfileRepository.class);
         HolidayService holidayService = mock(HolidayService.class);
+        CommonCalendarEntryService calendarEntryService = mock(CommonCalendarEntryService.class);
         EmployeeBirthdayWishRepository birthdayWishRepository = mock(EmployeeBirthdayWishRepository.class);
 
         List<EmployeeBirthdayProjection> birthdays = List.of(
@@ -64,6 +72,12 @@ class EmployeeDashboardContentServiceTest {
         when(profileRepository.findActiveEmployeeAnniversariesOn(9, 1)).thenReturn(anniversaries);
         when(holidayService.getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30)))
                 .thenReturn(List.of(holiday("MahaIT Foundation Day", TODAY.plusDays(5))));
+        CommonCalendarEntryEntity festival = festival(25L, "Ganesh Festival", TODAY.plusDays(2));
+        CommonCalendarEntryPhotoEntity festivalPhoto = festivalPhoto(25L, "calendar/ganesh-banner.jpg");
+        when(calendarEntryService.getEntriesBetween(TODAY, TODAY.plusDays(10)))
+                .thenReturn(List.of(festival));
+        when(calendarEntryService.getPhotosForEntries(List.of(25L)))
+                .thenReturn(List.of(festivalPhoto));
 
         EmployeeProfileDTO currentProfile = new EmployeeProfileDTO();
         currentProfile.setEmployeeId(99L);
@@ -72,6 +86,7 @@ class EmployeeDashboardContentServiceTest {
                 employeeRepository,
                 profileRepository,
                 holidayService,
+                calendarEntryService,
                 birthdayWishRepository,
                 fixedClock(TODAY));
 
@@ -93,6 +108,13 @@ class EmployeeDashboardContentServiceTest {
         assertThat(content.upcomingEvents())
                 .extracting(event -> event.title())
                 .containsExactly("MahaIT Foundation Day");
+        assertThat(content.festivals())
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.title()).isEqualTo("Ganesh Festival");
+                    assertThat(item.photoTokens()).containsExactly(Base64.getEncoder().encodeToString(
+                            "calendar/ganesh-banner.jpg".getBytes(StandardCharsets.UTF_8)));
+                });
         assertThat(content.announcements())
                 .extracting(announcement -> announcement.title())
                 .containsExactly("Complete your employee profile");
@@ -103,11 +125,13 @@ class EmployeeDashboardContentServiceTest {
         EmployeeRepository employeeRepository = mock(EmployeeRepository.class);
         EmployeeProfileRepository profileRepository = mock(EmployeeProfileRepository.class);
         HolidayService holidayService = mock(HolidayService.class);
+        CommonCalendarEntryService calendarEntryService = mock(CommonCalendarEntryService.class);
         EmployeeBirthdayWishRepository birthdayWishRepository = mock(EmployeeBirthdayWishRepository.class);
         when(employeeRepository.findActiveEmployeeBirthdaysOn(9, 1)).thenReturn(List.of());
         when(profileRepository.findActiveEmployeeAnniversariesOn(9, 1)).thenReturn(List.of());
         when(holidayService.getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30)))
                 .thenReturn(List.of());
+        when(calendarEntryService.getEntriesBetween(TODAY, TODAY.plusDays(10))).thenReturn(List.of());
 
         EmployeeProfileDTO currentProfile = new EmployeeProfileDTO();
         currentProfile.setCompletionPercentage(100);
@@ -115,6 +139,7 @@ class EmployeeDashboardContentServiceTest {
                 employeeRepository,
                 profileRepository,
                 holidayService,
+                calendarEntryService,
                 birthdayWishRepository,
                 fixedClock(TODAY));
 
@@ -122,6 +147,7 @@ class EmployeeDashboardContentServiceTest {
 
         assertThat(content.todaysCelebrations()).isEmpty();
         assertThat(content.upcomingEvents()).isEmpty();
+        assertThat(content.festivals()).isEmpty();
         assertThat(content.announcements()).isEmpty();
     }
 
@@ -130,11 +156,13 @@ class EmployeeDashboardContentServiceTest {
         EmployeeRepository employeeRepository = mock(EmployeeRepository.class);
         EmployeeProfileRepository profileRepository = mock(EmployeeProfileRepository.class);
         HolidayService holidayService = mock(HolidayService.class);
+        CommonCalendarEntryService calendarEntryService = mock(CommonCalendarEntryService.class);
         EmployeeBirthdayWishRepository birthdayWishRepository = mock(EmployeeBirthdayWishRepository.class);
         when(employeeRepository.findActiveEmployeeBirthdaysOn(9, 1)).thenReturn(List.of());
         when(profileRepository.findActiveEmployeeAnniversariesOn(9, 1)).thenReturn(List.of());
         when(holidayService.getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30)))
                 .thenReturn(List.of());
+        when(calendarEntryService.getEntriesBetween(TODAY, TODAY.plusDays(10))).thenReturn(List.of());
 
         EmployeeProfileDTO currentProfile = new EmployeeProfileDTO();
         currentProfile.setEmployeeId(99L);
@@ -142,6 +170,7 @@ class EmployeeDashboardContentServiceTest {
                 employeeRepository,
                 profileRepository,
                 holidayService,
+                calendarEntryService,
                 birthdayWishRepository,
                 fixedClock(TODAY));
 
@@ -152,6 +181,8 @@ class EmployeeDashboardContentServiceTest {
         verify(profileRepository, times(1)).findActiveEmployeeAnniversariesOn(9, 1);
         verify(holidayService, times(1))
                 .getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30));
+        verify(calendarEntryService, times(1))
+                .getEntriesBetween(TODAY, TODAY.plusDays(10));
         verify(birthdayWishRepository, never())
                 .findBySender_EmployeeIdAndCelebrationDateOrderByCreatedDateDesc(99L, TODAY);
     }
@@ -176,6 +207,22 @@ class EmployeeDashboardContentServiceTest {
         holiday.setHolidayName(name);
         holiday.setHolidayDate(date);
         return holiday;
+    }
+
+    private CommonCalendarEntryEntity festival(Long id, String title, LocalDate date) {
+        CommonCalendarEntryEntity festival = new CommonCalendarEntryEntity();
+        festival.setId(id);
+        festival.setTitle(title);
+        festival.setEntryDate(date);
+        festival.setEntryType(CalendarEntryType.FESTIVAL);
+        return festival;
+    }
+
+    private CommonCalendarEntryPhotoEntity festivalPhoto(Long entryId, String filePath) {
+        CommonCalendarEntryPhotoEntity photo = new CommonCalendarEntryPhotoEntity();
+        photo.setCalendarEntryId(entryId);
+        photo.setFilePath(filePath);
+        return photo;
     }
 
     private Clock fixedClock(LocalDate date) {

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Employee Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/employee-dashboard.css(v='20260903')}" />
+    <link rel="stylesheet" th:href="@{/css/employee-dashboard.css(v='20261009-1')}" />
 </head>
 
 <body class="employee-dashboard-page employee-dashboard-home">
@@ -31,6 +31,66 @@
                     <small>Profile Completion</small>
                 </div>
             </div>
+
+            <section class="employee-festival-showcase"
+                th:if="${!#lists.isEmpty(dashboardContent.festivals)}"
+                data-employee-festival-carousel aria-label="Current and upcoming festivals">
+                <header class="employee-festival-heading">
+                    <div class="employee-festival-heading-icon" aria-hidden="true">
+                        <i class="fa-solid fa-calendar-day"></i>
+                    </div>
+                    <div>
+                        <span>Organization Calendar</span>
+                        <h3>Festivals</h3>
+                    </div>
+                    <strong class="employee-festival-count"
+                        th:text="${#lists.size(dashboardContent.festivals)}">1</strong>
+                </header>
+
+                <div class="employee-festival-stage">
+                    <article class="employee-festival-slide"
+                        th:each="festival, festivalStatus : ${dashboardContent.festivals}"
+                        th:attr="data-employee-festival-slide=${festivalStatus.index},aria-label=${festival.title}"
+                        th:hidden="${!festivalStatus.first}">
+                        <th:block th:if="${!#lists.isEmpty(festival.photoTokens)}">
+                            <img class="employee-festival-photo"
+                                th:each="photoToken, photoStatus : ${festival.photoTokens}"
+                                th:src="@{/documents/view(path=${photoToken})}"
+                                th:alt="${festival.title}"
+                                th:attr="data-employee-festival-photo=${photoStatus.index}"
+                                th:hidden="${!photoStatus.first}" loading="lazy" decoding="async">
+                            <span class="employee-festival-photo-count"
+                                th:if="${#lists.size(festival.photoTokens) > 1}">
+                                <i class="fa-regular fa-images" aria-hidden="true"></i>
+                                <b data-employee-festival-photo-current>1</b>
+                                / <span th:text="${#lists.size(festival.photoTokens)}">2</span>
+                            </span>
+                        </th:block>
+                        <div class="employee-festival-fallback"
+                            th:if="${#lists.isEmpty(festival.photoTokens)}" aria-hidden="true">
+                            <i class="fa-solid fa-sparkles"></i>
+                        </div>
+                        <div class="employee-festival-title">
+                            <h4 th:text="${festival.title}">Festival</h4>
+                        </div>
+                    </article>
+
+                    <button type="button" class="employee-festival-control previous"
+                        data-employee-festival-previous aria-label="Show previous festival image">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="employee-festival-control next"
+                        data-employee-festival-next aria-label="Show next festival image">
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="employee-festival-dots" aria-label="Choose a festival">
+                    <button type="button" th:each="festival, festivalStatus : ${dashboardContent.festivals}"
+                        th:attr="data-employee-festival-target=${festivalStatus.index},aria-label=${'Show ' + festival.title},aria-current=${festivalStatus.first ? 'true' : 'false'}">
+                    </button>
+                </div>
+                <p class="visually-hidden" aria-live="polite" data-employee-festival-status></p>
+            </section>
 
             <div class="profile-grid">
                 <article class="profile-card">
@@ -416,7 +476,7 @@
             </section>
         </section>
     </th:block>
-    <script th:src="@{/js/employee-dashboard-community.js(v='20260902')}"></script>
+    <script th:src="@{/js/employee-dashboard-community.js(v='20261009-1')}"></script>
 </body>
 
 </html>

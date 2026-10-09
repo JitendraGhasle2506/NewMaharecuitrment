@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.service.employee;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -8,6 +9,7 @@ import java.time.MonthDay;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +26,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
+import com.maharecruitment.gov.in.attendance.entity.CalendarEntryType;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryEntity;
+import com.maharecruitment.gov.in.attendance.entity.CommonCalendarEntryPhotoEntity;
+import com.maharecruitment.gov.in.attendance.service.CommonCalendarEntryService;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeBirthdayWishEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeBirthdayWishRepository;
@@ -36,6 +42,7 @@ import com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardCo
 import com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.AnnouncementView;
 import com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.BirthdayWishView;
 import com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.CelebrationView;
+import com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.FestivalView;
 import com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.UpcomingEventView;
 
 @Service
@@ -43,6 +50,7 @@ import com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardCo
 public class EmployeeDashboardContentService {
 
     static final int UPCOMING_WINDOW_DAYS = 30;
+    static final int FESTIVAL_WINDOW_DAYS = 10;
     static final int UPCOMING_EVENT_LIMIT = 8;
     static final int WISH_HISTORY_DAYS = 30;
     static final int WISH_HISTORY_LIMIT = 20;
@@ -62,6 +70,7 @@ public class EmployeeDashboardContentService {
     private final EmployeeRepository employeeRepository;
     private final EmployeeProfileRepository employeeProfileRepository;
     private final HolidayService holidayService;
+    private final CommonCalendarEntryService calendarEntryService;
     private final EmployeeBirthdayWishRepository birthdayWishRepository;
     private final Clock clock;
     private final Object sharedContentCacheMonitor = new Object();
@@ -72,11 +81,13 @@ public class EmployeeDashboardContentService {
             EmployeeRepository employeeRepository,
             EmployeeProfileRepository employeeProfileRepository,
             HolidayService holidayService,
+            CommonCalendarEntryService calendarEntryService,
             EmployeeBirthdayWishRepository birthdayWishRepository) {
         this(
                 employeeRepository,
                 employeeProfileRepository,
                 holidayService,
+                calendarEntryService,
                 birthdayWishRepository,
                 Clock.system(INDIA_ZONE));
     }
@@ -85,11 +96,13 @@ public class EmployeeDashboardContentService {
             EmployeeRepository employeeRepository,
             EmployeeProfileRepository employeeProfileRepository,
             HolidayService holidayService,
+            CommonCalendarEntryService calendarEntryService,
             EmployeeBirthdayWishRepository birthdayWishRepository,
             Clock clock) {
         this.employeeRepository = employeeRepository;
         this.employeeProfileRepository = employeeProfileRepository;
         this.holidayService = holidayService;
+        this.calendarEntryService = calendarEntryService;
         this.birthdayWishRepository = birthdayWishRepository;
         this.clock = clock;
     }
@@ -127,6 +140,7 @@ public class EmployeeDashboardContentService {
         return new EmployeeDashboardContentView(
                 today,
                 today.format(TODAY_FORMATTER),
+                sharedContent.festivals(),
                 todaysCelebrations,
                 sharedContent.upcomingEvents(),
                 announcements,
@@ -158,15 +172,50 @@ public class EmployeeDashboardContentService {
                     holidayService.getHolidaysBetween(
                             today.plusDays(1),
                             today.plusDays(UPCOMING_WINDOW_DAYS)));
+            List<FestivalView> festivals = festivalHighlights(today);
             snapshot = new SharedContentSnapshot(
                     today,
                     now.plus(SHARED_CONTENT_CACHE_TTL),
                     birthdays,
                     anniversaries,
+                    festivals,
                     upcomingEvents);
             sharedContentCache = snapshot;
             return snapshot;
         }
+    }
+
+    private List<FestivalView> festivalHighlights(LocalDate today) {
+        List<CommonCalendarEntryEntity> festivals = calendarEntryService
+                .getEntriesBetween(today, today.plusDays(FESTIVAL_WINDOW_DAYS))
+                .stream()
+                .filter(entry -> entry.getEntryType() == CalendarEntryType.FESTIVAL)
+                .sorted(Comparator
+                        .comparing(CommonCalendarEntryEntity::getEntryDate)
+                        .thenComparing(CommonCalendarEntryEntity::getTitle, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        List<Long> entryIds = festivals.stream()
+                .map(CommonCalendarEntryEntity::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        Map<Long, List<String>> photoTokensByEntryId = new LinkedHashMap<>();
+        if (!entryIds.isEmpty()) {
+            for (CommonCalendarEntryPhotoEntity photo : calendarEntryService.getPhotosForEntries(entryIds)) {
+                if (photo.getCalendarEntryId() == null || photo.getFilePath() == null || photo.getFilePath().isBlank()) {
+                    continue;
+                }
+                photoTokensByEntryId
+                        .computeIfAbsent(photo.getCalendarEntryId(), ignored -> new ArrayList<>())
+                        .add(Base64.getEncoder().encodeToString(
+                                photo.getFilePath().getBytes(StandardCharsets.UTF_8)));
+            }
+        }
+        return festivals.stream()
+                .map(festival -> new FestivalView(
+                        festival.getId(),
+                        festival.getTitle(),
+                        photoTokensByEntryId.getOrDefault(festival.getId(), List.of())))
+                .toList();
     }
 
     private List<CelebrationView> todaysCelebrations(
@@ -339,6 +388,7 @@ public class EmployeeDashboardContentService {
             Instant expiresAt,
             List<EmployeeBirthdayProjection> birthdays,
             List<EmployeeAnniversaryProjection> anniversaries,
+            List<FestivalView> festivals,
             List<UpcomingEventView> upcomingEvents) {
 
         private boolean isValidFor(LocalDate requestedDate, Instant now) {
