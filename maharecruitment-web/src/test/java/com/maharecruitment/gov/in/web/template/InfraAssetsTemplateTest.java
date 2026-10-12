@@ -22,6 +22,8 @@ class InfraAssetsTemplateTest {
                 .getContentAsString(StandardCharsets.UTF_8);
         String allocationInteractions = new ClassPathResource("static/js/infra-asset-allocations.js")
                 .getContentAsString(StandardCharsets.UTF_8);
+        String allocationStyles = new ClassPathResource("static/css/infra-asset-allocations.css")
+                .getContentAsString(StandardCharsets.UTF_8);
 
         assertThat(template)
                 .contains("data-asset-view-target=\"addCategoryView\"")
@@ -55,18 +57,29 @@ class InfraAssetsTemplateTest {
                 .contains("name=\"search\"")
                 .contains("Serial no., employee or category")
                 .contains("search=${search}")
+                .contains("employee.fullName + ' (' + employee.mobile + ')'", "allocation.employeeMobile")
+                .doesNotContain("allocation.employeeCode", "employee.fullName + ' (' + employee.employeeCode + ')'")
                 .contains("@{/infra/utilities/assets/replace}")
                 .contains("data-asset-replace")
                 .contains("id=\"replaceOldAssetName\"")
                 .contains("id=\"replaceOldAssetCode\"")
                 .contains("id=\"replaceOldOwnership\"")
                 .contains("name=\"replacementReason\"")
-                .contains("@{/js/infra-asset-allocations.js(v='20261012-1')}")
+                .contains("data-asset-return")
+                .contains("id=\"returnAssetModal\"")
+                .contains("modal-fullscreen-sm-down")
+                .contains("@{/css/infra-asset-allocations.css(v='20261012-1')}")
+                .contains("@{/js/infra-asset-allocations.js(v='20261012-2')}")
                 .doesNotContain("onclick=", "th:inline=\"javascript\"")
                 .doesNotContain("Recent Asset Activity");
         assertThat(allocationInteractions)
                 .contains("[data-asset-replace]")
+                .contains("[data-asset-return]")
                 .contains("bootstrap.Modal.getOrCreateInstance")
                 .doesNotContain("onclick=");
+        assertThat(allocationStyles)
+                .contains("@media (max-width: 991.98px)")
+                .contains("content: attr(data-label)")
+                .contains(".allocation-search-input");
     }
 }

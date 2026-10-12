@@ -296,7 +296,7 @@ public class AssetServiceImpl implements AssetService {
                 allocation.getAsset().getAssetCategory().getCategoryName(),
                 allocation.getAsset().getOwnershipType(),
                 allocation.getEmployee().getFullName(),
-                allocation.getEmployee().getEmployeeCode(),
+                allocation.getEmployee().getMobile(),
                 allocation.getAllocatedDate(),
                 allocation.getAllocationStatus());
     }

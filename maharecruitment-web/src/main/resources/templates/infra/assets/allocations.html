@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <title>Allocated Assets</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/infra-asset-allocations.css(v='20261012-1')}">
 </head>
 <body class="infra-shell">
 <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Allocated Assets', ~{::section})}">
-    <section>
+    <section class="asset-allocation-page">
         <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
             <span th:text="${successMessage}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -17,12 +18,12 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div class="asset-page-heading d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <div>
                 <h4 class="mb-1 fw-bold">Allocated Assets</h4>
                 <p class="text-muted mb-0">Allocate available assets and manage active assignments.</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="asset-page-nav d-flex flex-wrap gap-2">
                 <a class="btn btn-outline-primary" th:href="@{/infra/utilities/assets/inventory}">
                     <i class="fas fa-boxes me-2"></i>Asset List
                 </a>
@@ -32,20 +33,26 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3"><strong>Allocate Asset</strong></div>
+        <div class="card asset-panel border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 d-flex align-items-center gap-2">
+                <span class="asset-section-icon"><i class="fas fa-user-plus"></i></span>
+                <div>
+                    <strong class="d-block">Allocate Asset</strong>
+                    <small class="text-muted">Assign an available asset to an employee</small>
+                </div>
+            </div>
             <div class="card-body">
                 <form autocomplete="off" th:action="@{/infra/utilities/assets/allocate}" method="post">
                     <div class="row g-3 align-items-end">
-                        <div class="col-lg-4">
+                        <div class="col-12 col-md-6 col-xl-4">
                             <label class="form-label">Employee <span class="text-danger">*</span></label>
                             <select name="employeeId" class="form-select" required>
                                 <option value="">Select Employee</option>
                                 <option th:each="employee : ${employees}" th:value="${employee.employeeId}"
-                                        th:text="${employee.fullName + ' (' + employee.employeeCode + ')'}"></option>
+                                        th:text="${employee.fullName + ' (' + employee.mobile + ')'}"></option>
                             </select>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-12 col-md-6 col-xl-4">
                             <label class="form-label">Available Asset <span class="text-danger">*</span></label>
                             <select name="assetId" class="form-select" required>
                                 <option value="">Select Asset</option>
@@ -53,13 +60,13 @@
                                         th:text="${asset.assetName + ' (' + asset.assetCode + ')'}"></option>
                             </select>
                         </div>
-                        <div class="col-lg-3">
+                        <div class="col-12 col-md-8 col-xl-3">
                             <label class="form-label">Remarks</label>
                             <input type="text" name="remarks" class="form-control" maxlength="1000">
                         </div>
-                        <div class="col-lg-1 d-grid">
+                        <div class="col-12 col-md-4 col-xl-1 d-grid">
                             <button type="submit" class="btn btn-success" title="Allocate asset">
-                                <i class="fas fa-user-plus"></i>
+                                <i class="fas fa-user-plus me-2 me-xl-0"></i><span class="d-xl-none">Allocate Asset</span>
                             </button>
                         </div>
                     </div>
@@ -67,18 +74,21 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
-                <strong th:text="${allocationPage.totalElements + ' active allocation(s)'}">0 allocations</strong>
-                <form method="get" class="d-flex align-items-center flex-wrap gap-2" role="search">
+        <div class="card asset-panel border-0 shadow-sm">
+            <div class="card-header allocation-toolbar bg-white d-flex justify-content-between align-items-center flex-wrap gap-3 py-3">
+                <div>
+                    <strong class="d-block" th:text="${allocationPage.totalElements + ' active allocation(s)'}">0 allocations</strong>
+                    <small class="text-muted">Search and manage current assignments</small>
+                </div>
+                <form method="get" class="allocation-search d-flex align-items-center flex-wrap gap-2" role="search">
                     <label for="allocationSearch" class="visually-hidden">Search allocated assets</label>
-                    <div class="input-group input-group-sm w-auto">
+                    <div class="input-group input-group-sm allocation-search-input">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input id="allocationSearch" name="search" type="search" class="form-control"
                                maxlength="150" th:value="${search}"
                                placeholder="Serial no., employee or category">
                     </div>
-                    <label for="allocationPageSize" class="text-muted small">Rows</label>
+                    <label for="allocationPageSize" class="text-muted small mb-0">Rows</label>
                     <select id="allocationPageSize" name="size" class="form-select form-select-sm">
                         <option th:each="option : ${pageSizes}"
                                 th:value="${option}" th:text="${option}"
@@ -89,8 +99,8 @@
                        th:href="@{/infra/utilities/assets/allocations(size=${allocationPage.size})}">Clear</a>
                 </form>
             </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+            <div class="table-responsive allocation-table-wrap">
+                <table class="table table-hover align-middle mb-0 allocation-table">
                     <thead class="table-light">
                     <tr>
                         <th class="ps-4">Employee</th>
@@ -104,24 +114,31 @@
                     </thead>
                     <tbody>
                     <tr th:each="allocation : ${allocationPage.content}">
-                        <td class="ps-4">
-                            <span class="fw-semibold" th:text="${allocation.employeeName}"></span>
-                            <small class="d-block text-muted" th:text="${allocation.employeeCode}"></small>
+                        <td class="ps-4" data-label="Employee">
+                            <div class="allocation-cell-value">
+                                <span class="fw-semibold" th:text="${allocation.employeeName}"></span>
+                                <small class="d-block text-muted">
+                                    <i class="fas fa-mobile-alt me-1" aria-hidden="true"></i>
+                                    <span th:text="${allocation.employeeMobile}"></span>
+                                </small>
+                            </div>
                         </td>
-                        <td>
-                            <span class="fw-semibold" th:text="${allocation.assetName}"></span>
-                            <small class="d-block text-muted" th:text="${allocation.assetCode}"></small>
+                        <td data-label="Asset">
+                            <div class="allocation-cell-value">
+                                <span class="fw-semibold" th:text="${allocation.assetName}"></span>
+                                <small class="d-block text-muted" th:text="${allocation.assetCode}"></small>
+                            </div>
                         </td>
-                        <td>
+                        <td data-label="Ownership">
                             <span class="badge"
                                   th:classappend="${allocation.ownershipType.name() == 'RENTED'} ? 'bg-info-subtle text-info-emphasis' : 'bg-primary-subtle text-primary-emphasis'"
                                   th:text="${allocation.ownershipType}"></span>
                         </td>
-                        <td th:text="${allocation.categoryName}"></td>
-                        <td th:text="${#temporals.format(allocation.allocatedDate, 'dd-MM-yyyy')}"></td>
-                        <td><span class="badge bg-success-subtle text-success-emphasis" th:text="${allocation.allocationStatus}"></span></td>
-                        <td>
-                            <div class="d-flex flex-wrap gap-2">
+                        <td data-label="Category" th:text="${allocation.categoryName}"></td>
+                        <td data-label="Allocated" th:text="${#temporals.format(allocation.allocatedDate, 'dd-MM-yyyy')}"></td>
+                        <td data-label="Status"><span class="badge bg-success-subtle text-success-emphasis" th:text="${allocation.allocationStatus}"></span></td>
+                        <td data-label="Actions" class="allocation-actions">
+                            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
                                 <button type="button" class="btn btn-sm btn-outline-primary text-nowrap"
                                         data-asset-replace
                                         th:attr="data-allocation-id=${allocation.allocationId},
@@ -131,19 +148,19 @@
                                                  data-employee-name=${allocation.employeeName}">
                                     <i class="fas fa-exchange-alt me-1"></i>Replace
                                 </button>
-                            <form class="d-flex gap-2" th:action="@{/infra/utilities/assets/return}" method="post">
-                                <input type="hidden" name="allocationId" th:value="${allocation.allocationId}">
-                                <input type="text" name="remarks" class="form-control form-control-sm"
-                                       maxlength="1000" required placeholder="Return condition">
-                                <button type="submit" class="btn btn-sm btn-outline-warning text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-warning text-nowrap"
+                                        data-asset-return
+                                        th:attr="data-allocation-id=${allocation.allocationId},
+                                                 data-asset-name=${allocation.assetName},
+                                                 data-asset-code=${allocation.assetCode},
+                                                 data-employee-name=${allocation.employeeName}">
                                     <i class="fas fa-undo me-1"></i>Return
                                 </button>
-                            </form>
                             </div>
                         </td>
                     </tr>
                     <tr th:if="${allocationPage.empty}">
-                        <td colspan="7" class="text-center text-muted py-5"
+                        <td colspan="7" class="allocation-empty text-center text-muted py-5"
                             th:text="${#strings.isEmpty(search) ? 'No active allocations found.' : 'No allocations match your search.'}">
                             No active allocations found.
                         </td>
@@ -151,7 +168,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <div class="card-footer allocation-pagination bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
                 <span class="text-muted small"
                       th:text="${allocationPage.totalPages == 0 ? 'Page 0 of 0' : 'Page ' + (allocationPage.number + 1) + ' of ' + allocationPage.totalPages}"></span>
                 <nav aria-label="Allocated asset pages" th:if="${allocationPage.totalPages > 1}">
@@ -169,7 +186,7 @@
         </div>
 
         <div class="modal fade" id="replaceAssetModal" tabindex="-1" aria-labelledby="replaceAssetModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <form id="replaceAssetForm" autocomplete="off" th:action="@{/infra/utilities/assets/replace}" method="post">
                         <div class="modal-header">
@@ -225,8 +242,47 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="returnAssetModal" tabindex="-1" aria-labelledby="returnAssetModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <form id="returnAssetForm" autocomplete="off" th:action="@{/infra/utilities/assets/return}" method="post">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="returnAssetModalLabel">Return Allocated Asset</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="returnAllocationId" name="allocationId">
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-6">
+                                    <label for="returnEmployeeName" class="form-label">Employee</label>
+                                    <input id="returnEmployeeName" class="form-control" type="text" readonly>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="returnAssetName" class="form-label">Asset</label>
+                                    <input id="returnAssetName" class="form-control" type="text" readonly>
+                                </div>
+                                <div class="col-12">
+                                    <label for="returnAssetCode" class="form-label">Serial number</label>
+                                    <input id="returnAssetCode" class="form-control" type="text" readonly>
+                                </div>
+                            </div>
+                            <label for="returnRemarks" class="form-label">Return condition <span class="text-danger">*</span></label>
+                            <textarea id="returnRemarks" name="remarks" class="form-control" rows="3"
+                                      maxlength="1000" required placeholder="Describe the asset condition"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-undo me-1"></i>Confirm Return
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </section>
 </th:block>
-<script th:src="@{/js/infra-asset-allocations.js(v='20261012-1')}"></script>
+<script th:src="@{/js/infra-asset-allocations.js(v='20261012-2')}"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@ public record AssetAllocationListView(
         String categoryName,
         AssetOwnershipType ownershipType,
         String employeeName,
-        String employeeCode,
+        String employeeMobile,
         LocalDate allocatedDate,
         String allocationStatus) {
 }

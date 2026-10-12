@@ -1,0 +1,224 @@
+.asset-allocation-page {
+    --asset-border: #e7ebf0;
+    --asset-muted-bg: #f7f9fc;
+    --asset-primary: #2457a7;
+}
+
+.asset-page-heading h4 {
+    color: #1f2937;
+}
+
+.asset-page-nav .btn {
+    min-width: 120px;
+}
+
+.asset-panel {
+    border-radius: 0.85rem;
+    overflow: hidden;
+}
+
+.asset-panel > .card-header,
+.asset-panel > .card-footer {
+    border-color: var(--asset-border);
+}
+
+.asset-section-icon {
+    display: inline-grid;
+    width: 2.35rem;
+    height: 2.35rem;
+    flex: 0 0 2.35rem;
+    place-items: center;
+    border-radius: 0.7rem;
+    color: var(--asset-primary);
+    background: #eaf1fc;
+}
+
+.allocation-search-input {
+    width: min(22rem, 42vw);
+}
+
+.allocation-search .form-select {
+    width: 4.75rem;
+}
+
+.allocation-table thead th {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom-width: 1px;
+    color: #4b5563;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.allocation-table tbody td {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+    border-color: var(--asset-border);
+}
+
+.allocation-actions {
+    min-width: 12rem;
+}
+
+.allocation-pagination .pagination {
+    flex-wrap: wrap;
+}
+
+.asset-allocation-page .modal-content {
+    border: 0;
+    border-radius: 0.9rem;
+    box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.18);
+}
+
+.asset-allocation-page .modal-header,
+.asset-allocation-page .modal-footer {
+    border-color: var(--asset-border);
+}
+
+.asset-allocation-page input[readonly] {
+    color: #374151;
+    background-color: var(--asset-muted-bg);
+}
+
+@media (max-width: 991.98px) {
+    .allocation-toolbar {
+        align-items: stretch !important;
+    }
+
+    .allocation-search {
+        width: 100%;
+    }
+
+    .allocation-search-input {
+        width: 100%;
+    }
+
+    .allocation-table-wrap {
+        overflow: visible;
+        padding: 0.75rem;
+        background: var(--asset-muted-bg);
+    }
+
+    .allocation-table,
+    .allocation-table tbody {
+        display: block;
+    }
+
+    .allocation-table thead {
+        display: none;
+    }
+
+    .allocation-table tbody tr {
+        display: block;
+        margin-bottom: 0.75rem;
+        padding: 0.35rem 0.85rem;
+        border: 1px solid var(--asset-border);
+        border-radius: 0.75rem;
+        background: #fff;
+        box-shadow: 0 0.2rem 0.6rem rgba(15, 23, 42, 0.04);
+    }
+
+    .allocation-table tbody tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .allocation-table tbody td {
+        display: flex;
+        min-height: 2.75rem;
+        padding: 0.65rem 0 !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border-bottom: 1px solid var(--asset-border);
+        text-align: right;
+    }
+
+    .allocation-table tbody td::before {
+        content: attr(data-label);
+        flex: 0 0 6.5rem;
+        color: #6b7280;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .allocation-table tbody td:last-child {
+        border-bottom: 0;
+    }
+
+    .allocation-table .allocation-actions {
+        display: block;
+        padding-top: 0.85rem !important;
+        text-align: left;
+    }
+
+    .allocation-table .allocation-actions::before {
+        display: block;
+        margin-bottom: 0.6rem;
+    }
+
+    .allocation-table .allocation-empty {
+        display: block;
+        border: 0;
+        text-align: center;
+    }
+
+    .allocation-table .allocation-empty::before {
+        display: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .asset-page-heading {
+        align-items: stretch !important;
+    }
+
+    .asset-page-nav,
+    .asset-page-nav .btn {
+        width: 100%;
+    }
+
+    .allocation-search > label {
+        margin-left: auto;
+    }
+
+    .allocation-search .btn {
+        flex: 1 1 auto;
+    }
+
+    .allocation-table tbody td {
+        align-items: flex-start;
+    }
+
+    .allocation-table tbody td > :last-child {
+        max-width: calc(100% - 7.5rem);
+    }
+
+    .allocation-table .allocation-actions > div,
+    .allocation-table .allocation-actions .btn {
+        width: 100%;
+        max-width: none;
+    }
+
+    .allocation-pagination {
+        justify-content: center !important;
+        text-align: center;
+    }
+
+    .allocation-pagination nav {
+        width: 100%;
+    }
+
+    .allocation-pagination .pagination {
+        justify-content: center;
+    }
+
+    .asset-allocation-page .modal-footer .btn {
+        flex: 1 1 0;
+    }
+}
