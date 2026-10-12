@@ -303,7 +303,7 @@
                                                 <img th:src="@{/documents/view(path=${photo.documentPathToken})}"
                                                     th:alt="${photo.originalName}" loading="lazy">
                                             </a>
-                                            <form method="post" class="archive-entry-form"
+                                            <form autocomplete="off" method="post" class="archive-entry-form"
                                                 data-confirm-message="Remove this photo?"
                                                 th:action="@{/common/holidays/calendar-entries/{entryId}/photos/{photoId}/archive(entryId=${photo.calendarEntryId},photoId=${photo.id})}">
                                                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -352,12 +352,12 @@
                                             <div class="d-inline-flex gap-2">
                                                 <a th:if="${item.holiday}" class="btn btn-outline-primary btn-sm" th:href="@{/common/holidays(month=${selectedMonthValue},holidayId=${item.id})}">Edit</a>
                                                 <a th:unless="${item.holiday}" class="btn btn-outline-primary btn-sm" th:href="@{/common/holidays(month=${selectedMonthValue},calendarEntryId=${item.id})}">Edit</a>
-                                                <form th:if="${item.holiday}" method="post" class="archive-entry-form"
+                                                <form autocomplete="off" th:if="${item.holiday}" method="post" class="archive-entry-form"
                                                     data-confirm-message="Archive this holiday?"
                                                     th:action="@{/common/holidays/holidays/{id}/archive(id=${item.id})}">
                                                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><input type="hidden" name="month" th:value="${selectedMonthValue}"><button class="btn btn-outline-danger btn-sm" type="submit">Archive</button>
                                                 </form>
-                                                <form th:unless="${item.holiday}" method="post" class="archive-entry-form"
+                                                <form autocomplete="off" th:unless="${item.holiday}" method="post" class="archive-entry-form"
                                                     data-confirm-message="Archive this calendar entry?"
                                                     th:action="@{/common/holidays/entries/{id}/archive(id=${item.id})}">
                                                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><input type="hidden" name="month" th:value="${selectedMonthValue}"><button class="btn btn-outline-danger btn-sm" type="submit">Archive</button>
@@ -386,7 +386,7 @@
                                         <td class="text-end">
                                             <div class="d-inline-flex gap-2">
                                                 <a class="btn btn-outline-primary btn-sm" th:href="@{/common/holidays(month=${selectedMonthValue},type=${workingDayForm.returnType},workingDayId=${workingDay.id})} + '#workingDayForm'">Edit</a>
-                                                <form method="post" class="archive-entry-form" data-confirm-message="Archive this working-day override?"
+                                                <form autocomplete="off" method="post" class="archive-entry-form" data-confirm-message="Archive this working-day override?"
                                                     th:action="@{/common/holidays/working-days/{id}/archive(id=${workingDay.id})}">
                                                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                                     <input type="hidden" name="month" th:value="${selectedMonthValue}">

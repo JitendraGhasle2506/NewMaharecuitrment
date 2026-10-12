@@ -26,21 +26,29 @@ public class InfraAssetController {
         model.addAttribute("categories", assetService.getAllActiveCategories());
         model.addAttribute("assets", assetService.getAllAssets());
         model.addAttribute("allocations", assetService.getAssetAllocations());
-        model.addAttribute("employees", employeeRepository.findAll());
+        model.addAttribute("employees", employeeRepository.findActiveEmployeeOptions("ACTIVE"));
         return "infra/utilities";
     }
 
     @PostMapping("/category")
     public String addCategory(@ModelAttribute AssetCategoryEntity category, RedirectAttributes redirectAttributes) {
-        assetService.createCategory(category);
-        redirectAttributes.addFlashAttribute("successMessage", "Asset category added successfully.");
+        try {
+            assetService.createCategory(category);
+            redirectAttributes.addFlashAttribute("successMessage", "Asset category added successfully.");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
         return "redirect:/infra/utilities/assets";
     }
 
     @PostMapping("/add")
     public String addAsset(@ModelAttribute AssetEntity asset, RedirectAttributes redirectAttributes) {
-        assetService.createAsset(asset);
-        redirectAttributes.addFlashAttribute("successMessage", "Asset added successfully.");
+        try {
+            assetService.createAsset(asset);
+            redirectAttributes.addFlashAttribute("successMessage", "Asset added successfully.");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
         return "redirect:/infra/utilities/assets";
     }
 
@@ -49,8 +57,8 @@ public class InfraAssetController {
         try {
             assetService.allocateAsset(assetId, employeeId, remarks);
             redirectAttributes.addFlashAttribute("successMessage", "Asset allocated successfully.");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
         return "redirect:/infra/utilities/assets";
     }
@@ -60,8 +68,8 @@ public class InfraAssetController {
         try {
             assetService.returnAsset(allocationId, remarks);
             redirectAttributes.addFlashAttribute("successMessage", "Asset returned successfully.");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
         return "redirect:/infra/utilities/assets";
     }

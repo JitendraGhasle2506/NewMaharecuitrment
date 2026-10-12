@@ -23,8 +23,8 @@ public class V140__mahait_employee_leave_tour_approval_workflow extends BaseJava
                     """);
             statement.execute("""
                     insert into approval_recruitment_type_rule
-                        (recruitment_type_code, active)
-                    values ('MAHAIT', true)
+                        (recruitment_type_code, active, created_at, updated_at)
+                    values ('MAHAIT', true, current_timestamp, current_timestamp)
                     on conflict (recruitment_type_code) do nothing
                     """);
             statement.execute("""

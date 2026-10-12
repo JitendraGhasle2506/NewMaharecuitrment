@@ -31,6 +31,10 @@
             border-top: 2px dashed #e2e8f0;
             margin: 1.5rem 0;
         }
+        .asset-form-icon {
+            width: 48px;
+            height: 48px;
+        }
     </style>
 </head>
 <body class="infra-shell">
@@ -56,13 +60,16 @@
                 <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
                     <h4 class="mb-0 text-dark fw-bold">IT Infrastructure & Asset Utilities</h4>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-secondary fw-bold shadow-sm px-3" onclick="toggleView('addCategoryView')">
+                        <button type="button" class="btn btn-secondary fw-bold shadow-sm px-3"
+                                data-asset-view-target="addCategoryView">
                             <i class="fas fa-tags me-2"></i> Add Category
                         </button>
-                        <button class="btn btn-primary fw-bold shadow-sm px-3" onclick="toggleView('addAssetView')">
+                        <button type="button" class="btn btn-primary fw-bold shadow-sm px-3"
+                                data-asset-view-target="addAssetView">
                             <i class="fas fa-laptop me-2"></i> Add Asset
                         </button>
-                        <button class="btn btn-success fw-bold shadow-sm px-3" onclick="toggleView('allocateAssetView')">
+                        <button type="button" class="btn btn-success fw-bold shadow-sm px-3"
+                                data-asset-view-target="allocateAssetView">
                             <i class="fas fa-user-plus me-2"></i> Allocate Asset
                         </button>
                     </div>
@@ -142,8 +149,9 @@
                                         <td th:text="${#temporals.format(alloc.allocatedDate, 'dd-MM-yyyy')}"></td>
                                         <td><span class="badge bg-success-subtle text-success-emphasis">Assigned</span></td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-warning" 
-                                                    th:attr="onclick=|openReturnView('${alloc.id}', '${alloc.asset.assetName}', '${alloc.employee.fullName}')|">
+                                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                                    data-asset-return
+                                                    th:attr="data-allocation-id=${alloc.id},data-asset-name=${alloc.asset.assetName},data-employee-name=${alloc.employee.fullName}">
                                                 <i class="fas fa-undo me-1"></i> Return
                                             </button>
                                         </td>
@@ -206,7 +214,7 @@
                 <div class="card asset-card">
                     <div class="asset-header d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-secondary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <div class="asset-form-icon rounded-circle bg-secondary bg-opacity-10 p-3 d-flex align-items-center justify-content-center">
                                 <i class="fas fa-tags text-secondary fs-5"></i>
                             </div>
                             <div>
@@ -214,7 +222,7 @@
                                 <p class="text-muted mb-0 small">Create a new category for your assets.</p>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-asset-view-target="listView" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
                         <form autocomplete="off" th:action="@{/infra/utilities/assets/category}" method="post">
@@ -230,7 +238,7 @@
                             </div>
                             <hr class="section-divider">
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="button" class="btn btn-outline-secondary px-4" data-asset-view-target="listView">Cancel</button>
                                 <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Save Category</button>
                             </div>
                         </form>
@@ -243,7 +251,7 @@
                 <div class="card asset-card">
                     <div class="asset-header d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <div class="asset-form-icon rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center">
                                 <i class="fas fa-laptop text-primary fs-5"></i>
                             </div>
                             <div>
@@ -251,7 +259,7 @@
                                 <p class="text-muted mb-0 small">Register a new physical or digital asset into the inventory.</p>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-asset-view-target="listView" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
                         <form autocomplete="off" th:action="@{/infra/utilities/assets/add}" method="post">
@@ -288,7 +296,7 @@
                             </div>
                             <hr class="section-divider">
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="button" class="btn btn-outline-secondary px-4" data-asset-view-target="listView">Cancel</button>
                                 <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Save Asset</button>
                             </div>
                         </form>
@@ -301,7 +309,7 @@
                 <div class="card asset-card">
                     <div class="asset-header d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-success bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <div class="asset-form-icon rounded-circle bg-success bg-opacity-10 p-3 d-flex align-items-center justify-content-center">
                                 <i class="fas fa-user-plus text-success fs-5"></i>
                             </div>
                             <div>
@@ -309,7 +317,7 @@
                                 <p class="text-muted mb-0 small">Assign an available asset to an employee.</p>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-asset-view-target="listView" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
                         <form autocomplete="off" th:action="@{/infra/utilities/assets/allocate}" method="post">
@@ -337,7 +345,7 @@
                             </div>
                             <hr class="section-divider">
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="button" class="btn btn-outline-secondary px-4" data-asset-view-target="listView">Cancel</button>
                                 <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">Allocate Asset</button>
                             </div>
                         </form>
@@ -350,7 +358,7 @@
                 <div class="card asset-card">
                     <div class="asset-header d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-warning bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <div class="asset-form-icon rounded-circle bg-warning bg-opacity-10 p-3 d-flex align-items-center justify-content-center">
                                 <i class="fas fa-undo text-warning fs-5"></i>
                             </div>
                             <div>
@@ -358,7 +366,7 @@
                                 <p class="text-muted mb-0 small">Process the return of an allocated asset.</p>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-asset-view-target="listView" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
                         <form autocomplete="off" th:action="@{/infra/utilities/assets/return}" method="post">
@@ -382,7 +390,7 @@
                             </div>
                             <hr class="section-divider">
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="button" class="btn btn-outline-secondary px-4" data-asset-view-target="listView">Cancel</button>
                                 <button type="submit" class="btn btn-warning px-4 fw-bold shadow-sm">Process Return</button>
                             </div>
                         </form>
@@ -393,21 +401,6 @@
         </section>
     </th:block>
 
-    <script th:inline="javascript">
-        function toggleView(viewId) {
-            const views = ['listView', 'addCategoryView', 'addAssetView', 'allocateAssetView', 'returnAssetView'];
-            views.forEach(id => {
-                document.getElementById(id).classList.add('d-none');
-            });
-            document.getElementById(viewId).classList.remove('d-none');
-        }
-
-        function openReturnView(allocationId, assetName, empName) {
-            document.getElementById('returnAllocationId').value = allocationId;
-            document.getElementById('returnAssetName').value = assetName;
-            document.getElementById('returnEmpName').value = empName;
-            toggleView('returnAssetView');
-        }
-    </script>
+    <script th:src="@{/js/infra-assets.js(v='20261009-1')}" defer></script>
 </body>
 </html>

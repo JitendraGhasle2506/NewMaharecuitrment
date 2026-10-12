@@ -354,6 +354,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     private List<Map<String, Object>> toAuthorityOptions(Map<Long, String> authorityTypesByUserId) {
+        if (authorityTypesByUserId == null || authorityTypesByUserId.isEmpty()) {
+            return List.of();
+        }
         return userRepository.findAllById(authorityTypesByUserId.keySet()).stream()
                 .filter(user -> Boolean.TRUE.equals(user.getActive()))
                 .sorted(Comparator

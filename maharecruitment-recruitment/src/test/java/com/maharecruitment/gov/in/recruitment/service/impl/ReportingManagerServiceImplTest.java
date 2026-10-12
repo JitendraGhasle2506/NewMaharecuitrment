@@ -181,9 +181,7 @@ class ReportingManagerServiceImplTest {
         EmployeeEntity employee = employee(110L, "Neha Kulkarni", "EMP110", "INTERNAL", "ACTIVE");
         employee.setUser(employeeUser);
 
-        when(employeeRepository
-                .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
-                        "INTERNAL", "ACTIVE"))
+        when(employeeRepository.findActiveCellAuthorityEmployees(Set.of("INTERNAL", "MAHAIT")))
                 .thenReturn(List.of(employee));
         when(userRepository.findAllById(Set.of(11L))).thenReturn(List.of(employeeUser));
 

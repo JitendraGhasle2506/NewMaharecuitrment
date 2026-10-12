@@ -36,7 +36,7 @@
                 <span th:text="${errorMessage}">Unable to convert employee.</span>
             </div>
 
-            <form id="employeeConversionForm" method="post" th:action="@{/hr/employee-type-conversion}"
+            <form id="employeeConversionForm" method="post" autocomplete="off" th:action="@{/hr/employee-type-conversion}"
                 th:object="${conversionForm}" novalidate>
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <input type="hidden" id="targetType" th:field="*{targetType}">

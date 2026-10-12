@@ -32,46 +32,86 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AssetCategoryEntity> getAllActiveCategories() {
         return categoryRepository.findByIsActiveTrue();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AssetEntity> getAllAssets() {
-        return assetRepository.findAll();
+        return assetRepository.findAllByOrderByAssetCodeAsc();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AssetAllocationEntity> getAssetAllocations() {
-        return allocationRepository.findAll();
+        return allocationRepository.findByAllocationStatusOrderByAllocatedDateDescIdDesc("ASSIGNED");
     }
 
     @Override
     public AssetCategoryEntity createCategory(AssetCategoryEntity category) {
+        if (category == null || category.getCategoryName() == null || category.getCategoryName().isBlank()) {
+            throw new IllegalArgumentException("Category name is required.");
+        }
+        String categoryName = category.getCategoryName().trim();
+        if (categoryRepository.existsByCategoryNameIgnoreCase(categoryName)) {
+            throw new IllegalArgumentException("An asset category with this name already exists.");
+        }
+        category.setId(null);
+        category.setCategoryName(categoryName);
+        category.setDescription(trimToNull(category.getDescription()));
+        category.setIsActive(Boolean.TRUE);
         return categoryRepository.save(category);
     }
 
     @Override
     public AssetEntity createAsset(AssetEntity asset) {
+        if (asset == null || asset.getAssetCategory() == null || asset.getAssetCategory().getId() == null) {
+            throw new IllegalArgumentException("Asset category is required.");
+        }
+        String assetCode = requiredText(asset.getAssetCode(), "Asset code is required.");
+        String assetName = requiredText(asset.getAssetName(), "Asset name is required.");
+        if (assetRepository.existsByAssetCodeIgnoreCase(assetCode)) {
+            throw new IllegalArgumentException("An asset with this code already exists.");
+        }
+        AssetCategoryEntity category = categoryRepository.findById(asset.getAssetCategory().getId())
+                .filter(item -> Boolean.TRUE.equals(item.getIsActive()))
+                .orElseThrow(() -> new IllegalArgumentException("Select a valid active asset category."));
+        if (asset.getPurchaseDate() != null && asset.getWarrantyExpiryDate() != null
+                && asset.getWarrantyExpiryDate().isBefore(asset.getPurchaseDate())) {
+            throw new IllegalArgumentException("Warranty expiry date cannot be before the purchase date.");
+        }
+        asset.setId(null);
+        asset.setAssetCategory(category);
+        asset.setAssetCode(assetCode);
+        asset.setAssetName(assetName);
+        asset.setNotes(trimToNull(asset.getNotes()));
         asset.setStatus("AVAILABLE");
         return assetRepository.save(asset);
     }
 
     @Override
     public AssetAllocationEntity allocateAsset(Long assetId, Long employeeId, String remarks) {
-        AssetEntity asset = assetRepository.findById(assetId).orElseThrow(() -> new RuntimeException("Asset not found"));
+        if (assetId == null || employeeId == null) {
+            throw new IllegalArgumentException("Asset and employee are required.");
+        }
+        AssetEntity asset = assetRepository.findByIdForUpdate(assetId)
+                .orElseThrow(() -> new IllegalArgumentException("Asset not found."));
         if (!"AVAILABLE".equals(asset.getStatus())) {
-            throw new RuntimeException("Asset is not available for allocation");
+            throw new IllegalStateException("Asset is not available for allocation.");
         }
 
-        EmployeeEntity employee = employeeRepository.findById(employeeId).orElseThrow(() -> new RuntimeException("Employee not found"));
+        EmployeeEntity employee = employeeRepository.findById(employeeId)
+                .filter(item -> "ACTIVE".equalsIgnoreCase(item.getStatus()))
+                .orElseThrow(() -> new IllegalArgumentException("Select a valid active employee."));
 
         AssetAllocationEntity allocation = new AssetAllocationEntity();
         allocation.setAsset(asset);
         allocation.setEmployee(employee);
         allocation.setAllocatedDate(LocalDate.now());
         allocation.setAllocationStatus("ASSIGNED");
-        allocation.setRemarks(remarks);
+        allocation.setRemarks(trimToNull(remarks));
 
         asset.setStatus("ALLOCATED");
         assetRepository.save(asset);
@@ -81,15 +121,41 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     public void returnAsset(Long allocationId, String remarks) {
-        AssetAllocationEntity allocation = allocationRepository.findById(allocationId).orElseThrow(() -> new RuntimeException("Allocation not found"));
+        if (allocationId == null) {
+            throw new IllegalArgumentException("Allocation is required.");
+        }
+        AssetAllocationEntity allocation = allocationRepository.findById(allocationId)
+                .orElseThrow(() -> new IllegalArgumentException("Allocation not found."));
+        if (!"ASSIGNED".equals(allocation.getAllocationStatus())) {
+            throw new IllegalStateException("This asset allocation has already been returned.");
+        }
         allocation.setAllocationStatus("RETURNED");
         allocation.setReturnedDate(LocalDate.now());
-        allocation.setRemarks(allocation.getRemarks() + " | Return remarks: " + remarks);
+        String returnRemarks = trimToNull(remarks);
+        String existingRemarks = trimToNull(allocation.getRemarks());
+        allocation.setRemarks(existingRemarks == null
+                ? "Return remarks: " + (returnRemarks == null ? "None" : returnRemarks)
+                : existingRemarks + " | Return remarks: " + (returnRemarks == null ? "None" : returnRemarks));
 
         AssetEntity asset = allocation.getAsset();
         asset.setStatus("AVAILABLE");
 
         assetRepository.save(asset);
         allocationRepository.save(allocation);
+    }
+
+    private String requiredText(String value, String message) {
+        String normalized = trimToNull(value);
+        if (normalized == null) {
+            throw new IllegalArgumentException(message);
+        }
+        return normalized;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

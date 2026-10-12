@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.asset.repository;
 
 import com.maharecruitment.gov.in.asset.entity.AssetAllocationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,4 +11,7 @@ import java.util.List;
 public interface AssetAllocationRepository extends JpaRepository<AssetAllocationEntity, Long> {
     List<AssetAllocationEntity> findByEmployeeEmployeeId(Long employeeId);
     List<AssetAllocationEntity> findByEmployeeEmployeeIdAndAllocationStatus(Long employeeId, String allocationStatus);
+
+    @EntityGraph(attributePaths = { "asset", "asset.assetCategory", "employee" })
+    List<AssetAllocationEntity> findByAllocationStatusOrderByAllocatedDateDescIdDesc(String allocationStatus);
 }
