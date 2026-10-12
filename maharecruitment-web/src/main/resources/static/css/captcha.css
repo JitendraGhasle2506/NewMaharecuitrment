@@ -16,8 +16,8 @@
     display: block;
     border: 1px solid var(--border, #E2E8F0);
     border-radius: 10px;
-    width: 220px;
-    max-width: 100%;
+    width: 129px;
+    max-width: 50%;
     height: auto;
     background: #ffffff;
 }
@@ -124,9 +124,5 @@
 
 /* ── Responsive ── */
 @media (max-width: 575.98px) {
-    .capcode {
-        width: min(220px, 100%);
-    }
-
     .CaptchaWrap { flex-wrap: wrap; }
 }

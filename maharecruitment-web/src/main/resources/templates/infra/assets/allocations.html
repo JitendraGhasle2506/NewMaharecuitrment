@@ -80,7 +80,8 @@
                     <strong class="d-block" th:text="${allocationPage.totalElements + ' active allocation(s)'}">0 allocations</strong>
                     <small class="text-muted">Search and manage current assignments</small>
                 </div>
-                <form method="get" class="allocation-search d-flex align-items-center flex-wrap gap-2" role="search">
+                <form method="get" autocomplete="off"
+                      class="allocation-search d-flex align-items-center flex-wrap gap-2" role="search">
                     <label for="allocationSearch" class="visually-hidden">Search allocated assets</label>
                     <div class="input-group input-group-sm allocation-search-input">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>

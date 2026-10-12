@@ -35,7 +35,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
                 <strong th:text="${assetPage.totalElements + ' asset(s)'}">0 assets</strong>
-                <form method="get" class="d-flex align-items-center gap-2">
+                <form method="get" autocomplete="off" class="d-flex align-items-center gap-2">
                     <label for="assetPageSize" class="text-muted small">Rows</label>
                     <select id="assetPageSize" name="size" class="form-select form-select-sm">
                         <option th:each="option : ${pageSizes}"
