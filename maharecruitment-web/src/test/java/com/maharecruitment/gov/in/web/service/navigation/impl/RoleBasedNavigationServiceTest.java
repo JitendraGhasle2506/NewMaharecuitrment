@@ -48,6 +48,12 @@ class RoleBasedNavigationServiceTest {
     }
 
     @Test
+    void infraRoleUsesAssetDashboardAsHomePage() {
+        assertEquals("/infra/utilities/assets", service.resolveHomeUrl(List.of("ROLE_INFRA")));
+        assertTrue(service.canAccessUrl("/infra/utilities/assets", List.of("ROLE_INFRA")));
+    }
+
+    @Test
     void canAccessUrlAllowsAuthenticatedFallbackForGeneralPages() {
         assertTrue(service.canAccessUrl("/master/designations", List.of("ROLE_HR")));
         assertTrue(service.canAccessUrl("/common", List.of("ROLE_DEPARTMENT")));

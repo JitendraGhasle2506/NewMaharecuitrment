@@ -25,6 +25,7 @@ public class RoleBasedNavigationService implements NavigationService {
         private static final List<String> ROLE_PRIORITY = List.of(
                         "ROLE_ADMIN",
                         "ROLE_HR",
+                        "ROLE_INFRA",
                         "ROLE_AUDITOR",
                         "ROLE_MD",
                         "ROLE_CTO",

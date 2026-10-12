@@ -76,6 +76,15 @@ class MySimpleUrlAuthenticationSuccessHandlerTest {
     }
 
     @Test
+    void infraRoleUsesAssetDashboardAsItsLandingPage() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "infra@example.com", "password", "ROLE_INFRA");
+
+        assertThat(handler.determineTargetUrl(authentication))
+                .isEqualTo("/infra/utilities/assets");
+    }
+
+    @Test
     void firstLoginForcesPasswordChangeEvenWhenLegacyFlagIsFalse() throws Exception {
         User user = user(false);
         stubAffiliation(user);

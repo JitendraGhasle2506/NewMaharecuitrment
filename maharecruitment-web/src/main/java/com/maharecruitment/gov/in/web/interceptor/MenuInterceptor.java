@@ -1,7 +1,6 @@
 package com.maharecruitment.gov.in.web.interceptor;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -16,7 +15,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import com.maharecruitment.gov.in.auth.constant.CommonConstant;
 import com.maharecruitment.gov.in.auth.entity.MstMenu;
 import com.maharecruitment.gov.in.auth.entity.MstSubMenu;
 import com.maharecruitment.gov.in.auth.service.MstMenuService;
@@ -74,16 +72,7 @@ public class MenuInterceptor implements HandlerInterceptor {
             loginIdentifier = userDetails.getUsername();
         }
 
-        Map<String, String> roleTargetUrlMap = CommonConstant.getDashboardUrls();
-        for (String roleName : roles) {
-            if (session.getAttribute(HOMEPAGE_URL_KEY) == null && roleTargetUrlMap.containsKey(roleName)) {
-                session.setAttribute(HOMEPAGE_URL_KEY, roleTargetUrlMap.get(roleName));
-            }
-        }
-
-        if (session.getAttribute(HOMEPAGE_URL_KEY) == null) {
-            session.setAttribute(HOMEPAGE_URL_KEY, "/home");
-        }
+        session.setAttribute(HOMEPAGE_URL_KEY, navigationService.resolveHomeUrl(roles));
 
         String roleSignature = String.join("|", roles);
         if (roleSignature.equals(session.getAttribute(MENU_ROLE_SIGNATURE_KEY))
