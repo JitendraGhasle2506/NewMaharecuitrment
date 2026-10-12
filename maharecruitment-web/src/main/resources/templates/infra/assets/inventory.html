@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Asset Inventory</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+<body class="infra-shell">
+<th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Asset Inventory', ~{::section})}">
+    <section>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+            <div>
+                <h4 class="mb-1 fw-bold">Asset Inventory</h4>
+                <p class="text-muted mb-0">Paginated master list of owned and rented assets.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-success" th:href="@{/infra/utilities/assets/allocations}">
+                    <i class="fas fa-user-check me-2"></i>Allocated Assets
+                </a>
+                <a class="btn btn-outline-secondary" th:href="@{/infra/utilities/assets}">
+                    <i class="fas fa-arrow-left me-2"></i>Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                <strong th:text="${assetPage.totalElements + ' asset(s)'}">0 assets</strong>
+                <form method="get" class="d-flex align-items-center gap-2">
+                    <label for="assetPageSize" class="text-muted small">Rows</label>
+                    <select id="assetPageSize" name="size" class="form-select form-select-sm">
+                        <option th:each="option : ${pageSizes}"
+                                th:value="${option}" th:text="${option}"
+                                th:selected="${assetPage.size == option}"></option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Apply</button>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Asset Code</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Ownership</th>
+                        <th>Rental Period</th>
+                        <th>Purchase Date</th>
+                        <th>Warranty Expiry</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="asset : ${assetPage.content}">
+                        <td class="ps-4 fw-semibold" th:text="${asset.assetCode}"></td>
+                        <td th:text="${asset.assetName}"></td>
+                        <td th:text="${asset.categoryName}"></td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${asset.ownershipType.name() == 'RENTED' ? 'bg-warning-subtle text-warning-emphasis' : 'bg-primary-subtle text-primary-emphasis'}"
+                                  th:text="${asset.ownershipType}"></span>
+                        </td>
+                        <td th:text="${asset.ownershipType.name() == 'RENTED'
+                                ? #temporals.format(asset.rentStartDate, 'dd-MM-yyyy') + ' to ' + (asset.rentEndDate != null ? #temporals.format(asset.rentEndDate, 'dd-MM-yyyy') : 'Open-ended')
+                                : '-'}"></td>
+                        <td th:text="${asset.purchaseDate != null ? #temporals.format(asset.purchaseDate, 'dd-MM-yyyy') : '-'}"></td>
+                        <td th:text="${asset.warrantyExpiryDate != null ? #temporals.format(asset.warrantyExpiryDate, 'dd-MM-yyyy') : '-'}"></td>
+                        <td><span class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${asset.status}"></span></td>
+                    </tr>
+                    <tr th:if="${assetPage.empty}">
+                        <td colspan="8" class="text-center text-muted py-5">No assets found.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+                <span class="text-muted small"
+                      th:text="${assetPage.totalPages == 0 ? 'Page 0 of 0' : 'Page ' + (assetPage.number + 1) + ' of ' + assetPage.totalPages}"></span>
+                <nav aria-label="Asset inventory pages" th:if="${assetPage.totalPages > 1}">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${assetPage.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/infra/utilities/assets/inventory(page=${assetPage.number - 1},size=${assetPage.size})}">Previous</a>
+                        </li>
+                        <li class="page-item disabled"><span class="page-link" th:text="${assetPage.number + 1}"></span></li>
+                        <li class="page-item" th:classappend="${assetPage.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/infra/utilities/assets/inventory(page=${assetPage.number + 1},size=${assetPage.size})}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </section>
+</th:block>
+</body>
+</html>

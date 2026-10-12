@@ -123,6 +123,9 @@ import db.postmigration.V143__internal_conversion_department_optional;
 import db.postmigration.V144__employee_type_conversion_location_audit;
 import db.postmigration.V145__employee_type_conversion_department_nullable_reconciliation;
 import db.postmigration.V146__internal_vacancy_level_two_authority;
+import db.postmigration.V147__asset_ownership_and_audit_log;
+import db.postmigration.V148__asset_list_performance_indexes;
+import db.postmigration.V150__asset_replacement_history;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -288,6 +291,9 @@ public class PostSchemaFlywayRunner {
                 new V144__employee_type_conversion_location_audit(),
                 new V145__employee_type_conversion_department_nullable_reconciliation(),
                 new V146__internal_vacancy_level_two_authority(),
+                new V147__asset_ownership_and_audit_log(),
+                new V148__asset_list_performance_indexes(),
+                new V150__asset_replacement_history(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

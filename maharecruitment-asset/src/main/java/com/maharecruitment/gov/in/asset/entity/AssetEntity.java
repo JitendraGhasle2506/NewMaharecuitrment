@@ -37,6 +37,16 @@ public class AssetEntity {
     @Column(name = "warranty_expiry_date")
     private LocalDate warrantyExpiryDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ownership_type", length = 10)
+    private AssetOwnershipType ownershipType = AssetOwnershipType.OWNED;
+
+    @Column(name = "rent_start_date")
+    private LocalDate rentStartDate;
+
+    @Column(name = "rent_end_date")
+    private LocalDate rentEndDate;
+
     @Column(name = "status", nullable = false, length = 50)
     private String status = "AVAILABLE"; // AVAILABLE, ALLOCATED, DAMAGED, RETIRED, LOST
 

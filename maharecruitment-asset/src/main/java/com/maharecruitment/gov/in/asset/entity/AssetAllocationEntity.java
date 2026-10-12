@@ -30,6 +30,10 @@ public class AssetAllocationEntity {
     @JoinColumn(name = "employee_id", nullable = false)
     private EmployeeEntity employee;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "replaces_allocation_id")
+    private AssetAllocationEntity replacesAllocation;
+
     @Column(name = "allocated_date", nullable = false)
     private LocalDate allocatedDate;
 
@@ -37,7 +41,7 @@ public class AssetAllocationEntity {
     private LocalDate returnedDate;
 
     @Column(name = "allocation_status", nullable = false, length = 50)
-    private String allocationStatus = "ASSIGNED"; // ASSIGNED, RETURNED, PENDING_RETURN
+    private String allocationStatus = "ASSIGNED"; // ASSIGNED, RETURNED, REPLACED, PENDING_RETURN
 
     @Column(name = "remarks", length = 1000)
     private String remarks;
