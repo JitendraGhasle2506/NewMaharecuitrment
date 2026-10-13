@@ -37,7 +37,7 @@ public interface AssetRepository extends JpaRepository<AssetEntity, Long> {
 
     @Query("""
             select new com.maharecruitment.gov.in.asset.service.model.AssetOptionView(
-                asset.id, asset.assetCode, asset.assetName)
+                asset.id, asset.assetCode, asset.assetName, asset.makeModel)
             from AssetEntity asset
             where asset.status = 'AVAILABLE'
             order by asset.assetCode

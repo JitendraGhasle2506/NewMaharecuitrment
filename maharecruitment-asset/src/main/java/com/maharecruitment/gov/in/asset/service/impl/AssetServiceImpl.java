@@ -104,6 +104,10 @@ public class AssetServiceImpl implements AssetService {
         }
         String assetCode = requiredText(asset.getAssetCode(), "Asset code is required.");
         String assetName = requiredText(asset.getAssetName(), "Asset name is required.");
+        String makeModel = requiredText(asset.getMakeModel(), "Make / Model is required.");
+        if (makeModel.length() > 150) {
+            throw new IllegalArgumentException("Make / Model must not exceed 150 characters.");
+        }
         if (assetRepository.existsByAssetCodeIgnoreCase(assetCode)) {
             throw new IllegalArgumentException("An asset with this code already exists.");
         }
@@ -119,6 +123,7 @@ public class AssetServiceImpl implements AssetService {
         asset.setAssetCategory(category);
         asset.setAssetCode(assetCode);
         asset.setAssetName(assetName);
+        asset.setMakeModel(makeModel);
         asset.setNotes(trimToNull(asset.getNotes()));
         asset.setStatus("AVAILABLE");
         AssetEntity savedAsset = assetRepository.save(asset);
@@ -128,10 +133,13 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public AssetAllocationEntity allocateAsset(Long assetId, Long employeeId, String remarks,
+    public AssetAllocationEntity allocateAsset(Long assetId, Long employeeId, LocalDate allocatedDate, String remarks,
             String actorUsername, String ipAddress) {
-        if (assetId == null || employeeId == null) {
-            throw new IllegalArgumentException("Asset and employee are required.");
+        if (assetId == null || employeeId == null || allocatedDate == null) {
+            throw new IllegalArgumentException("Asset, employee and allocation date are required.");
+        }
+        if (allocatedDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Allocation date cannot be in the future.");
         }
         AssetEntity asset = assetRepository.findByIdForUpdate(assetId)
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found."));
@@ -146,7 +154,7 @@ public class AssetServiceImpl implements AssetService {
         AssetAllocationEntity allocation = new AssetAllocationEntity();
         allocation.setAsset(asset);
         allocation.setEmployee(employee);
-        allocation.setAllocatedDate(LocalDate.now());
+        allocation.setAllocatedDate(allocatedDate);
         allocation.setAllocationStatus("ASSIGNED");
         allocation.setRemarks(trimToNull(remarks));
 
@@ -155,7 +163,7 @@ public class AssetServiceImpl implements AssetService {
 
         AssetAllocationEntity savedAllocation = allocationRepository.save(allocation);
         saveAuditLog(asset, "ALLOCATED", actorUsername, ipAddress,
-                "Allocated to employee " + employee.getEmployeeCode()
+                "Allocated to employee " + employee.getEmployeeCode() + " on " + allocatedDate
                         + optionalRemarks(allocation.getRemarks()));
         return savedAllocation;
     }
@@ -279,6 +287,7 @@ public class AssetServiceImpl implements AssetService {
                 asset.getId(),
                 asset.getAssetCode(),
                 asset.getAssetName(),
+                asset.getMakeModel(),
                 asset.getAssetCategory().getCategoryName(),
                 asset.getOwnershipType(),
                 asset.getRentStartDate(),
@@ -293,6 +302,7 @@ public class AssetServiceImpl implements AssetService {
                 allocation.getId(),
                 allocation.getAsset().getAssetName(),
                 allocation.getAsset().getAssetCode(),
+                allocation.getAsset().getMakeModel(),
                 allocation.getAsset().getAssetCategory().getCategoryName(),
                 allocation.getAsset().getOwnershipType(),
                 allocation.getEmployee().getFullName(),

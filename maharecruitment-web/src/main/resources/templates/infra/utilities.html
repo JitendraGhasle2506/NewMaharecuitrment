@@ -193,20 +193,24 @@
                     <div class="asset-body">
                         <form autocomplete="off" th:action="@{/infra/utilities/assets/add}" method="post">
                             <div class="row g-3 mb-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label">Category <span class="text-danger">*</span></label>
                                     <select autocomplete="off" name="assetCategory.id" class="form-select" required>
                                         <option value="">Select Category</option>
                                         <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.categoryName}"></option>
                                     </select>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label">Asset Code / Serial No <span class="text-danger">*</span></label>
-                                    <input autocomplete="off" type="text" name="assetCode" class="form-control" required>
+                                    <input autocomplete="off" type="text" name="assetCode" class="form-control" maxlength="100" required>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label">Asset Name <span class="text-danger">*</span></label>
-                                    <input autocomplete="off" type="text" name="assetName" class="form-control" required placeholder="e.g. Dell Latitude 5420">
+                                    <input autocomplete="off" type="text" name="assetName" class="form-control" maxlength="150" required placeholder="e.g. Office Laptop">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Make / Model <span class="text-danger">*</span></label>
+                                    <input autocomplete="off" type="text" name="makeModel" class="form-control" maxlength="150" required placeholder="e.g. Dell Latitude 5420">
                                 </div>
                             </div>
                             <div class="row g-3 mb-3">

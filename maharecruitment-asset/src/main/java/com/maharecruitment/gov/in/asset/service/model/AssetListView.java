@@ -8,6 +8,7 @@ public record AssetListView(
         Long id,
         String assetCode,
         String assetName,
+        String makeModel,
         String categoryName,
         AssetOwnershipType ownershipType,
         LocalDate rentStartDate,

@@ -9,6 +9,7 @@ import com.maharecruitment.gov.in.asset.service.model.AssetListView;
 import com.maharecruitment.gov.in.asset.service.model.AssetOptionView;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +22,7 @@ public interface AssetService {
     List<AssetOptionView> getAvailableAssetOptions();
     AssetCategoryEntity createCategory(AssetCategoryEntity category);
     AssetEntity createAsset(AssetEntity asset, String actorUsername, String ipAddress);
-    AssetAllocationEntity allocateAsset(Long assetId, Long employeeId, String remarks,
+    AssetAllocationEntity allocateAsset(Long assetId, Long employeeId, LocalDate allocatedDate, String remarks,
             String actorUsername, String ipAddress);
     AssetAllocationEntity replaceAsset(Long allocationId, Long replacementAssetId, String replacementReason,
             String actorUsername, String ipAddress);

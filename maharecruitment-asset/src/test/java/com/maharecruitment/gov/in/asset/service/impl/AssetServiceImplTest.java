@@ -83,6 +83,7 @@ class AssetServiceImplTest {
         asset.setAssetCategory(submittedCategory);
         asset.setAssetCode("  LAP-100  ");
         asset.setAssetName("  Finance Laptop  ");
+        asset.setMakeModel("  Dell Latitude 5420  ");
         asset.setNotes("  New device  ");
         when(categoryRepository.findById(4L)).thenReturn(Optional.of(selectedCategory));
         when(assetRepository.save(asset)).thenReturn(asset);
@@ -92,6 +93,7 @@ class AssetServiceImplTest {
         assertThat(saved.getAssetCategory()).isSameAs(selectedCategory);
         assertThat(saved.getAssetCode()).isEqualTo("LAP-100");
         assertThat(saved.getAssetName()).isEqualTo("Finance Laptop");
+        assertThat(saved.getMakeModel()).isEqualTo("Dell Latitude 5420");
         assertThat(saved.getNotes()).isEqualTo("New device");
         assertThat(saved.getStatus()).isEqualTo("AVAILABLE");
         assertThat(saved.getOwnershipType()).isEqualTo(AssetOwnershipType.OWNED);
@@ -112,6 +114,7 @@ class AssetServiceImplTest {
         asset.setAssetCategory(category);
         asset.setAssetCode("LAP-200");
         asset.setAssetName("Laptop");
+        asset.setMakeModel("HP EliteBook 840");
         asset.setPurchaseDate(LocalDate.of(2026, 10, 9));
         asset.setWarrantyExpiryDate(LocalDate.of(2026, 10, 8));
         when(categoryRepository.findById(2L)).thenReturn(Optional.of(category));
@@ -141,13 +144,28 @@ class AssetServiceImplTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         employee.setEmployeeCode("EMP-12");
+        LocalDate selectedAllocationDate = LocalDate.of(2026, 10, 10);
         AssetAllocationEntity allocation = service.allocateAsset(
-                8L, 12L, " New laptop ", "infra.admin", "192.0.2.11");
+                8L, 12L, selectedAllocationDate, " New laptop ", "infra.admin", "192.0.2.11");
 
         assertThat(asset.getStatus()).isEqualTo("ALLOCATED");
         assertThat(allocation.getEmployee()).isSameAs(employee);
+        assertThat(allocation.getAllocatedDate()).isEqualTo(selectedAllocationDate);
         assertThat(allocation.getAllocationStatus()).isEqualTo("ASSIGNED");
         assertThat(allocation.getRemarks()).isEqualTo("New laptop");
+    }
+
+    @Test
+    void requiresAUserSelectedNonFutureAllocationDate() {
+        assertThatThrownBy(() -> service.allocateAsset(
+                8L, 12L, null, null, "infra.admin", "192.0.2.11"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Asset, employee and allocation date are required.");
+
+        assertThatThrownBy(() -> service.allocateAsset(
+                8L, 12L, LocalDate.now().plusDays(1), null, "infra.admin", "192.0.2.11"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Allocation date cannot be in the future.");
     }
 
     @Test
@@ -236,6 +254,7 @@ class AssetServiceImplTest {
         asset.setAssetCategory(category);
         asset.setAssetCode("RTR-1");
         asset.setAssetName("Rented Router");
+        asset.setMakeModel("Cisco ISR 1100");
         asset.setOwnershipType(AssetOwnershipType.RENTED);
         when(categoryRepository.findById(3L)).thenReturn(Optional.of(category));
 

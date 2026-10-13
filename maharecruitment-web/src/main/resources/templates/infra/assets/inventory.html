@@ -51,6 +51,7 @@
                     <tr>
                         <th class="ps-4">Asset Code</th>
                         <th>Name</th>
+                        <th>Make / Model</th>
                         <th>Category</th>
                         <th>Ownership</th>
                         <th>Rental Period</th>
@@ -63,6 +64,7 @@
                     <tr th:each="asset : ${assetPage.content}">
                         <td class="ps-4 fw-semibold" th:text="${asset.assetCode}"></td>
                         <td th:text="${asset.assetName}"></td>
+                        <td th:text="${asset.makeModel != null ? asset.makeModel : '-'}"></td>
                         <td th:text="${asset.categoryName}"></td>
                         <td>
                             <span class="badge"
@@ -77,7 +79,7 @@
                         <td><span class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${asset.status}"></span></td>
                     </tr>
                     <tr th:if="${assetPage.empty}">
-                        <td colspan="8" class="text-center text-muted py-5">No assets found.</td>
+                        <td colspan="9" class="text-center text-muted py-5">No assets found.</td>
                     </tr>
                     </tbody>
                 </table>

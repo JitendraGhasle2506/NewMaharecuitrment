@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Allocated Assets</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
     <link rel="stylesheet" th:href="@{/css/infra-asset-allocations.css(v='20261012-1')}">
 </head>
 <body class="infra-shell">
@@ -44,21 +46,27 @@
             <div class="card-body">
                 <form autocomplete="off" th:action="@{/infra/utilities/assets/allocate}" method="post">
                     <div class="row g-3 align-items-end">
-                        <div class="col-12 col-md-6 col-xl-4">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">Employee <span class="text-danger">*</span></label>
-                            <select name="employeeId" class="form-select" required>
+                            <select name="employeeId" class="form-select asset-search-select"
+                                    data-placeholder="Search and select employee" required>
                                 <option value="">Select Employee</option>
                                 <option th:each="employee : ${employees}" th:value="${employee.employeeId}"
                                         th:text="${employee.fullName + ' (' + employee.mobile + ')'}"></option>
                             </select>
                         </div>
-                        <div class="col-12 col-md-6 col-xl-4">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">Available Asset <span class="text-danger">*</span></label>
-                            <select name="assetId" class="form-select" required>
+                            <select name="assetId" class="form-select asset-search-select"
+                                    data-placeholder="Search and select asset" required>
                                 <option value="">Select Asset</option>
                                 <option th:each="asset : ${availableAssets}" th:value="${asset.id}"
-                                        th:text="${asset.assetName + ' (' + asset.assetCode + ')'}"></option>
+                                        th:text="${asset.assetName + ' - ' + (asset.makeModel != null ? asset.makeModel : 'Make/model unavailable') + ' (' + asset.assetCode + ')'}"></option>
                             </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-xl-2">
+                            <label class="form-label">Allocation Date <span class="text-danger">*</span></label>
+                            <input type="date" name="allocatedDate" class="form-control" required>
                         </div>
                         <div class="col-12 col-md-8 col-xl-3">
                             <label class="form-label">Remarks</label>
@@ -87,7 +95,7 @@
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input id="allocationSearch" name="search" type="search" class="form-control"
                                maxlength="150" th:value="${search}"
-                               placeholder="Serial no., employee or category">
+                               placeholder="Serial no., make/model, employee or category">
                     </div>
                     <label for="allocationPageSize" class="text-muted small mb-0">Rows</label>
                     <select id="allocationPageSize" name="size" class="form-select form-select-sm">
@@ -128,6 +136,7 @@
                             <div class="allocation-cell-value">
                                 <span class="fw-semibold" th:text="${allocation.assetName}"></span>
                                 <small class="d-block text-muted" th:text="${allocation.assetCode}"></small>
+                                <small class="d-block text-muted" th:text="${allocation.makeModel != null ? allocation.makeModel : 'Make/model unavailable'}"></small>
                             </div>
                         </td>
                         <td data-label="Ownership">
@@ -220,10 +229,12 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="replacementAssetId" class="form-label">New asset <span class="text-danger">*</span></label>
-                                    <select id="replacementAssetId" name="replacementAssetId" class="form-select" required>
+                                    <select id="replacementAssetId" name="replacementAssetId"
+                                            class="form-select asset-search-select"
+                                            data-placeholder="Search and select replacement asset" required>
                                         <option value="">Select available asset</option>
                                         <option th:each="asset : ${availableAssets}" th:value="${asset.id}"
-                                                th:text="${asset.assetName + ' (' + asset.assetCode + ')'}"></option>
+                                                th:text="${asset.assetName + ' - ' + (asset.makeModel != null ? asset.makeModel : 'Make/model unavailable') + ' (' + asset.assetCode + ')'}"></option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -284,6 +295,7 @@
         </div>
     </section>
 </th:block>
-<script th:src="@{/js/infra-asset-allocations.js(v='20261012-2')}"></script>
+<script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
+<script th:src="@{/js/infra-asset-allocations.js(v='20261013-1')}"></script>
 </body>
 </html>

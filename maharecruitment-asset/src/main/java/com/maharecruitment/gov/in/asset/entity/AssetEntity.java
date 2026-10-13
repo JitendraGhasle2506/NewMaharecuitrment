@@ -31,6 +31,9 @@ public class AssetEntity {
     @Column(name = "asset_name", nullable = false, length = 150)
     private String assetName;
 
+    @Column(name = "make_model", length = 150)
+    private String makeModel;
+
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;
 

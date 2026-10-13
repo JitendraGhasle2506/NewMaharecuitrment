@@ -9,9 +9,11 @@ import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.ui.Model;
@@ -100,10 +102,11 @@ public class InfraAssetController {
 
     @PostMapping("/allocate")
     public String allocateAsset(@RequestParam Long assetId, @RequestParam Long employeeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate allocatedDate,
             @RequestParam(required = false) String remarks, Principal principal,
             HttpServletRequest request, RedirectAttributes redirectAttributes) {
         try {
-            assetService.allocateAsset(assetId, employeeId, remarks,
+            assetService.allocateAsset(assetId, employeeId, allocatedDate, remarks,
                     actorUsername(principal), clientIp(request));
             redirectAttributes.addFlashAttribute("successMessage", "Asset allocated successfully.");
         } catch (IllegalArgumentException | IllegalStateException exception) {

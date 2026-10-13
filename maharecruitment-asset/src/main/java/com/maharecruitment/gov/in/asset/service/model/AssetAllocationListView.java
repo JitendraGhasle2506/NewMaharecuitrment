@@ -8,6 +8,7 @@ public record AssetAllocationListView(
         Long allocationId,
         String assetName,
         String assetCode,
+        String makeModel,
         String categoryName,
         AssetOwnershipType ownershipType,
         String employeeName,

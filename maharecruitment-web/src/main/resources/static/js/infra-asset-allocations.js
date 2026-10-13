@@ -19,6 +19,33 @@
         assetCode: document.getElementById('returnAssetCode')
     };
 
+    function initializeSearchableSelects() {
+        if (!window.jQuery?.fn?.select2) {
+            return;
+        }
+
+        window.jQuery('.asset-search-select').each(function () {
+            const select = window.jQuery(this);
+            if (select.hasClass('select2-hidden-accessible')) {
+                return;
+            }
+
+            const parentModal = select.closest('.modal');
+            const options = {
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: this.dataset.placeholder || 'Search and select',
+                allowClear: true
+            };
+            if (parentModal.length) {
+                options.dropdownParent = parentModal;
+            }
+            select.select2(options);
+        });
+    }
+
+    initializeSearchableSelects();
+
     document.addEventListener('click', (event) => {
         const replaceTrigger = event.target.closest('[data-asset-replace]');
         if (replaceTrigger && replaceModalElement) {
@@ -41,6 +68,11 @@
         }
     });
 
-    replaceModalElement?.addEventListener('hidden.bs.modal', () => replaceForm?.reset());
+    replaceModalElement?.addEventListener('hidden.bs.modal', () => {
+        replaceForm?.reset();
+        if (window.jQuery?.fn?.select2) {
+            window.jQuery('#replacementAssetId').val('').trigger('change.select2');
+        }
+    });
     returnModalElement?.addEventListener('hidden.bs.modal', () => returnForm?.reset());
 })();

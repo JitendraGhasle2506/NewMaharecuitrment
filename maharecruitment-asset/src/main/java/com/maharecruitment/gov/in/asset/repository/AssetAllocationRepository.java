@@ -29,6 +29,7 @@ public interface AssetAllocationRepository extends JpaRepository<AssetAllocation
             where allocation.allocationStatus = 'ASSIGNED'
               and (
                    lower(asset.assetCode) like concat('%', :searchTerm, '%')
+                   or lower(coalesce(asset.makeModel, '')) like concat('%', :searchTerm, '%')
                    or lower(employee.fullName) like concat('%', :searchTerm, '%')
                    or lower(category.categoryName) like concat('%', :searchTerm, '%')
               )
@@ -42,6 +43,7 @@ public interface AssetAllocationRepository extends JpaRepository<AssetAllocation
                     where allocation.allocationStatus = 'ASSIGNED'
                       and (
                            lower(asset.assetCode) like concat('%', :searchTerm, '%')
+                           or lower(coalesce(asset.makeModel, '')) like concat('%', :searchTerm, '%')
                            or lower(employee.fullName) like concat('%', :searchTerm, '%')
                            or lower(category.categoryName) like concat('%', :searchTerm, '%')
                       )
