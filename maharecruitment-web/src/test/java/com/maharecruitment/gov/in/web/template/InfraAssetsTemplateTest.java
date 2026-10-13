@@ -62,6 +62,7 @@ class InfraAssetsTemplateTest {
                 .contains("data-placeholder=\"Search and select asset\"")
                 .contains("data-placeholder=\"Search and select replacement asset\"")
                 .contains("@{/assets/vendor/select2/select2.min.css}")
+                .contains("@{/assets/vendor/jquery/jquery-3.7.1.min.js}")
                 .contains("@{/assets/vendor/select2/select2.min.js}")
                 .contains("Serial no., make/model, employee or category")
                 .contains("search=${search}")
@@ -77,7 +78,7 @@ class InfraAssetsTemplateTest {
                 .contains("id=\"returnAssetModal\"")
                 .contains("modal-fullscreen-sm-down")
                 .contains("@{/css/infra-asset-allocations.css(v='20261012-1')}")
-                .contains("@{/js/infra-asset-allocations.js(v='20261013-1')}")
+                .contains("@{/js/infra-asset-allocations.js(v='20261013-2')}")
                 .doesNotContain("onclick=", "th:inline=\"javascript\"")
                 .doesNotContain("Recent Asset Activity");
         assertThat(allocationInteractions)
