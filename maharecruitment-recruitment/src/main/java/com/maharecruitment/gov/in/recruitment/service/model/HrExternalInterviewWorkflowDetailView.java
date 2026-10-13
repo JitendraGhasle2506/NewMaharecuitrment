@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.service.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class HrExternalInterviewWorkflowDetailView {
     private String designationName;
     private String levelCode;
     private String joiningTime;
+    private LocalDate tentativeJoiningDate;
     private String resumeFilePath;
     private String finalDecisionStatus;
     private LocalDateTime interviewDateTime;

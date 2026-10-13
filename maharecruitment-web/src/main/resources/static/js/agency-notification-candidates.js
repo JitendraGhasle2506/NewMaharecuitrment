@@ -87,7 +87,7 @@
             '</select><div class="invalid-feedback">Select Yes or No.</div></td>' +
             '<td><input type="date" class="form-control last-working-day-input" name="candidates[' + index + '].lastWorkingDay" disabled>' +
             '<div class="invalid-feedback">Last working day is required when resigned.</div></td>' +
-            '<td><select class="form-select" name="candidates[' + index + '].joiningTime" required>' +
+            '<td><select class="form-select joining-time-input" name="candidates[' + index + '].joiningTime" required>' +
             '<option value="">Select</option>' +
             '<option value="Immediate">Immediate</option>' +
             '<option value="15 days">15 Days</option>' +
@@ -95,6 +95,7 @@
             '<option value="45 days">45 Days</option>' +
             '<option value="60 days">60 Days</option>' +
             "</select></td>" +
+            '<td><input type="date" class="form-control tentative-joining-date-display" aria-label="Tentative joining date" readonly></td>' +
             '<td><input type="file" class="form-control resume-file-input" name="candidates[' + index + '].resumeFile" accept=".pdf" required></td>' +
             '<td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm remove-candidate-row">Remove</button></td>';
 
@@ -200,8 +201,54 @@
     tableBody.addEventListener("change", function (event) {
         if (event.target.classList.contains("resigned-status-input")) {
             updateResignationFields(event.target.closest(".candidate-input-row"));
+            return;
+        }
+        if (event.target.classList.contains("last-working-day-input")
+                || event.target.classList.contains("joining-time-input")) {
+            updateTentativeJoiningDate(event.target.closest(".candidate-input-row"));
         }
     });
+
+    function formatLocalDate(date) {
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, "0");
+        var day = String(date.getDate()).padStart(2, "0");
+        return year + "-" + month + "-" + day;
+    }
+
+    function updateTentativeJoiningDate(row) {
+        if (!row) {
+            return;
+        }
+
+        var resignedSelect = row.querySelector(".resigned-status-input");
+        var lastWorkingDayInput = row.querySelector(".last-working-day-input");
+        var joiningTimeInput = row.querySelector(".joining-time-input");
+        var tentativeDateDisplay = row.querySelector(".tentative-joining-date-display");
+        if (!joiningTimeInput || !tentativeDateDisplay) {
+            return;
+        }
+
+        var joiningTime = joiningTimeInput.value;
+        var resigned = resignedSelect && resignedSelect.value === "true";
+        if (!joiningTime || (resigned && (!lastWorkingDayInput || !lastWorkingDayInput.value))) {
+            tentativeDateDisplay.value = "";
+            return;
+        }
+
+        var baseDate;
+        if (lastWorkingDayInput && lastWorkingDayInput.value) {
+            var dateParts = lastWorkingDayInput.value.split("-").map(Number);
+            baseDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+        } else {
+            baseDate = new Date();
+            baseDate.setHours(0, 0, 0, 0);
+        }
+
+        var waitDays = joiningTime === "Immediate" ? 0 : parseInt(joiningTime, 10);
+        baseDate.setDate(baseDate.getDate() + (Number.isNaN(waitDays) ? 0 : waitDays));
+        tentativeDateDisplay.value = formatLocalDate(baseDate);
+    }
 
     function updateResignationFields(row) {
         if (!row) {
@@ -222,6 +269,7 @@
             lastWorkingDayInput.setCustomValidity("");
             lastWorkingDayInput.classList.remove("is-invalid");
         }
+        updateTentativeJoiningDate(row);
     }
 
     function updateAllResignationFields() {

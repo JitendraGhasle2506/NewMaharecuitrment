@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.service.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
@@ -25,6 +26,7 @@ public class DepartmentSubmittedCandidateView {
     private BigDecimal totalExperience;
     private BigDecimal relevantExperience;
     private String joiningTime;
+    private LocalDate tentativeJoiningDate;
     private String resumeOriginalName;
     private String resumeFilePath;
     private RecruitmentCandidateStatus candidateStatus;

@@ -131,6 +131,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .totalExperience(candidate.getTotalExperience())
                 .relevantExperience(candidate.getRelevantExperience())
                 .joiningTime(candidate.getJoiningTime())
+                .tentativeJoiningDate(candidate.getTentativeJoiningDate())
                 .candidateStatus(candidate.getCandidateStatus())
                 .interviewDateTime(candidate.getInterviewDateTime())
                 .interviewTimeSlot(candidate.getInterviewTimeSlot())

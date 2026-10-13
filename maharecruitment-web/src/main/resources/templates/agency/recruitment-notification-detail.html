@@ -170,6 +170,7 @@
                                         <th>Resigned?</th>
                                         <th>Last Working Day</th>
                                         <th>Joining Time</th>
+                                        <th>Tentative Joining Date</th>
                                         <th>Resume (PDF)</th>
                                         <th>Action</th>
                                     </tr>
@@ -257,7 +258,7 @@
                                             <div class="invalid-feedback">Last working day is required when resigned.</div>
                                         </td>
                                         <td>
-                                            <select autocomplete="off" class="form-select" th:field="*{candidates[__${rowStat.index}__].joiningTime}"
+                                            <select autocomplete="off" class="form-select joining-time-input" th:field="*{candidates[__${rowStat.index}__].joiningTime}"
                                                 required>
                                                 <option value="">Select</option>
                                                 <option value="Immediate">Immediate</option>
@@ -266,6 +267,10 @@
                                                 <option value="45 days">45 Days</option>
                                                 <option value="60 days">60 Days</option>
                                             </select>
+                                        </td>
+                                        <td>
+                                            <input type="date" class="form-control tentative-joining-date-display"
+                                                aria-label="Tentative joining date" readonly>
                                         </td>
                                         <td>
                                             <input autocomplete="off" type="file" class="form-control resume-file-input"
@@ -299,6 +304,7 @@
                                     <th>Current CTC (₹)</th>
                                     <th>Resignation</th>
                                     <th>Joining Time</th>
+                                    <th>Tentative Joining Date</th>
                                     <th>Status</th>
                                     <th>Resume</th>
                                     <th>Interview Details</th>
@@ -307,7 +313,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(submittedCandidates)}">
-                                    <td colspan="11" class="text-center text-muted">
+                                    <td colspan="12" class="text-center text-muted">
                                         No candidates submitted yet.
                                     </td>
                                 </tr>
@@ -338,6 +344,7 @@
                                         </small>
                                     </td>
                                     <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
+                                    <td th:text="${candidate.tentativeJoiningDate != null ? #temporals.format(candidate.tentativeJoiningDate, 'dd-MM-yyyy') : '-'}">-</td>
                                     <td>
                                         <div th:if="${candidate.finalDecisionStatus != null}">
                                             <span class="badge"

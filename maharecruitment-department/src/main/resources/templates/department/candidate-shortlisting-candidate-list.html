@@ -231,6 +231,7 @@
                                     <th>Designation</th>
                                     <th>Experience</th>
                                     <th>Joining Time</th>
+                                    <th>Tentative Joining Date</th>
                                     <th>Status</th>
                                     <th>Resume</th>
                                     <th>Interview Details</th>
@@ -240,7 +241,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(shortlistingDetail.candidates)}">
-                                    <td colspan="11" class="empty-state">
+                                    <td colspan="12" class="empty-state">
                                         No candidates submitted for this project.
                                     </td>
                                 </tr>
@@ -274,6 +275,7 @@
                                         <span th:text="${candidate.relevantExperience != null ? candidate.relevantExperience : 0}">0</span>
                                     </td>
                                     <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
+                                    <td th:text="${candidate.tentativeJoiningDate != null ? #temporals.format(candidate.tentativeJoiningDate, 'dd-MM-yyyy') : '-'}">-</td>
                                     <td>
                                         <span class="status-chip"
                                               th:classappend="${candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' status-shortlisted' :

@@ -152,6 +152,7 @@ public class HrExternalInterviewServiceImpl implements HrExternalInterviewServic
                 .designationName(entity.getDesignationVacancy() != null && entity.getDesignationVacancy().getDesignationMst() != null ? entity.getDesignationVacancy().getDesignationMst().getDesignationName() : "N/A")
                 .levelCode(entity.getDesignationVacancy() != null ? entity.getDesignationVacancy().getLevelCode() : "N/A")
                 .joiningTime(entity.getJoiningTime())
+                .tentativeJoiningDate(entity.getTentativeJoiningDate())
                 .resumeFilePath(entity.getResumeFilePath())
                 .finalDecisionStatus(entity.getFinalDecisionStatus())
                 .interviewDateTime(entity.getInterviewDateTime())

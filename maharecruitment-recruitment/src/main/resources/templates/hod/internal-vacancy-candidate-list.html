@@ -287,6 +287,10 @@
                                                 <i class="fa-regular fa-clock" aria-hidden="true"></i>
                                                 <span th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</span>
                                             </div>
+                                            <div class="joining-time">
+                                                <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                                <span th:text="${candidate.tentativeJoiningDate != null ? 'Tentative: ' + #temporals.format(candidate.tentativeJoiningDate, 'dd-MM-yyyy') : 'Tentative: -'}">Tentative: -</span>
+                                            </div>
                                         </td>
                                         <td data-label="Application">
                                             <span class="candidate-status" th:classappend="${' ' + candidate.candidateStatusCssClass}"

@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.service.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class DepartmentInterviewWorkflowDetailView {
     private BigDecimal totalExperience;
     private BigDecimal relevantExperience;
     private String joiningTime;
+    private LocalDate tentativeJoiningDate;
     private RecruitmentCandidateStatus candidateStatus;
     private LocalDateTime interviewDateTime;
     private String interviewTimeSlot;

@@ -191,6 +191,7 @@ public class ExternalVacancyPanelReviewServiceImpl implements ExternalVacancyPan
                 .designationName(designationName)
                 .levelCode(levelCode)
                 .joiningTime(entity.getJoiningTime())
+                .tentativeJoiningDate(entity.getTentativeJoiningDate())
                 .resumeFilePath(entity.getResumeFilePath())
                 .agencyName(agencyName)
                 .interviewDateTime(entity.getInterviewDateTime())

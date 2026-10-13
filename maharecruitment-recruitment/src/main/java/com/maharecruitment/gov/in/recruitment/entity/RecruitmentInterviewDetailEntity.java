@@ -22,6 +22,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -91,6 +92,29 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
 
     @Column(name = "joining_time", nullable = false, length = 50)
     private String joiningTime;
+
+    /**
+     * Returns the candidate's expected joining date. A supplied last working day
+     * takes precedence over the submission date when applying the selected wait.
+     */
+    @Transient
+    public LocalDate getTentativeJoiningDate() {
+        LocalDate baseDate = lastWorkingDay != null
+                ? lastWorkingDay
+                : getCreatedDateTime() != null ? getCreatedDateTime().toLocalDate() : LocalDate.now();
+
+        if (!StringUtils.hasText(joiningTime) || "Immediate".equalsIgnoreCase(joiningTime.trim())) {
+            return baseDate;
+        }
+
+        return switch (joiningTime.trim().toLowerCase()) {
+            case "15 days" -> baseDate.plusDays(15);
+            case "30 days" -> baseDate.plusDays(30);
+            case "45 days" -> baseDate.plusDays(45);
+            case "60 days" -> baseDate.plusDays(60);
+            default -> baseDate;
+        };
+    }
 
     @Column(name = "resume_original_name", nullable = false, length = 255)
     private String resumeOriginalName;

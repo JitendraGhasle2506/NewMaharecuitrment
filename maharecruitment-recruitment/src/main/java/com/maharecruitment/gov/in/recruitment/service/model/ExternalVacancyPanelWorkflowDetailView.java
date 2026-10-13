@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.service.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import lombok.Builder;
@@ -22,6 +23,7 @@ public class ExternalVacancyPanelWorkflowDetailView {
     private String designationName;
     private String levelCode;
     private String joiningTime;
+    private LocalDate tentativeJoiningDate;
     private String resumeFilePath;
     
     private String agencyName;

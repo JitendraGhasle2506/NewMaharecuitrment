@@ -35,6 +35,8 @@ public class AgencySubmittedCandidateView {
 
     private String joiningTime;
 
+    private LocalDate tentativeJoiningDate;
+
     private Long vacancyId;
 
     private String designationName;

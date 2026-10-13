@@ -587,6 +587,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .resigned(candidate.getResigned())
                 .lastWorkingDay(candidate.getLastWorkingDay())
                 .joiningTime(candidate.getJoiningTime())
+                .tentativeJoiningDate(candidate.getTentativeJoiningDate())
                 .vacancyId(candidate.getDesignationVacancy().getRecruitmentDesignationVacancyId())
                 .designationName(designationName)
                 .levelCode(candidate.getDesignationVacancy().getLevelCode())

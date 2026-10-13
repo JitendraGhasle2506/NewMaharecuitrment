@@ -230,6 +230,7 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
                 .totalExperience(candidate.getTotalExperience())
                 .relevantExperience(candidate.getRelevantExperience())
                 .joiningTime(candidate.getJoiningTime())
+                .tentativeJoiningDate(candidate.getTentativeJoiningDate())
                 .resumeOriginalName(candidate.getResumeOriginalName())
                 .resumeFilePath(candidate.getResumeFilePath())
                 .candidateStatus(candidate.getCandidateStatus())
