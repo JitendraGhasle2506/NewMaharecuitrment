@@ -55,7 +55,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private static final String ACTIVE_FLAG_Y = "Y";
     private static final String INTERNAL = "INTERNAL";
     private static final String MAHAIT = "MAHAIT";
-    private static final Set<String> CELL_AUTHORITY_RECRUITMENT_TYPES = Set.of(INTERNAL, MAHAIT);
+    private static final Set<String> REPORTING_EMPLOYEE_RECRUITMENT_TYPES = Set.of(INTERNAL, MAHAIT);
     private static final Set<String> CELL_AUTHORITY_ROLES = Set.of(
             "ROLE_EMPLOYEE",
             "ROLE_AUDITOR",
@@ -129,7 +129,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getCellAuthorityUsers() {
         List<EmployeeEntity> employees = employeeRepository
-                .findActiveCellAuthorityEmployees(CELL_AUTHORITY_RECRUITMENT_TYPES);
+                .findActiveCellAuthorityEmployees(REPORTING_EMPLOYEE_RECRUITMENT_TYPES);
         Map<String, User> usersByEmail = loadActiveUsersByEmployeeEmail(employees);
         Map<String, User> usersByMobile = loadActiveUsersByEmployeeMobile(employees);
         Map<Long, Map.Entry<EmployeeEntity, User>> eligibleUsers = new LinkedHashMap<>();
@@ -261,7 +261,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private void addOtherEmployeeAuthorities(Map<Long, String> authorityTypesByUserId) {
         addAuthorityEmployees(
                 authorityTypesByUserId,
-                employeeRepository.findActiveCellAuthorityEmployees(CELL_AUTHORITY_RECRUITMENT_TYPES),
+                employeeRepository.findActiveCellAuthorityEmployees(REPORTING_EMPLOYEE_RECRUITMENT_TYPES),
                 TYPE_OTHER);
     }
 
@@ -651,7 +651,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         }
 
         List<EmployeeEntity> employees = employeeRepository
-                .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(INTERNAL, ACTIVE);
+                .findActiveEmployeesByRecruitmentTypes(REPORTING_EMPLOYEE_RECRUITMENT_TYPES);
         Map<Long, EmployeeReportingMappingEntity> mappingsByEmployeeId =
                 getLatestReportingMappingsByEmployeeId(employees);
         Long excludedAuthorityEmployeeId = authorityEmployeeId;
@@ -769,8 +769,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getEmployeeReportingAssignments() {
         List<EmployeeEntity> employees = employeeRepository
-                .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
-                        INTERNAL, ACTIVE);
+                .findActiveEmployeesByRecruitmentTypes(REPORTING_EMPLOYEE_RECRUITMENT_TYPES);
         if (employees.isEmpty()) {
             return List.of();
         }
@@ -1179,11 +1178,11 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         }
 
         if (employeeIds == null || employeeIds.isEmpty()) {
-            throw new IllegalArgumentException("At least one internal employee must be selected.");
+            throw new IllegalArgumentException("At least one Internal or MAHAIT employee must be selected.");
         }
         LinkedHashSet<Long> distinctEmployeeIds = new LinkedHashSet<>(employeeIds);
         if (distinctEmployeeIds.contains(null)) {
-            throw new IllegalArgumentException("A valid internal employee must be selected.");
+            throw new IllegalArgumentException("A valid Internal or MAHAIT employee must be selected.");
         }
 
         List<EmployeeEntity> employees = employeeRepository.findAllById(distinctEmployeeIds);
@@ -1214,8 +1213,11 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             if (!ACTIVE.equalsIgnoreCase(employee.getStatus())) {
                 throw new IllegalArgumentException("Inactive employees cannot be mapped.");
             }
-            if (!INTERNAL.equalsIgnoreCase(employee.getRecruitmentType())) {
-                throw new IllegalArgumentException("External employees cannot be mapped.");
+            String recruitmentType = employee.getRecruitmentType() == null
+                    ? ""
+                    : employee.getRecruitmentType().trim().toUpperCase(Locale.ROOT);
+            if (!REPORTING_EMPLOYEE_RECRUITMENT_TYPES.contains(recruitmentType)) {
+                throw new IllegalArgumentException("Only Internal or MAHAIT employees can be mapped.");
             }
             if (authorityEmployeeId != null && authorityEmployeeId.equals(employee.getEmployeeId())) {
                 throw new IllegalArgumentException(

@@ -400,6 +400,21 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
+    void mahaitEmployeeCanBeMappedToReportingAuthority() {
+        EmployeeEntity employee = employee(122L, "Vijay Employee", "EMP122", "MAHAIT", "ACTIVE");
+        stubValidHodAndEmployees(7L, employee);
+        when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.empty());
+        when(mappingRepository.findByEmployeeIdIn(List.of(122L))).thenReturn(List.of());
+
+        service.saveMapping(7L, null, null, null, List.of(122L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        assertEquals(122L, captor.getValue().getFirst().getEmployeeId());
+    }
+
+    @Test
     void stmAllowsMultipleManagersToBeMappedDirectlyToAuthority() {
         EmployeeEntity firstManager = employee(50L, "First STM", "EMP050", "INTERNAL", "ACTIVE");
         EmployeeEntity secondManager = employee(51L, "Second STM", "EMP051", "INTERNAL", "ACTIVE");
@@ -806,7 +821,7 @@ class ReportingManagerServiceImplTest {
     void reportingAssignmentsIncludeCellEmployeesAndIdentifyManagers() {
         EmployeeEntity manager = employee(50L, "Project Manager", "EMP050", "INTERNAL", "ACTIVE");
         EmployeeEntity employee = employee(101L, "Managed Employee", "EMP101", "INTERNAL", "ACTIVE");
-        EmployeeEntity cellEmployee = employee(102L, "Cell Employee", "EMP102", "INTERNAL", "ACTIVE");
+        EmployeeEntity cellEmployee = employee(102L, "Cell Employee", "EMP102", "MAHAIT", "ACTIVE");
         EmployeeReportingMappingEntity managerMapping = reportingMapping(900L, 50L, 7L, "PM", null);
         EmployeeReportingMappingEntity employeeMapping = reportingMapping(901L, 101L, 7L, "PM", 50L);
         CellMaster cell = CellMaster.builder().cellId(11L).cellName("Applications").build();
@@ -816,8 +831,8 @@ class ReportingManagerServiceImplTest {
         CellReportingAuthorityMappingEntity cellAuthority = new CellReportingAuthorityMappingEntity();
         cellAuthority.setCell(cell);
         cellAuthority.setAuthorityUserId(8L);
-        when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
-                "INTERNAL", "ACTIVE")).thenReturn(List.of(manager, employee, cellEmployee));
+        when(employeeRepository.findActiveEmployeesByRecruitmentTypes(Set.of("INTERNAL", "MAHAIT")))
+                .thenReturn(List.of(manager, employee, cellEmployee));
         when(mappingRepository.findByEmployeeIdIn(Set.of(50L, 101L, 102L)))
                 .thenReturn(List.of(managerMapping, employeeMapping));
         when(employeeCellMappingRepository.findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAsc(
@@ -943,8 +958,8 @@ class ReportingManagerServiceImplTest {
         when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
         when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(hodEmployee));
         when(mappingRepository.findByEmployeeIdIn(Set.of(5L, 10L, 11L))).thenReturn(List.of(existing));
-        when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
-                "INTERNAL", "ACTIVE")).thenReturn(List.of(available, hodEmployee, mapped));
+        when(employeeRepository.findActiveEmployeesByRecruitmentTypes(Set.of("INTERNAL", "MAHAIT")))
+                .thenReturn(List.of(available, hodEmployee, mapped));
 
         List<Map<String, Object>> result = service.getInternalEmployees(null, 7L, "OTHER", null);
 
@@ -963,8 +978,8 @@ class ReportingManagerServiceImplTest {
         EmployeeEntity manager = employee(50L, "Manager", "EMP050", "INTERNAL", "ACTIVE");
         when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
         when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(authority));
-        when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
-                "INTERNAL", "ACTIVE")).thenReturn(List.of(authority, unassigned, directReport, elsewhere, managed, manager));
+        when(employeeRepository.findActiveEmployeesByRecruitmentTypes(Set.of("INTERNAL", "MAHAIT")))
+                .thenReturn(List.of(authority, unassigned, directReport, elsewhere, managed, manager));
         when(mappingRepository.findByEmployeeIdIn(Set.of(5L, 10L, 11L, 12L, 13L, 50L))).thenReturn(List.of(
                 reportingMapping(900L, 11L, 7L, storedManagerType, null),
                 reportingMapping(901L, 12L, 8L, "OTHER", null),
@@ -987,8 +1002,8 @@ class ReportingManagerServiceImplTest {
     void editingStillIncludesEmployeeWithAnAssignedManager() {
         EmployeeEntity employee = employee(11L, "Beta", "EMP011", "INTERNAL", "ACTIVE");
         when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
-        when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
-                "INTERNAL", "ACTIVE")).thenReturn(List.of(employee));
+        when(employeeRepository.findActiveEmployeesByRecruitmentTypes(Set.of("INTERNAL", "MAHAIT")))
+                .thenReturn(List.of(employee));
         when(mappingRepository.findByEmployeeIdIn(Set.of(11L)))
                 .thenReturn(List.of(reportingMapping(900L, 11L, 7L, "OTHER", 60L)));
 
