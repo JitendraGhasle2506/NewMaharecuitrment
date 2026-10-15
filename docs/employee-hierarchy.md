@@ -10,7 +10,7 @@ To open a particular employee as the root, use `?hodEmployeeId=1001` (an **emplo
 
 - Uses `employee_master` and `employee_reporting_mapping`, not the separate position/team chart.
 - `manager_employee_id` identifies the immediate manager. If absent, `hod_user_id` is resolved through `employee_master.user_id`.
-- HOD choices include active employees with `ROLE_HOD` or whose user ID is referenced as an HOD in the reporting mappings. A user must have a linked employee record to appear.
+- HOD choices include active employees whose linked user has any of `ROLE_STM`, `ROLE_COO`, `ROLE_HOD`, `ROLE_MD`, `ROLE_CTO`, or `ROLE_CFO`. Reporting mappings alone do not qualify a user for the dropdown. A user must have a linked employee record to appear.
 - The newest mapping for an employee and reporting type wins. Invalid/self/circular links are omitted; an inactive/missing manager does not cause a report to be attached to another employee.
 - Only ACTIVE employees with an active linked account (or no linked account) appear. Completed/relieved exits and non-cancelled/non-rejected exits on or before today are excluded. Pending future exits remain visible.
 - Department/designation filters preserve connecting ancestors, displayed with a dashed border.

@@ -26,8 +26,8 @@ public interface EmployeeHierarchyRepository extends Repository<EmployeeEntity, 
                    d.departmentName as department, des.designationId as designationId,
                    des.designationName as designation,
                    case when exists (select hu.id from User hu join hu.roles role
-                       where hu.id = u.id and upper(role.name) = 'ROLE_HOD')
-                       or exists (select m.mappingId from EmployeeReportingMappingEntity m where m.hodUserId = u.id)
+                       where hu.id = u.id and upper(role.name) in
+                           ('ROLE_STM', 'ROLE_COO', 'ROLE_HOD', 'ROLE_MD', 'ROLE_CTO', 'ROLE_CFO'))
                        then true else false end as hod,
                    case when e.photoPath is not null or pre.photoFilePath is not null
                        or exists (select p.id from EmployeeProfile p where p.employee = e and p.photoPath is not null)
