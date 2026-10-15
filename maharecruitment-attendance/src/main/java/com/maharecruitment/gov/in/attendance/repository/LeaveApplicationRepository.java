@@ -70,9 +70,25 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
     @Query("""
             select leave from LeaveApplicationEntity leave
+            join EmployeeEntity employee on employee.employeeId = leave.employeeId
+            left join employee.designation designation
+            where leave.status = 'PENDING' and leave.employeeId in :employeeIds
+              and (:searchPattern is null or upper(employee.fullName) like :searchPattern
+                   or upper(employee.employeeCode) like :searchPattern or upper(designation.designationName) like :searchPattern)
+              and (:searchDate is null or (leave.startDate <= :searchDate and leave.endDate >= :searchDate)
+                   or leave.compOffWorkDate = :searchDate)
+            order by leave.applicationDate desc
+            """)
+    List<LeaveApplicationEntity> findPendingAdditionalChargeCandidates(@Param("employeeIds") Collection<Long> employeeIds,
+            @Param("searchPattern") String searchPattern, @Param("searchDate") LocalDate searchDate);
+
+    @Query("""
+            select leave from LeaveApplicationEntity leave
             where leave.status in :statuses
               and (
-                    leave.managerApproverUserId = :actorUserId
+                    leave.managerDecisionByUserId = :actorUserId
+                 or leave.hodDecisionByUserId = :actorUserId
+                 or leave.managerApproverUserId = :actorUserId
                  or leave.hodApproverUserId = :actorUserId
                  or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
                      and leave.employeeId in :legacyEmployeeIds)
@@ -90,7 +106,9 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             left join employee.designation designation
             where leave.status in ('APPROVED', 'REJECTED')
               and (
-                    leave.managerApproverUserId = :actorUserId
+                    leave.managerDecisionByUserId = :actorUserId
+                 or leave.hodDecisionByUserId = :actorUserId
+                 or leave.managerApproverUserId = :actorUserId
                  or leave.hodApproverUserId = :actorUserId
                  or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
                      and leave.employeeId in :legacyEmployeeIds)
@@ -110,7 +128,9 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             left join employee.designation designation
             where leave.status in ('APPROVED', 'REJECTED')
               and (
-                    leave.managerApproverUserId = :actorUserId
+                    leave.managerDecisionByUserId = :actorUserId
+                 or leave.hodDecisionByUserId = :actorUserId
+                 or leave.managerApproverUserId = :actorUserId
                  or leave.hodApproverUserId = :actorUserId
                  or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
                      and leave.employeeId in :legacyEmployeeIds)

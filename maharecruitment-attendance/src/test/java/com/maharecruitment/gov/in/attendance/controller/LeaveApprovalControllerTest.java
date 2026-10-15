@@ -3,7 +3,7 @@ package com.maharecruitment.gov.in.attendance.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -36,11 +36,13 @@ class LeaveApprovalControllerTest {
     private LeaveApprovalController controller;
 
     @Test
-    void leaveTabLoadsOnlyPendingLeaveData() {
+    void leaveTabLoadsBothAuthorizedCountsWithoutLoadingHistory() {
         LocalDate date = LocalDate.of(2026, 10, 7);
         MockHttpSession session = authenticatedSession(7L);
         ExtendedModelMap model = new ExtendedModelMap();
         when(leaveApplicationService.getPendingLeavesForHOD(7L, "Asha", date)).thenReturn(List.of());
+        var tour = mock(com.maharecruitment.gov.in.attendance.dto.TourApplicationHODDTO.class);
+        when(tourApplicationService.getPendingToursForHOD(7L, "Asha", date)).thenReturn(List.of(tour));
 
         String view = controller.showLeaveApprovals("Asha", date, "leave", 0, 0, model, session);
 
@@ -50,11 +52,16 @@ class LeaveApprovalControllerTest {
         verify(leaveApplicationService, never()).getProcessedLeavesForHOD(
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
-        verifyNoInteractions(tourApplicationService);
+        assertThat(model.get("pendingLeaves")).isEqualTo(List.of());
+        assertThat(model.get("pendingTours")).isEqualTo(List.of(tour));
+        verify(tourApplicationService).getPendingToursForHOD(7L, "Asha", date);
+        verify(tourApplicationService, never()).getProcessedToursForHOD(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    void historyTabLoadsOnlyRequestedDatabasePages() {
+    void historyTabLoadsRequestedPagesAndBothPendingCounts() {
         MockHttpSession session = authenticatedSession(7L);
         ExtendedModelMap model = new ExtendedModelMap();
         PageRequest leavePage = PageRequest.of(2, 10);
@@ -68,12 +75,8 @@ class LeaveApprovalControllerTest {
 
         verify(leaveApplicationService).getProcessedLeavesForHOD(7L, null, null, leavePage);
         verify(tourApplicationService).getProcessedToursForHOD(7L, null, null, tourPage);
-        verify(leaveApplicationService, never()).getPendingLeavesForHOD(
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any());
-        verify(tourApplicationService, never()).getPendingToursForHOD(
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any());
+        verify(leaveApplicationService).getPendingLeavesForHOD(7L, null, null);
+        verify(tourApplicationService).getPendingToursForHOD(7L, null, null);
     }
 
     private MockHttpSession authenticatedSession(Long userId) {

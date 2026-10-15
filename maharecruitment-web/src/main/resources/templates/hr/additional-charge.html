@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Additional charge</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
+    <link rel="stylesheet" th:href="@{/css/additional-charge.css(v='20261015-2')}">
+    <script defer th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
+    <script defer th:src="@{/assets/vendor/select2/select2.min.js}"></script>
+    <script defer th:src="@{/js/additional-charge.js(v='20261015-3')}"></script>
+</head>
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Additional charge', ~{::section})}">
+    <section class="ac-page">
+        <header class="ac-heading">
+            <div><span class="ac-eyebrow">HUMAN RESOURCES / ASSIGNMENTS</span><h1>Additional charge</h1>
+                <p>Assign extra responsibilities while keeping the person's primary position.</p></div>
+            <a class="btn btn-outline-secondary" th:href="@{/hr/reportingManager}">Back to reporting manager</a>
+        </header>
+        <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+        <div class="ac-notice"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span>Select a person to replace to map their current direct reports under the charge holder for the effective dates. Their team branches follow them. Leave and tour approvals are covered within the selected scope—one cell, or all cells when Cell is blank—at the replaced person's approval stage.</span></div>
+        <div class="ac-layout">
+            <article class="ac-panel">
+                <div class="ac-panel-title"><span class="ac-step">01</span><div><h2>Assign a charge</h2><p>Fields marked * are required.</p></div></div>
+                <form id="additionalChargeForm" method="post" th:action="@{/hr/additional-charge}" th:object="${chargeForm}" th:attr="data-team-api=@{/hr/additional-charge/team-preview}">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <div class="alert alert-danger" th:if="${#fields.hasAnyErrors()}" role="alert" tabindex="-1" id="acErrors">
+                        <strong>Check the assignment details.</strong>
+                        <ul class="mb-0"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
+                    </div>
+                    <div class="ac-field"><label for="assignee">Employee or user <span aria-hidden="true">*</span></label>
+                        <select id="assignee" class="form-select ac-searchable" th:field="*{assignee}" required>
+                            <option value="">Select an employee or user</option>
+                            <optgroup label="Employees"><option th:each="person : ${employees}" th:value="${'E:' + person.id}" th:text="${person.label}"></option></optgroup>
+                            <optgroup label="Users without an employee record"><option th:each="person : ${users}" th:value="${'U:' + person.id}" th:text="${person.label}"></option></optgroup>
+                        </select><small>Active employees and active user accounts are available.</small></div>
+                    <div class="ac-field"><label for="position">Additional position / charge *</label>
+                        <select id="position" class="form-select ac-searchable" th:field="*{position}" required>
+                            <option value="">Select a role for the additional charge</option>
+                            <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"></option>
+                        </select></div>
+                    <div class="ac-field"><label for="scope">Cell <small class="d-inline">(optional)</small></label>
+                        <select id="scope" class="form-select ac-searchable" th:field="*{scope}">
+                            <option value="">All cells</option>
+                            <option th:each="cell : ${cells}" th:value="${'C:' + cell.cellId}" th:text="${cell.wing.wingName + ' / ' + cell.cellName}"></option>
+                        </select><small>Leave blank to cover the selected person's team across all cells. Select a cell to limit team and approval coverage.</small></div>
+                    <div class="ac-field"><label for="replaces">Person being replaced</label>
+                        <select id="replaces" class="form-select ac-searchable" th:field="*{replaces}" aria-describedby="replacementHelp">
+                            <option value="">No replacement / additional duties only</option>
+                            <optgroup label="Employees"><option th:each="person : ${replacementEmployees}" th:value="${'E:' + person.id}" th:text="${person.label}"></option></optgroup>
+                            <optgroup label="Users without an employee record"><option th:each="person : ${replacementUsers}" th:value="${'U:' + person.id}" th:text="${person.label}"></option></optgroup>
+                        </select><small id="replacementHelp">Optional. The charge holder needs an active employee record and user account for team and approval coverage. Original reporting and approval authority resumes when the charge ends or is revoked.</small>
+                    </div>
+                    <div class="ac-team-preview ac-field" aria-live="polite" aria-atomic="true">
+                        <strong>Replacement team</strong><p id="replacementTeamStatus">Select a person being replaced to preview their team. A blank cell covers all cells.</p>
+                        <ul id="replacementTeamMembers" hidden></ul>
+                    </div>
+                    <div class="ac-dates">
+                        <div class="ac-field"><label for="startDate">Start date *</label><input id="startDate" type="date" class="form-control" th:field="*{startDate}" required></div>
+                        <div class="ac-field"><label for="endDate">End date</label><input id="endDate" type="date" class="form-control" th:field="*{endDate}"><small>Leave blank for an ongoing charge.</small></div>
+                    </div>
+                    <div class="ac-field"><label for="orderReference">Order / reference number</label><input id="orderReference" class="form-control" th:field="*{orderReference}" maxlength="150" placeholder="Office order reference"></div>
+                    <div class="ac-field"><label for="responsibilities">Responsibilities / remarks</label><textarea id="responsibilities" class="form-control" th:field="*{responsibilities}" rows="3" maxlength="1000" placeholder="Describe the additional duties and scope"></textarea></div>
+                    <button class="btn btn-primary ac-submit" type="submit"><i class="fa-solid fa-plus me-1" aria-hidden="true"></i> Assign additional charge</button>
+                </form>
+            </article>
+            <article class="ac-panel ac-history">
+                <div class="ac-panel-title"><span class="ac-step">02</span><div><h2>Charge register <span class="ac-count" th:text="${charges.totalElements}">0</span></h2><p>Current, scheduled and previous assignments.</p></div></div>
+                <div th:if="${charges.empty}" class="ac-empty"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i><h3>No additional charges yet</h3><p>Assign the first charge using the form.</p></div>
+                <div class="table-responsive" th:unless="${charges.empty}">
+                    <table class="table align-middle ac-table"><caption class="visually-hidden">Additional charge assignments</caption>
+                        <thead><tr><th>Person / charge</th><th>Effective period</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody><tr th:each="charge : ${charges.content}">
+                            <td><strong th:text="${charge.assignee}"></strong><div th:text="${charge.position}"></div><small th:text="${charge.scope}"></small>
+                                <small th:if="${!#strings.isEmpty(charge.replaces)}" th:text="${'Covering: ' + charge.replaces}"></small>
+                                <small th:if="${!#strings.isEmpty(charge.replaces)}" th:text="${'Team at assignment: ' + charge.teamSize + ' direct reports'}"></small>
+                                <details><summary>Details</summary><dl><dt>Reference</dt><dd th:text="${#strings.isEmpty(charge.orderReference) ? 'Not provided' : charge.orderReference}"></dd><dt>Responsibilities</dt><dd class="ac-remarks" th:text="${#strings.isEmpty(charge.responsibilities) ? 'Not provided' : charge.responsibilities}"></dd><dt>Assigned by</dt><dd th:text="${charge.assignedBy}"></dd><th:block th:if="${charge.revokedBy != null}"><dt>Revoked by</dt><dd th:text="${charge.revokedBy}"></dd></th:block></dl></details>
+                            </td>
+                            <td><span th:text="${#temporals.format(charge.startDate, 'dd MMM yyyy')}"></span><small class="d-block" th:text="${charge.endDate == null ? 'Ongoing' : 'to ' + #temporals.format(charge.endDate, 'dd MMM yyyy')}"></small></td>
+                            <td><span class="ac-status" th:classappend="${'ac-' + #strings.toLowerCase(charge.status)}" th:text="${charge.status}"></span></td>
+                            <td><form th:if="${charge.status == 'Active' or charge.status == 'Scheduled'}" class="ac-revoke" th:action="@{/hr/additional-charge/{id}/revoke(id=${charge.id})}" method="post"><input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button class="btn btn-sm btn-outline-danger" type="submit">Revoke</button></form><span th:unless="${charge.status == 'Active' or charge.status == 'Scheduled'}" class="text-muted">—</span></td>
+                        </tr></tbody>
+                    </table>
+                </div>
+                <nav class="ac-pagination" th:if="${charges.totalPages > 1}" aria-label="Charge register pages">
+                    <a class="btn btn-sm btn-outline-secondary" th:if="${charges.hasPrevious()}" th:href="@{/hr/additional-charge(page=${charges.number - 1})}">Previous</a>
+                    <span th:text="${'Page ' + (charges.number + 1) + ' of ' + charges.totalPages}"></span>
+                    <a class="btn btn-sm btn-outline-secondary" th:if="${charges.hasNext()}" th:href="@{/hr/additional-charge(page=${charges.number + 1})}">Next</a>
+                </nav>
+            </article>
+        </div>
+    </section>
+</th:block>
+</body>
+</html>

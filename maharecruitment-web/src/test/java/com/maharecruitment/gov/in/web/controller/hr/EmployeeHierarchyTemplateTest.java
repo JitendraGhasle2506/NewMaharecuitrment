@@ -52,7 +52,7 @@ class EmployeeHierarchyTemplateTest {
         String html = engine.process(template, context);
         assertThat(html).contains("data-api=\"/portal/api/employees/hierarchy\"", "data-context=\"/portal/\"",
                 "data-layout=\"horizontal\"",
-                "src=\"/portal/js/employee-hierarchy.js?v=20261015\"", "href=\"/portal/css/employee-hierarchy.css?v=20261015\"",
+                "src=\"/portal/js/employee-hierarchy.js?v=20261017\"", "href=\"/portal/css/employee-hierarchy.css?v=20261016\"",
                 "id=\"ehHod\"", "id=\"ehViewport\"", "id=\"ehSearch\"",
                 "id=\"ehVisibleCount\"", "id=\"ehFullscreen\"", "id=\"ehRetry\"", "href=\"#eh-i-chart\"")
                 .doesNotContain("Department</label>", "Designation</label>", "Reporting type</label>");

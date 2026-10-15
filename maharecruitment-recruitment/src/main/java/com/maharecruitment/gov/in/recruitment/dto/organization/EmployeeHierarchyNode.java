@@ -23,6 +23,10 @@ public class EmployeeHierarchyNode {
     private final boolean filterMatch;
     @Setter
     private Integer nextOffset;
+    @Setter
+    private List<String> additionalCharges = List.of();
+    @Setter
+    private boolean additionalChargeReporting;
     private final List<EmployeeHierarchyNode> children = new ArrayList<>();
 
     public boolean isHasChildren() {

@@ -46,16 +46,76 @@ class TourApplicationServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock private AdditionalChargeApprovalService additionalChargeApprovals;
+
     private TourApplicationServiceImpl service;
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(additionalChargeApprovals.snapshot()).thenReturn(AdditionalChargeApprovalService.Snapshot.empty());
         service = new TourApplicationServiceImpl(
                 tourApplicationRepository,
                 reportingManagerService,
                 employeeRepository,
                 approvalRoutingService,
-                userRepository);
+                userRepository, additionalChargeApprovals);
+    }
+
+    @Test
+    void delegatedHodCanApproveTourAndOriginalOwnerCannotActDuringCoverage() {
+        var tour = tour(501L, 101L, "PENDING");
+        tour.setApprovalStage("HOD");
+        tour.setManagerApproverUserId(7L);
+        tour.setHodApproverUserId(9L);
+        var scope = org.mockito.Mockito.mock(AdditionalChargeApprovalService.Snapshot.class);
+        when(additionalChargeApprovals.snapshot()).thenReturn(scope);
+        when(scope.replaces(101L, 9L)).thenReturn(true);
+        when(scope.canAct(11L, 101L, "HOD", 7L, 9L)).thenReturn(true);
+        when(scope.canAct(9L, 101L, "HOD", 7L, 9L)).thenReturn(false);
+        when(approvalRoutingService.isTwoLevelStage("HOD")).thenReturn(true);
+        when(tourApplicationRepository.findByTourIdForUpdate(501L)).thenReturn(java.util.Optional.of(tour));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateTourStatus(501L, "APPROVED", "Not current approver", 9L));
+        service.updateTourStatus(501L, "APPROVED", "Acting HOD", 11L);
+        assertThat(tour.getStatus()).isEqualTo("APPROVED");
+        assertThat(tour.getHodApproverUserId()).isEqualTo(9L);
+        assertThat(tour.getHodDecisionByUserId()).isEqualTo(11L);
+        verify(tourApplicationRepository).save(tour);
+    }
+
+    @Test
+    void expiredCoverageUsesTheOriginalStoredApproverWithoutRewritingTheRequest() {
+        var tour = tour(501L, 101L, "PENDING");
+        tour.setApprovalStage("HOD");
+        tour.setManagerApproverUserId(7L);
+        tour.setHodApproverUserId(9L);
+        when(approvalRoutingService.isTwoLevelStage("HOD")).thenReturn(true);
+        when(approvalRoutingService.canAct(9L, "HOD", 7L, 9L)).thenReturn(true);
+        when(approvalRoutingService.canAct(11L, "HOD", 7L, 9L)).thenReturn(false);
+        when(tourApplicationRepository.findByTourIdForUpdate(501L)).thenReturn(java.util.Optional.of(tour));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateTourStatus(501L, "APPROVED", "Charge expired", 11L));
+        service.updateTourStatus(501L, "APPROVED", "Original approver", 9L);
+        assertThat(tour.getHodApproverUserId()).isEqualTo(9L);
+        assertThat(tour.getHodDecisionByUserId()).isEqualTo(9L);
+    }
+
+    @Test
+    void pendingTourCoverageUsesTheSameSearchAndDateFilters() {
+        var tour = tour(501L, 101L, "PENDING");
+        tour.setApprovalStage("HOD");
+        tour.setHodApproverUserId(9L);
+        var scope = org.mockito.Mockito.mock(AdditionalChargeApprovalService.Snapshot.class);
+        when(additionalChargeApprovals.snapshot()).thenReturn(scope);
+        when(scope.affects(11L)).thenReturn(true);
+        when(scope.incomingEmployeeIds(11L)).thenReturn(List.of(101L));
+        when(scope.canAct(11L, 101L, "HOD", null, 9L)).thenReturn(true);
+        when(approvalRoutingService.isTwoLevelStage("HOD")).thenReturn(true);
+        var date = LocalDate.of(2026, 10, 15);
+        when(tourApplicationRepository.findPendingAdditionalChargeCandidates(List.of(101L), "%ASHA%", date)).thenReturn(List.of(tour));
+        when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(List.of(101L)))
+                .thenReturn(List.of(employee(101L, "EMP101", "Asha Patil", "Developer")));
+        assertThat(service.getPendingToursForHOD(11L, "Asha", date)).hasSize(1);
     }
 
     @Test

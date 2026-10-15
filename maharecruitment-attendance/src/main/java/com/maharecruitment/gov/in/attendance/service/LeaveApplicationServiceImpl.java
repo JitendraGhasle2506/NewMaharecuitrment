@@ -7,6 +7,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,9 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Autowired
     private RecruitmentTypeApprovalRoutingService approvalRoutingService;
+
+    @Autowired
+    private AdditionalChargeApprovalService additionalChargeApprovals;
 
     @Override
     public void saveLeaveApplication(LeaveApplicationEntity leaveApplication) {
@@ -237,6 +242,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         List<Long> legacyEmployeeIds = legacyEmployeeIds(hodUserId);
         List<LeaveApplicationEntity> leaves = leaveApplicationRepository
                 .findPendingForApprover(hodUserId, legacyEmployeeIds, "PENDING");
+        leaves = additionalChargePending(hodUserId, leaves, legacyEmployeeIds, null, null);
         
         if (leaves.isEmpty()) {
             return List.of();
@@ -249,11 +255,13 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Transactional(readOnly = true)
     public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(
             Long hodUserId, String search, LocalDate searchDate) {
+        List<Long> legacyIds = legacyEmployeeIds(hodUserId);
         List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findPendingForApproverFiltered(
                 hodUserId,
-                legacyEmployeeIds(hodUserId),
+                legacyIds,
                 searchPattern(search),
                 searchDate);
+        leaves = additionalChargePending(hodUserId, leaves, legacyIds, searchPattern(search), searchDate);
         return leaves.isEmpty()
                 ? List.of()
                 : convertToHODDTO(leaves, applicationEmployeeIds(leaves), null);
@@ -293,6 +301,25 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     private String searchPattern(String search) {
         return StringUtils.hasText(search) ? "%" + search.trim().toUpperCase(Locale.ROOT) + "%" : null;
+    }
+
+    private List<LeaveApplicationEntity> additionalChargePending(Long actor, List<LeaveApplicationEntity> baseline,
+            List<Long> legacyIds, String searchPattern, LocalDate searchDate) {
+        var coverage = additionalChargeApprovals.snapshot();
+        if (!coverage.affects(actor)) return baseline;
+        Map<Long, LeaveApplicationEntity> pending = new LinkedHashMap<>();
+        baseline.forEach(leave -> pending.put(leave.getLeaveId(), leave));
+        var inherited = coverage.incomingEmployeeIds(actor);
+        if (!inherited.isEmpty()) {
+            leaveApplicationRepository.findPendingAdditionalChargeCandidates(inherited, searchPattern, searchDate)
+                    .forEach(leave -> pending.putIfAbsent(leave.getLeaveId(), leave));
+        }
+        return pending.values().stream().filter(leave -> approvalRoutingService.isTwoLevelStage(leave.getApprovalStage())
+                ? coverage.canAct(actor, leave.getEmployeeId(), leave.getApprovalStage(),
+                        leave.getManagerApproverUserId(), leave.getHodApproverUserId())
+                : coverage.canActLegacy(actor, leave.getEmployeeId(), legacyIds))
+                .sorted(Comparator.comparing(LeaveApplicationEntity::getApplicationDate,
+                        Comparator.nullsLast(Comparator.reverseOrder()))).toList();
     }
 
     private List<Long> legacyEmployeeIds(Long actorUserId) {
@@ -359,25 +386,29 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             requireLegacyAuthority(actorUserId, leave.getEmployeeId());
             leave.setStatus(status);
             leave.setHodRemarks(remarks);
+            leave.setHodDecisionByUserId(actorUserId);
         } else {
             requireStageAuthority(
                     actorUserId,
+                    leave.getEmployeeId(),
                     leave.getApprovalStage(),
                     leave.getManagerApproverUserId(),
                     leave.getHodApproverUserId());
-            applyStagedDecision(leave, status, remarks);
+            applyStagedDecision(leave, status, remarks, actorUserId);
         }
         leaveApplicationRepository.save(leave);
     }
 
-    private void applyStagedDecision(LeaveApplicationEntity leave, String status, String remarks) {
+    private void applyStagedDecision(LeaveApplicationEntity leave, String status, String remarks, Long actorUserId) {
         if (RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(leave.getApprovalStage())) {
+            leave.setManagerDecisionByUserId(actorUserId);
             leave.setManagerRemarks(remarks);
             if ("APPROVED".equalsIgnoreCase(status)) {
                 leave.setApprovalStage(RecruitmentTypeApprovalRoutingService.STAGE_HOD);
                 return;
             }
         } else {
+            leave.setHodDecisionByUserId(actorUserId);
             leave.setHodRemarks(remarks);
         }
         leave.setStatus(status);
@@ -397,17 +428,25 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     }
 
     private void requireLegacyAuthority(Long actorUserId, Long employeeId) {
-        if (!reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId).contains(employeeId)) {
+        if (!additionalChargeApprovals.snapshot().canActLegacy(actorUserId, employeeId,
+                reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId))) {
             throw new IllegalArgumentException("This leave application is outside your reporting authority.");
         }
     }
 
     private void requireStageAuthority(
             Long actorUserId,
+            Long employeeId,
             String stage,
             Long managerApproverUserId,
             Long hodApproverUserId) {
-        if (!approvalRoutingService.canAct(actorUserId, stage, managerApproverUserId, hodApproverUserId)) {
+        var coverage = additionalChargeApprovals.snapshot();
+        Long original = RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(stage)
+                ? managerApproverUserId : hodApproverUserId;
+        boolean allowed = coverage.replaces(employeeId, original)
+                ? coverage.canAct(actorUserId, employeeId, stage, managerApproverUserId, hodApproverUserId)
+                : approvalRoutingService.canAct(actorUserId, stage, managerApproverUserId, hodApproverUserId);
+        if (!allowed) {
             throw new IllegalArgumentException("This leave application is not pending at your approval level.");
         }
     }

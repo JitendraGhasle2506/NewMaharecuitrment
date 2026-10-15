@@ -28,17 +28,20 @@ function node(id, expanded = false) {
         department: 'Technology', profilePhoto: id === 2 || id === 4 ? `/api/employees/hierarchy/photo/${id}` : null,
         totalChildren: reports.length, hasChildren: !!reports.length,
         totalSubordinates: totalSubordinates.get(id) || 0,
+        additionalCharges: id === 1 ? ['ROLE_HOD · Covering Rohan Patil'] : [],
+        additionalChargeReporting: id === 2,
         filterMatch: true, nextOffset: reports.length && !expanded ? 0 : null,
         children: expanded ? reports.map(id => node(id)) : [] };
 }
 let page = await readFile(join(base, 'templates/hr/employee-hierarchy.html'), 'utf8');
-page = page.replace(/\(v=20261015\)/g, '?v=20261015')
+page = page.replace(/\(v=(\d+)\)/g, '?v=$1')
     .replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"')
     .replace(/th:src="@\{([^}]+)\}"/g, 'src="$1"')
     .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy" data-context="/" data-photo-api="/api/employees/hierarchy/photo" data-layout="horizontal"')
     .replace('</head>', '<style>body{font-family:system-ui,sans-serif;margin:24px;background:#f4f7fb}.btn{color:#087ba4;text-decoration:none;font-size:13px}</style></head>');
-const dashboard = await readFile(join(base, 'templates/employee/dashboard.html'), 'utf8');
-const dashboardPage = dashboard.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
+// Rendered by EmployeeAdditionalChargeDashboardTest; includes the real shared chart fragment.
+const dashboardPage = (await readFile(resolve('maharecruitment-web/target/employee-dashboard-hierarchy-preview.html'), 'utf8'))
+    .replace('data-api="/employee/api/employee-hierarchy"', 'data-api="/api/employees/hierarchy"');
 const teamTemplate = await readFile(join(base, 'templates/employee/employee-hierarchy.html'), 'utf8');
 const backLink = teamTemplate.match(/<a class="eh-secondary"[\s\S]*?<\/a>/)[0]
     .replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
@@ -65,8 +68,10 @@ const server = createServer(async (request, response) => {
             };
             else if (url.pathname.endsWith('/reporting-chain')) data = [
                 { employeeId: 9, employeeName: 'Senior Director', designation: 'Director', currentEmployee: false },
-                { employeeId: 8, employeeName: 'Reporting Manager', designation: 'Manager', currentEmployee: false },
-                { employeeId: 1, employeeName: names[0], designation: 'Head of Department', currentEmployee: true }
+                { employeeId: 8, employeeName: 'Reporting Manager', designation: 'Manager', currentEmployee: false,
+                    additionalCharges: ['ROLE_HOD · Covering Rohan Patil · All cells'] },
+                { employeeId: 1, employeeName: names[0], designation: 'Head of Department', currentEmployee: true,
+                    additionalChargeReporting: true }
             ];
             else if (url.pathname.endsWith('/search')) data = url.searchParams.get('q') === 'missing' ? [] : [
                 { employeeId: 6, employeeName: names[5], employeeCode: 'EMP006', path: [node(1), node(2), node(6)] }
@@ -88,7 +93,8 @@ const server = createServer(async (request, response) => {
             response.setHeader('Content-Type', 'text/html'); response.end(dashboardPage);
         } else if (url.pathname === '/employee/employee-hierarchy') {
             response.setHeader('Content-Type', 'text/html'); response.end(teamPage);
-        } else if (['/js/employee-hierarchy.js', '/css/employee-hierarchy.css', '/img/employee-default-avatar.svg'].includes(url.pathname)) {
+        } else if (['/js/employee-hierarchy.js', '/css/employee-hierarchy.css', '/img/employee-default-avatar.svg',
+            '/css/employee-dashboard.css', '/css/employee-additional-charge.css', '/js/employee-dashboard-community.js'].includes(url.pathname)) {
             response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'text/javascript'
                 : url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css');
             response.end(await readFile(join(base, 'static', url.pathname)));
@@ -157,6 +163,12 @@ try {
     'Advanced hierarchy filters are not rendered');
     assert.equal(await evaluate(`document.querySelector('.eh-root .eh-name-value').textContent`), names[0]);
     assert.equal(await evaluate(`document.querySelector('.eh-root .eh-designation-value').textContent`), 'Head of Department');
+    assert.equal(await evaluate(`document.querySelector('.eh-root .eh-charge-badge').textContent`), 'Additional charge');
+    await evaluate(`document.querySelector('.eh-root .eh-charge-details summary').click(); true`);
+    assert.equal(await evaluate(`document.querySelector('.eh-root .eh-charge-details').open`), true);
+    assert.ok(await evaluate(`document.querySelector('.eh-root .eh-charge-details-body').textContent.includes('Covering Rohan Patil')`));
+    await evaluate(`document.querySelector('.eh-root .eh-charge-details summary').click(); true`);
+    assert.equal(await evaluate(`document.querySelector('.eh-card[data-id="2"] .eh-charge-badge').textContent`), 'Additional-charge reporting');
     await assertSubordinates(1, 6, 'HOD total includes indirect, unloaded subordinates');
     await assertSubordinates(2, 2, 'Collapsed manager shows the full total');
     await assertSubordinates(3, 1);
@@ -359,9 +371,14 @@ try {
     const requestsBeforeDashboard = apiRequests;
     await send('Page.navigate', { url: `${origin}/employee/dashboard` });
     await waitFor(`document.readyState === 'complete' && document.querySelector('a[href="/employee/employee-hierarchy"]')`);
-    assert.equal(await evaluate(`document.getElementById('employeeHierarchy')`), null,
-        'Dashboard does not contain the hierarchy');
-    assert.equal(apiRequests, requestsBeforeDashboard, 'Dashboard makes no hierarchy API requests');
+    await waitFor(`document.querySelectorAll('.dashboard-team-hierarchy .eh-card').length === 4`);
+    assert.ok(apiRequests > requestsBeforeDashboard, 'Dashboard loads the signed-in employee hierarchy');
+    assert.equal(await evaluate(`document.getElementById('employeeHierarchy').dataset.selfMode`), 'true');
+    assert.equal(await evaluate(`document.querySelector('.dashboard-team-hierarchy .eh-charge-badge').textContent`), 'Additional charge');
+    await evaluate(`document.querySelector('button[data-id="2"][data-action="toggle"]').click()`);
+    await waitFor(`document.querySelectorAll('.dashboard-team-hierarchy .eh-card').length === 6`);
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= window.innerWidth`), true,
+        'Embedded dashboard hierarchy fits the mobile page');
     await evaluate(`document.querySelector('a[href="/employee/employee-hierarchy"]').click()`);
     await waitFor(`document.querySelectorAll('.eh-card').length === 4`);
     assert.equal(await evaluate(`location.pathname`), '/employee/employee-hierarchy');
@@ -375,6 +392,10 @@ try {
     assert.deepEqual(await evaluate(`[...document.querySelectorAll('#ehChainMembers strong')].map(item => item.textContent)`),
         ['Senior Director', 'Reporting Manager', names[0]], 'Upper chain runs from highest manager to employee');
     assert.equal(await evaluate(`document.querySelector('#ehChainMembers .is-current small').textContent`), 'You');
+    assert.equal(await evaluate(`document.querySelector('#ehChainMembers .eh-charge-badge').textContent`), 'Additional charge');
+    assert.equal(await evaluate(`document.querySelector('#ehChainMembers .eh-charge-badge').title`),
+        'ROLE_HOD · Covering Rohan Patil · All cells');
+    assert.equal(await evaluate(`document.querySelector('#ehChainMembers .is-current').textContent.includes('Reports under additional charge')`), true);
     assert.equal(await evaluate(`(() => {
         const members = [...document.querySelectorAll('#ehChainMembers li')].map(item => item.getBoundingClientRect());
         return members.every((box, index) => !index || box.top > members[index - 1].bottom);
@@ -386,7 +407,7 @@ try {
     await evaluate(`document.querySelector('a[href="/employee/dashboard"]').click()`);
     await waitFor(`location.pathname === '/employee/dashboard' && document.querySelector('.quick-actions')`);
     assert.deepEqual(exceptions, [], 'No browser JavaScript exceptions');
-    console.log('PASS: Dashboard link opens the team hierarchy on a separate page; branches expand and Back to Dashboard returns correctly.');
+    console.log('PASS: Dashboard embeds the signed-in employee hierarchy and charge markers; branches expand on mobile, the separate team page opens and Back to Dashboard returns correctly.');
     console.log(`PASS: HOD-only selection, minimal transparent nodes, total subordinate counts (including unloaded branches), photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);
 } finally {
     if (cdp && socket?.readyState === WebSocket.OPEN) await cdp('Browser.close').catch(() => {});

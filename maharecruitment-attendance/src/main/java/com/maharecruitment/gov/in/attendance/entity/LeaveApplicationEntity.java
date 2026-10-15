@@ -76,6 +76,12 @@ public class LeaveApplicationEntity {
     @Column(name = "hod_approver_user_id")
     private Long hodApproverUserId;
 
+    @Column(name = "manager_decision_by_user_id")
+    private Long managerDecisionByUserId;
+
+    @Column(name = "hod_decision_by_user_id")
+    private Long hodDecisionByUserId;
+
     @Transient
     private String managerApproverName;
 

@@ -267,14 +267,14 @@
                             <a class="nav-link" th:classappend="${activeTab == 'leave' ? 'active' : ''}" id="leave-tab"
                                th:href="@{/hod1/leaveApprovals(activeTab='leave',query=${searchQuery},searchDate=${searchDate})}">
                                 <i class="fa fa-calendar-minus me-2"></i>Leave Requests
-                                <span class="badge bg-danger ms-2" th:if="${not #lists.isEmpty(pendingLeaves)}" th:text="${#lists.size(pendingLeaves)}"></span>
+                                <span class="badge bg-danger ms-2" aria-label="Pending leave requests matching the current filters" th:text="${#lists.size(pendingLeaves)}">0</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" th:classappend="${activeTab == 'tour' ? 'active' : ''}" id="tour-tab"
                                th:href="@{/hod1/leaveApprovals(activeTab='tour',query=${searchQuery},searchDate=${searchDate})}">
                                 Tour Requests
-                                <span class="badge bg-danger ms-2" th:if="${not #lists.isEmpty(pendingTours)}" th:text="${#lists.size(pendingTours)}"></span>
+                                <span class="badge bg-danger ms-2" aria-label="Pending tour requests matching the current filters" th:text="${#lists.size(pendingTours)}">0</span>
                             </a>
                         </li>
                         <li class="nav-item">

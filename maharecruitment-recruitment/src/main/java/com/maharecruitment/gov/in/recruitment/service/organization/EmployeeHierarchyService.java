@@ -13,6 +13,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.time.LocalDate;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeHierarchyNode;
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeReportingType;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository;
+import com.maharecruitment.gov.in.recruitment.repository.AdditionalChargeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository.EmployeeRow;
 
 @Service
@@ -29,9 +32,11 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyReposi
 public class EmployeeHierarchyService {
     private static final int RESPONSE_NODE_LIMIT = 500;
     private final EmployeeHierarchyRepository repository;
+    private final AdditionalChargeRepository additionalCharges;
 
-    public EmployeeHierarchyService(EmployeeHierarchyRepository repository) {
+    public EmployeeHierarchyService(EmployeeHierarchyRepository repository, AdditionalChargeRepository additionalCharges) {
         this.repository = repository;
+        this.additionalCharges = additionalCharges;
     }
 
     public record Option(Long id, String label) { }
@@ -39,7 +44,12 @@ public class EmployeeHierarchyService {
     public record SearchMatch(Long employeeId, String employeeName, String employeeCode,
                               List<EmployeeHierarchyNode> path) { }
     public record ReportingChainMember(Long employeeId, String employeeName, String designation,
-                                       boolean currentEmployee) { }
+                                       boolean currentEmployee, List<String> additionalCharges,
+                                       boolean additionalChargeReporting) {
+        public ReportingChainMember(Long employeeId, String employeeName, String designation, boolean currentEmployee) {
+            this(employeeId, employeeName, designation, currentEmployee, List.of(), false);
+        }
+    }
 
     /** Only the employee's own manager chain is returned, never the managers' other teams. */
     public List<ReportingChainMember> reportingChain(Long employeeId, EmployeeReportingType type) {
@@ -49,7 +59,8 @@ public class EmployeeHierarchyService {
         for (Long id = employeeId; id != null && visited.add(id); id = graph.reportingParents.get(id)) {
             EmployeeRow employee = graph.employees.get(id);
             chain.add(new ReportingChainMember(id, employee.getEmployeeName(), employee.getDesignation(),
-                    id.equals(employeeId)));
+                    id.equals(employeeId), List.copyOf(graph.chargeLabels.getOrDefault(id, List.of())),
+                    graph.coveredReports.contains(id)));
         }
         Collections.reverse(chain);
         return chain;
@@ -60,8 +71,11 @@ public class EmployeeHierarchyService {
         Map<Long, String> departments = new HashMap<>();
         Map<Long, String> designations = new HashMap<>();
         List<Option> hods = new ArrayList<>();
+        Set<Long> actingManagers = additionalCharges.activeChargeLabels(LocalDate.now()).stream()
+                .map(AdditionalChargeRepository.ChargeLabel::getEmployeeId).filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         for (EmployeeRow employee : employees) {
-            if (Boolean.TRUE.equals(employee.getHod())) {
+            if (Boolean.TRUE.equals(employee.getHod()) || actingManagers.contains(employee.getEmployeeId())) {
                 String code = employee.getEmployeeCode();
                 hods.add(new Option(employee.getEmployeeId(), employee.getEmployeeName()
                         + (code == null || code.isBlank() ? "" : " (" + code + ")")));
@@ -146,8 +160,16 @@ public class EmployeeHierarchyService {
         if (!employees.containsKey(rootId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Selected employee is unavailable, inactive or relieved.");
         }
-        Map<Long, List<Long>> edges = new HashMap<>();
         Map<Long, Long> reportingParents = new HashMap<>();
+        Set<Long> coveredReports = new HashSet<>();
+        Map<Long, List<String>> chargeLabels = new HashMap<>();
+        for (var charge : additionalCharges.activeChargeLabels(LocalDate.now())) {
+            if (charge.getEmployeeId() == null) continue;
+            String label = charge.getPosition()
+                    + (charge.getReplacedName() == null || charge.getReplacedName().isBlank() ? "" : " · Covering " + charge.getReplacedName())
+                    + (charge.getCellName() == null || charge.getCellName().isBlank() ? "" : " · " + charge.getCellName());
+            chargeLabels.computeIfAbsent(charge.getEmployeeId(), unused -> new ArrayList<>()).add(label);
+        }
         Set<Long> assigned = new HashSet<>();
         // Legacy data can contain historical duplicates. The newest mapping wins for each reporting type.
         for (var mapping : repository.findReportingRelationships(type.name())) {
@@ -156,10 +178,32 @@ public class EmployeeHierarchyService {
                     : employeeByUser.get(mapping.getHodUserId());
             if (parentId != null && !parentId.equals(mapping.getEmployeeId())
                     && employees.containsKey(parentId) && employees.containsKey(mapping.getEmployeeId())) {
-                edges.computeIfAbsent(parentId, unused -> new ArrayList<>()).add(mapping.getEmployeeId());
                 reportingParents.put(mapping.getEmployeeId(), parentId);
             }
         }
+        if (type == EmployeeReportingType.PRIMARY) {
+            Set<Long> overridden = new HashSet<>();
+            Set<Long> actingManagers = new LinkedHashSet<>();
+            for (var replacement : additionalCharges.activeTeamOverrides(LocalDate.now())) {
+                Long employeeId = replacement.getEmployeeId();
+                Long managerId = replacement.getManagerEmployeeId();
+                if (managerId == null || !employees.containsKey(managerId) || !employees.containsKey(employeeId)
+                        || managerId.equals(employeeId) || !overridden.add(employeeId)) continue;
+                reportingParents.put(employeeId, managerId);
+                coveredReports.add(employeeId);
+                actingManagers.add(managerId);
+            }
+            // An employee can cover their own manager. Temporarily detach their incoming edge if
+            // inheriting a branch would otherwise make them their own ancestor; stored mappings stay intact.
+            for (Long managerId : actingManagers) {
+                Set<Long> ancestors = new HashSet<>();
+                Long ancestor = managerId;
+                while (ancestor != null && ancestors.add(ancestor)) ancestor = reportingParents.get(ancestor);
+                if (ancestor != null) reportingParents.remove(managerId);
+            }
+        }
+        Map<Long, List<Long>> edges = new HashMap<>();
+        reportingParents.forEach((child, parent) -> edges.computeIfAbsent(parent, unused -> new ArrayList<>()).add(child));
         Comparator<Long> order = Comparator.comparing((Long id) -> employees.get(id).getEmployeeName(),
                 Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)).thenComparing(Long::compareTo);
         edges.values().forEach(children -> children.sort(order));
@@ -210,7 +254,7 @@ public class EmployeeHierarchyService {
         }
         // Preserve deterministic breadth-first order for search results.
         visited.retainAll(included);
-        return new Graph(employees, children, parents, visited, matches, subordinateCounts, reportingParents);
+        return new Graph(employees, children, parents, visited, matches, subordinateCounts, reportingParents, chargeLabels, coveredReports);
     }
 
     private EmployeeHierarchyNode node(Graph graph, Long id) {
@@ -221,6 +265,8 @@ public class EmployeeHierarchyService {
                 Boolean.TRUE.equals(employee.getHasPhoto()) ? "/api/employees/hierarchy/photo/" + id : null,
                 count, graph.subordinateCounts.getOrDefault(id, 0), graph.matches.contains(id));
         node.setNextOffset(count == 0 ? null : 0);
+        node.setAdditionalCharges(List.copyOf(graph.chargeLabels.getOrDefault(id, List.of())));
+        node.setAdditionalChargeReporting(graph.coveredReports.contains(id));
         return node;
     }
 
@@ -236,5 +282,6 @@ public class EmployeeHierarchyService {
 
     private record Graph(Map<Long, EmployeeRow> employees, Map<Long, List<Long>> children,
                          Map<Long, Long> parent, Set<Long> included, Set<Long> matches,
-                         Map<Long, Integer> subordinateCounts, Map<Long, Long> reportingParents) { }
+                         Map<Long, Integer> subordinateCounts, Map<Long, Long> reportingParents,
+                         Map<Long, List<String>> chargeLabels, Set<Long> coveredReports) { }
 }

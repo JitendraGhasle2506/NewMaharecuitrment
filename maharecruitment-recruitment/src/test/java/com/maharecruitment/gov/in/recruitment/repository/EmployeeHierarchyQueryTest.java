@@ -22,9 +22,11 @@ class EmployeeHierarchyQueryTest {
                 "hibernate.hbm2ddl.auto", "none"));
         factory.afterPropertiesSet();
         try (var manager = factory.getObject().createEntityManager()) {
-            for (var method : EmployeeHierarchyRepository.class.getDeclaredMethods()) {
-                Query query = method.getAnnotation(Query.class);
-                if (query != null) assertThatCode(() -> manager.createQuery(query.value())).doesNotThrowAnyException();
+            for (var repository : new Class<?>[]{EmployeeHierarchyRepository.class, AdditionalChargeRepository.class}) {
+                for (var method : repository.getDeclaredMethods()) {
+                    Query query = method.getAnnotation(Query.class);
+                    if (query != null) assertThatCode(() -> manager.createQuery(query.value())).doesNotThrowAnyException();
+                }
             }
         } finally {
             factory.destroy();

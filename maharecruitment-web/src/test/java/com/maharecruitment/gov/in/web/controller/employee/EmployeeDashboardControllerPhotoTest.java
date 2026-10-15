@@ -21,6 +21,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileUpdateResponse;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeDashboardContentService;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
+import com.maharecruitment.gov.in.recruitment.service.AdditionalChargeService;
 
 @ExtendWith(MockitoExtension.class)
 class EmployeeDashboardControllerPhotoTest {
@@ -34,6 +35,9 @@ class EmployeeDashboardControllerPhotoTest {
     @Mock
     private EmployeeDashboardContentService employeeDashboardContentService;
 
+    @Mock
+    private AdditionalChargeService additionalChargeService;
+
     @Test
     void photoEndpointReturnsNotFoundWhenNoValidEmployeePhotoCanBeResolved() {
         Principal principal = () -> "employee@example.gov.in";
@@ -41,7 +45,7 @@ class EmployeeDashboardControllerPhotoTest {
                 .thenReturn(Optional.empty());
 
         EmployeeDashboardController controller =
-                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService);
+                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService, additionalChargeService);
 
         assertThat(controller.photo(principal).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(controller.photo(principal).getBody()).isNull();
@@ -55,7 +59,7 @@ class EmployeeDashboardControllerPhotoTest {
         when(employeeProfileService.resolveCurrentEmployeePhoto(principal.getName()))
                 .thenReturn(Optional.of(photo));
         EmployeeDashboardController controller =
-                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService);
+                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService, additionalChargeService);
 
         var response = controller.photo(principal);
 
@@ -76,7 +80,7 @@ class EmployeeDashboardControllerPhotoTest {
         when(employeeProfileService.uploadCurrentEmployeePhoto(eq(principal.getName()), any()))
                 .thenThrow(new IllegalStateException("Storage unavailable"));
         EmployeeDashboardController controller =
-                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService);
+                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService, additionalChargeService);
 
         var response = controller.uploadPhoto(principal, null, file);
 

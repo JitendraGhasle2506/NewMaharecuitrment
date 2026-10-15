@@ -172,6 +172,14 @@
                 item.append(element('strong', '', member.employeeName),
                     element('span', '', member.designation || 'Designation not available'));
                 if (member.currentEmployee) item.append(element('small', '', 'You'));
+                if (Array.isArray(member.additionalCharges) && member.additionalCharges.length) {
+                    const charge = element('small', 'eh-charge-badge', 'Additional charge');
+                    charge.title = member.additionalCharges.join('; ');
+                    item.append(charge);
+                }
+                if (member.additionalChargeReporting) {
+                    item.append(element('small', '', 'Reports under additional charge'));
+                }
                 return item;
             });
             $('ehChainMembers').replaceChildren(...members);
@@ -231,6 +239,24 @@
         const identity = element('div', 'eh-identity');
         const identityCopy = element('div', 'eh-identity-copy');
         identityCopy.append(name, designation, subordinates);
+        const charges = Array.isArray(node.additionalCharges) ? node.additionalCharges : [];
+        if (charges.length) {
+            const details = element('details', 'eh-charge-details');
+            const badge = element('summary', 'eh-charge-badge', 'Additional charge');
+            badge.title = charges.join('\n');
+            const body = element('div', 'eh-charge-details-body');
+            charges.forEach(charge => body.append(element('div', '', charge)));
+            if (node.additionalChargeReporting) body.append(element('div', '', 'Also reports under an active additional charge.'));
+            details.append(badge, body);
+            details.addEventListener('toggle', () => article.classList.toggle('eh-charge-open', details.open));
+            identityCopy.append(details);
+            article.classList.add('eh-has-charge');
+        } else if (node.additionalChargeReporting) {
+            const badge = element('span', 'eh-charge-badge', 'Additional-charge reporting');
+            badge.title = 'Temporarily reports under this manager through an active additional charge.';
+            identityCopy.append(badge);
+            article.classList.add('eh-has-charge');
+        }
         identity.append(avatar, identityCopy);
         article.append(identity);
         if (node.totalChildren) {

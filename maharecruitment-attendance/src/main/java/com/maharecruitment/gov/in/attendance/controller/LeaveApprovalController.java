@@ -49,16 +49,15 @@ public class LeaveApprovalController {
         }
 
         String selectedTab = normalizeTab(activeTab);
-        List<LeaveApplicationHODDTO> pendingLeaves = List.of();
-        List<TourApplicationHODDTO> pendingTours = List.of();
+        // Reuse the authorized, filtered lists for both tab counts and table rows.
+        List<LeaveApplicationHODDTO> pendingLeaves = leaveApplicationService
+                .getPendingLeavesForHOD(user.id(), query, searchDate);
+        List<TourApplicationHODDTO> pendingTours = tourApplicationService
+                .getPendingToursForHOD(user.id(), query, searchDate);
         Page<LeaveApplicationHODDTO> leaveHistory = Page.empty();
         Page<TourApplicationHODDTO> tourHistory = Page.empty();
 
-        if ("leave".equals(selectedTab)) {
-            pendingLeaves = leaveApplicationService.getPendingLeavesForHOD(user.id(), query, searchDate);
-        } else if ("tour".equals(selectedTab)) {
-            pendingTours = tourApplicationService.getPendingToursForHOD(user.id(), query, searchDate);
-        } else {
+        if ("history".equals(selectedTab)) {
             leaveHistory = leaveApplicationService.getProcessedLeavesForHOD(
                     user.id(), query, searchDate, PageRequest.of(Math.max(leavePage, 0), HISTORY_PAGE_SIZE));
             tourHistory = tourApplicationService.getProcessedToursForHOD(

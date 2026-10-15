@@ -64,9 +64,24 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
 
     @Query("""
             select tour from TourApplicationEntity tour
+            join EmployeeEntity employee on employee.employeeId = tour.employeeId
+            left join employee.designation designation
+            where tour.status = 'PENDING' and tour.employeeId in :employeeIds
+              and (:searchPattern is null or upper(employee.fullName) like :searchPattern
+                   or upper(employee.employeeCode) like :searchPattern or upper(designation.designationName) like :searchPattern)
+              and (:searchDate is null or (tour.startDate <= :searchDate and tour.endDate >= :searchDate))
+            order by tour.applicationDate desc
+            """)
+    List<TourApplicationEntity> findPendingAdditionalChargeCandidates(@Param("employeeIds") Collection<Long> employeeIds,
+            @Param("searchPattern") String searchPattern, @Param("searchDate") LocalDate searchDate);
+
+    @Query("""
+            select tour from TourApplicationEntity tour
             where tour.status in :statuses
               and (
-                    tour.managerApproverUserId = :actorUserId
+                    tour.managerDecisionByUserId = :actorUserId
+                 or tour.hodDecisionByUserId = :actorUserId
+                 or tour.managerApproverUserId = :actorUserId
                  or tour.hodApproverUserId = :actorUserId
                  or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
                      and tour.employeeId in :legacyEmployeeIds)
@@ -84,7 +99,9 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
             left join employee.designation designation
             where tour.status in ('APPROVED', 'REJECTED')
               and (
-                    tour.managerApproverUserId = :actorUserId
+                    tour.managerDecisionByUserId = :actorUserId
+                 or tour.hodDecisionByUserId = :actorUserId
+                 or tour.managerApproverUserId = :actorUserId
                  or tour.hodApproverUserId = :actorUserId
                  or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
                      and tour.employeeId in :legacyEmployeeIds)
@@ -103,7 +120,9 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
             left join employee.designation designation
             where tour.status in ('APPROVED', 'REJECTED')
               and (
-                    tour.managerApproverUserId = :actorUserId
+                    tour.managerDecisionByUserId = :actorUserId
+                 or tour.hodDecisionByUserId = :actorUserId
+                 or tour.managerApproverUserId = :actorUserId
                  or tour.hodApproverUserId = :actorUserId
                  or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
                      and tour.employeeId in :legacyEmployeeIds)

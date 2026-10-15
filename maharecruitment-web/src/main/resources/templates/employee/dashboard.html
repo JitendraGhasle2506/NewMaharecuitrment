@@ -6,6 +6,8 @@
     <title>Employee Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/employee-dashboard.css(v='20261009-1')}" />
+    <link rel="stylesheet" th:href="@{/css/employee-additional-charge.css(v='20261015-1')}" />
+    <link rel="stylesheet" th:href="@{/css/employee-hierarchy.css(v=20261016)}" />
 </head>
 
 <body class="employee-dashboard-page employee-dashboard-home">
@@ -92,6 +94,27 @@
                 <p class="visually-hidden" aria-live="polite" data-employee-festival-status></p>
             </section>
 
+            <section class="employee-charge-notice" th:if="${!#lists.isEmpty(personalAdditionalCharges)}"
+                     aria-labelledby="personalChargeHeading">
+                <h3 id="personalChargeHeading">Your additional charges</h3>
+                <p>You hold the following active responsibilities in addition to your regular position.</p>
+                <article th:each="charge : ${personalAdditionalCharges}" class="employee-charge-item">
+                    <h4 th:text="${charge.position}">ROLE_HOD</h4>
+                    <dl>
+                        <div th:if="${charge.replacedName != null}"><dt>Covering</dt><dd th:text="${charge.replacedName}">Employee</dd></div>
+                        <div><dt>Scope</dt><dd th:text="${charge.scope}">All cells</dd></div>
+                        <div><dt>Period</dt><dd><span th:text="${charge.startDate}"></span> to <span th:text="${charge.endDate != null ? charge.endDate : 'Until further orders'}"></span></dd></div>
+                    </dl>
+                    <p th:if="${!#strings.isEmpty(charge.responsibilities)}" th:text="${charge.responsibilities}"></p>
+                    <p th:if="${charge.replacedName != null}">Your hierarchy shows the team covered by this charge. Their leave and tour requests appear in your approvals when they reach the authority you cover.</p>
+                    <p th:unless="${charge.replacedName != null}">This charge records additional duties. No replacement team or approval authority is transferred.</p>
+                </article>
+                <div class="employee-charge-links">
+                    <a th:href="@{/employee/employee-hierarchy}">View my team and subordinates</a>
+                    <a th:if="${profile.profileAvailable}" th:href="@{/hod1/leaveApprovals}">Leave &amp; tour approvals</a>
+                </div>
+            </section>
+
             <div class="profile-grid">
                 <article class="profile-card">
                     <div class="profile-photo-wrap">
@@ -159,8 +182,7 @@
                         </span>
                         <i class="fa-solid fa-arrow-right quick-action-arrow"></i>
                     </a>
-                    <a class="quick-action" th:href="@{/employee/employee-hierarchy}"
-                        th:if="${profile.profileAvailable}">
+                    <a class="quick-action" th:href="@{/employee/employee-hierarchy}">
                         <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
                         <span class="quick-action-copy">
                             <strong>View My Team Hierarchy</strong>
@@ -168,7 +190,19 @@
                         </span>
                         <i class="fa-solid fa-arrow-right quick-action-arrow" aria-hidden="true"></i>
                     </a>
+                    <a class="quick-action" th:href="@{/hod1/leaveApprovals}" th:if="${profile.profileAvailable}">
+                        <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                        <span class="quick-action-copy">
+                            <strong>Leave &amp; Tour Approvals</strong>
+                            <small>Review requests under your reporting or additional-charge authority</small>
+                        </span>
+                        <i class="fa-solid fa-arrow-right quick-action-arrow" aria-hidden="true"></i>
+                    </a>
                 </div>
+            </div>
+
+            <div class="dashboard-team-hierarchy">
+                <th:block th:replace="~{hr/employee-hierarchy :: employee-hierarchy-content}"></th:block>
             </div>
 
             <div class="birthday-wish-feedback success" role="status" th:if="${birthdayWishSuccess}">

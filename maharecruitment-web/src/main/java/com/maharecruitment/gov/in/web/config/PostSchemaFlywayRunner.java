@@ -294,6 +294,10 @@ public class PostSchemaFlywayRunner {
                 new V147__asset_ownership_and_audit_log(),
                 new V148__asset_list_performance_indexes(),
                 new V150__asset_replacement_history(),
+                new db.postmigration.V151__employee_additional_charge(),
+                new db.postmigration.V152__additional_charge_replacement_team(),
+                new db.postmigration.V153__additional_charge_approval_audit(),
+                new db.postmigration.V154__additional_charge_optional_cell(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

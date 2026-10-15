@@ -1,0 +1,19 @@
+.employee-dashboard .employee-charge-notice {
+    margin: 20px 0;
+    padding: 20px;
+    border: 1px solid #d5c8ef;
+    border-left: 4px solid #7040a4;
+    border-radius: 12px;
+    background: #faf7ff;
+    color: #342346;
+    overflow-wrap: anywhere;
+}
+.employee-charge-notice h3 { margin: 0 0 8px; font-size: 1.2rem; }
+.employee-charge-item { padding: 12px 0; border-top: 1px solid #e5daef; }
+.employee-charge-item h4 { margin: 0 0 10px; font-size: 1rem; }
+.employee-charge-item dl { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 0 0 10px; }
+.employee-charge-item dt { font-size: .8rem; color: #655573; }
+.employee-charge-item dd { margin: 0; font-weight: 600; }
+.employee-charge-item p { margin: 8px 0 0; }
+.employee-charge-links { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.employee-charge-links a { color: #562781; font-weight: 600; text-decoration: underline; }

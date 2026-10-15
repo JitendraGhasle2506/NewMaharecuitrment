@@ -15,12 +15,14 @@ import org.springframework.web.server.ResponseStatusException;
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeHierarchyNode;
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeReportingType;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository;
+import com.maharecruitment.gov.in.recruitment.repository.AdditionalChargeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository.EmployeeRow;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository.ReportingRow;
 
 class EmployeeHierarchyServiceTest {
     private final EmployeeHierarchyRepository repository = mock(EmployeeHierarchyRepository.class);
-    private final EmployeeHierarchyService service = new EmployeeHierarchyService(repository);
+    private final AdditionalChargeRepository additionalCharges = mock(AdditionalChargeRepository.class);
+    private final EmployeeHierarchyService service = new EmployeeHierarchyService(repository, additionalCharges);
 
     @Test
     void reportingChainRunsFromTopManagerToEmployeeWithoutIncludingPeersOrSubordinates() {
@@ -186,6 +188,64 @@ class EmployeeHierarchyServiceTest {
 
     private EmployeeHierarchyNode tree(long root, Long node, int offset, int limit, int depth) {
         return service.tree(root, node, EmployeeReportingType.PRIMARY, null, null, offset, limit, depth);
+    }
+
+    @Test
+    void activeChargeMovesTheCapturedBranchAndRevocationRestoresPrimaryReporting() {
+        setup(List.of(employee(1, "Original", 10), employee(2, "Acting", 10), employee(3, "Report", 10),
+                        employee(4, "Descendant", 10), employee(5, "Other cell report", 20)),
+                List.of(mapping(3, 1L), mapping(4, 3L), mapping(5, 1L)));
+        var override = mock(AdditionalChargeRepository.TeamOverride.class);
+        when(override.getEmployeeId()).thenReturn(3L);
+        when(override.getManagerEmployeeId()).thenReturn(2L);
+        when(additionalCharges.activeTeamOverrides(java.time.LocalDate.now())).thenReturn(List.of(override));
+        var label = mock(AdditionalChargeRepository.ChargeLabel.class);
+        when(label.getEmployeeId()).thenReturn(2L);
+        when(label.getPosition()).thenReturn("ROLE_HOD");
+        when(label.getReplacedName()).thenReturn("Original");
+        when(label.getCellName()).thenReturn("All cells");
+        when(additionalCharges.activeChargeLabels(java.time.LocalDate.now())).thenReturn(List.of(label));
+        assertThat(tree(2, null, 0, 25, 3).getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(3L);
+        assertThat(tree(2, null, 0, 25, 3).getAdditionalCharges()).containsExactly("ROLE_HOD · Covering Original · All cells");
+        assertThat(tree(2, null, 0, 25, 3).getChildren().getFirst().isAdditionalChargeReporting()).isTrue();
+        assertThat(tree(2, null, 0, 25, 3).getTotalSubordinates()).isEqualTo(2);
+        assertThat(tree(1, null, 0, 25, 3).getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(5L);
+        assertThat(service.options().hods()).extracting(EmployeeHierarchyService.Option::id).contains(2L);
+        var chain = service.reportingChain(3L, EmployeeReportingType.PRIMARY);
+        assertThat(chain.getFirst().additionalCharges()).containsExactly("ROLE_HOD · Covering Original · All cells");
+        assertThat(chain.getLast().additionalChargeReporting()).isTrue();
+        when(additionalCharges.activeTeamOverrides(java.time.LocalDate.now())).thenReturn(List.of());
+        when(additionalCharges.activeChargeLabels(java.time.LocalDate.now())).thenReturn(List.of());
+        assertThat(tree(2, null, 0, 25, 3).getAdditionalCharges()).isEmpty();
+        assertThat(tree(2, null, 0, 25, 3).getTotalSubordinates()).isZero();
+        assertThat(tree(1, null, 0, 25, 3).getTotalSubordinates()).isEqualTo(3);
+    }
+
+    @Test
+    void activeChargeIsVisibleEvenWhenItDoesNotHaveAReplacementTeam() {
+        setup(List.of(employee(1, "HOD", 10), employee(2, "Additional charge holder", 10)), List.of());
+        var label = mock(AdditionalChargeRepository.ChargeLabel.class);
+        when(label.getEmployeeId()).thenReturn(2L);
+        when(label.getPosition()).thenReturn("ROLE_CTO");
+        when(label.getCellName()).thenReturn("All cells");
+        when(additionalCharges.activeChargeLabels(java.time.LocalDate.now())).thenReturn(List.of(label));
+        assertThat(tree(2, null, 0, 25, 1).getAdditionalCharges()).containsExactly("ROLE_CTO · All cells");
+        assertThat(tree(2, null, 0, 25, 1).isAdditionalChargeReporting()).isFalse();
+        assertThat(service.options().hods()).extracting(EmployeeHierarchyService.Option::id).contains(2L);
+    }
+
+    @Test
+    void employeeCoveringAnAncestorCannotBecomeTheirOwnAncestor() {
+        setup(List.of(employee(1, "Original", 10), employee(2, "Manager", 10), employee(3, "Acting employee", 10)),
+                List.of(mapping(2, 1L), mapping(3, 2L)));
+        var override = mock(AdditionalChargeRepository.TeamOverride.class);
+        when(override.getEmployeeId()).thenReturn(2L);
+        when(override.getManagerEmployeeId()).thenReturn(3L);
+        when(additionalCharges.activeTeamOverrides(java.time.LocalDate.now())).thenReturn(List.of(override));
+        assertThat(tree(3, null, 0, 25, 8).getChildren()).extracting(EmployeeHierarchyNode::getEmployeeId).containsExactly(2L);
+        assertThat(service.reportingChain(3L, EmployeeReportingType.PRIMARY))
+                .extracting(EmployeeHierarchyService.ReportingChainMember::employeeId).containsExactly(3L);
+        assertThat(tree(3, null, 0, 25, 8).getTotalSubordinates()).isEqualTo(1);
     }
 
     private void setup(List<EmployeeRow> employees, List<ReportingRow> mappings) {

@@ -6,6 +6,8 @@ The responsive workspace includes collapsible filters, visible-node/level counts
 On the HR page, the selected HOD is placed at the left and reporting levels flow left to right. Direct reports are stacked vertically around their manager, with connectors joining the manager's right edge to each report's left edge. The chart owns both scroll axes so large hierarchies do not widen the page. Employee, HOD, and executive hierarchy views retain their vertical layout.
 To open a particular employee as the root, use `?hodEmployeeId=1001` (an **employee ID**, not a user ID).
 
+The employee dashboard embeds the employee's own team hierarchy regardless of whether a separate personal-profile record has been created. Employee linkage and hierarchy access are checked by the authenticated hierarchy API; missing linkage is shown as a visible error with retry instead of hiding the chart.
+
 ## Data rules
 
 - Uses `employee_master` and `employee_reporting_mapping`, not the separate position/team chart.
@@ -15,6 +17,7 @@ To open a particular employee as the root, use `?hodEmployeeId=1001` (an **emplo
 - Only ACTIVE employees with an active linked account (or no linked account) appear. Completed/relieved exits and non-cancelled/non-rejected exits on or before today are excluded. Pending future exits remain visible.
 - Department/designation filters preserve connecting ancestors, displayed with a dashed border.
 - Cell-level approval authorities are not treated as employee reporting assignments: L1/L2 approval rules do not by themselves establish a PRIMARY reporting chain.
+- Active additional-charge replacements overlay the captured direct reports under the acting employee in PRIMARY views. Inherited branches follow their managers. The overlay is limited to the charge dates and captured employees still assigned to that cell, and stops on revocation or expiry. Stored reporting mappings remain unchanged. Leave/tour approval coverage resolves separately for inherited employees in the selected cell at the replaced person's stage, preserving original stored approver IDs. Acting employees with a covered team also appear in the HR root selector.
 
 ## API
 
@@ -30,7 +33,7 @@ Requests contain at most 500 nodes. There is no logical hierarchy-depth limit: c
 `GET /api/employees/hierarchy/{hodEmployeeId}/search?q=EMP001` accepts the same filters and returns at most 20 matches with their root-to-employee paths, including unloaded branches.
 `GET /api/employees/hierarchy/options` supplies HOD/department/designation selectors.
 
-Two bulk projection queries build a graph per tree/search request; traversal is iterative and does not issue one database query per employee. Rendering and JSON payloads are lazy/paginated. For extremely large installations the snapshot queries may warrant a database recursive-CTE implementation or cache with mapping-change invalidation.
+Two bulk projection queries build the base graph per tree/search request, and one supplies active charge labels; PRIMARY requests also add one bulk query for replacement teams. Traversal is iterative and does not issue one database query per employee. Rendering and JSON payloads are lazy/paginated. Active charge holders show an expandable Additional charge badge with role, incumbent, and scope; transferred direct reports show Additional-charge reporting. Blank-cell charges cover the selected person's team across all cells. For extremely large installations the snapshot queries may warrant a database recursive-CTE implementation or cache with mapping-change invalidation.
 
 ## Deployment
 

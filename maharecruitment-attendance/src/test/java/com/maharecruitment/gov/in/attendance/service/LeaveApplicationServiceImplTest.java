@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -57,8 +58,96 @@ class LeaveApplicationServiceImplTest {
     @Mock
     private RecruitmentTypeApprovalRoutingService approvalRoutingService;
 
+    @Mock private AdditionalChargeApprovalService additionalChargeApprovals;
+
+    @BeforeEach void noAdditionalChargesByDefault() {
+        org.mockito.Mockito.lenient().when(additionalChargeApprovals.snapshot()).thenReturn(AdditionalChargeApprovalService.Snapshot.empty());
+    }
+
     @InjectMocks
     private LeaveApplicationServiceImpl service;
+
+    @Test
+    void chargeHolderCanProcessTheCoveredManagerStageWithoutAcquiringTheHodStage() {
+        var leave = new LeaveApplicationEntity();
+        leave.setLeaveId(1L);
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+        leave.setApprovalStage("MANAGER");
+        leave.setManagerApproverUserId(7L);
+        leave.setHodApproverUserId(9L);
+        var scope = org.mockito.Mockito.mock(AdditionalChargeApprovalService.Snapshot.class);
+        when(additionalChargeApprovals.snapshot()).thenReturn(scope);
+        when(scope.replaces(101L, 7L)).thenReturn(true);
+        when(scope.replaces(101L, 9L)).thenReturn(false);
+        when(scope.canAct(11L, 101L, "MANAGER", 7L, 9L)).thenReturn(true);
+        when(scope.canAct(7L, 101L, "MANAGER", 7L, 9L)).thenReturn(false);
+        when(approvalRoutingService.isTwoLevelStage("MANAGER")).thenReturn(true);
+        when(approvalRoutingService.isTwoLevelStage("HOD")).thenReturn(true);
+        when(leaveApplicationRepository.findByLeaveIdForUpdate(1L)).thenReturn(java.util.Optional.of(leave));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateLeaveStatus(1L, "APPROVED", "Not current authority", 7L));
+        service.updateLeaveStatus(1L, "APPROVED", "Acting manager recommendation", 11L);
+        assertEquals("PENDING", leave.getStatus());
+        assertEquals("HOD", leave.getApprovalStage());
+        assertEquals(7L, leave.getManagerApproverUserId());
+        assertEquals(9L, leave.getHodApproverUserId());
+        assertEquals(11L, leave.getManagerDecisionByUserId());
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateLeaveStatus(1L, "APPROVED", "Wrong stage", 11L));
+        verify(leaveApplicationRepository).save(leave);
+    }
+
+    @Test
+    void delegatedPendingLeavesAppearForHolderAndDisappearForReplacedApprover() {
+        var leave = new LeaveApplicationEntity();
+        leave.setLeaveId(1L);
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+        leave.setApprovalStage("MANAGER");
+        leave.setManagerApproverUserId(7L);
+        leave.setHodApproverUserId(9L);
+        var scope = org.mockito.Mockito.mock(AdditionalChargeApprovalService.Snapshot.class);
+        when(additionalChargeApprovals.snapshot()).thenReturn(scope);
+        when(scope.affects(7L)).thenReturn(true);
+        when(scope.affects(11L)).thenReturn(true);
+        when(scope.incomingEmployeeIds(11L)).thenReturn(List.of(101L));
+        when(scope.incomingEmployeeIds(7L)).thenReturn(List.of());
+        when(scope.canAct(11L, 101L, "MANAGER", 7L, 9L)).thenReturn(true);
+        when(scope.canAct(7L, 101L, "MANAGER", 7L, 9L)).thenReturn(false);
+        when(approvalRoutingService.isTwoLevelStage("MANAGER")).thenReturn(true);
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(11L)).thenReturn(List.of());
+        when(leaveApplicationRepository.findPendingForApprover(7L, List.of(101L), "PENDING")).thenReturn(List.of(leave));
+        when(leaveApplicationRepository.findPendingForApprover(11L, List.of(-1L), "PENDING")).thenReturn(List.of());
+        when(leaveApplicationRepository.findPendingAdditionalChargeCandidates(List.of(101L), null, null)).thenReturn(List.of(leave));
+        var employee = new EmployeeEntity();
+        employee.setEmployeeId(101L);
+        employee.setFullName("Team member");
+        when(employeeRepository.findAllById(List.of(101L))).thenReturn(List.of(employee));
+        assertEquals(0, service.getPendingLeavesForHOD(7L, null).size());
+        assertEquals(1, service.getPendingLeavesForHOD(11L, null).size());
+    }
+
+    @Test
+    void legacyLeaveApprovalIsTransferredAndAuditsTheActualActor() {
+        var leave = new LeaveApplicationEntity();
+        leave.setLeaveId(1L);
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+        var scope = org.mockito.Mockito.mock(AdditionalChargeApprovalService.Snapshot.class);
+        when(additionalChargeApprovals.snapshot()).thenReturn(scope);
+        when(scope.canActLegacy(11L, 101L, List.of())).thenReturn(true);
+        when(scope.canActLegacy(7L, 101L, List.of(101L))).thenReturn(false);
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(11L)).thenReturn(List.of());
+        when(leaveApplicationRepository.findByLeaveIdForUpdate(1L)).thenReturn(java.util.Optional.of(leave));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateLeaveStatus(1L, "APPROVED", "Not current authority", 7L));
+        service.updateLeaveStatus(1L, "APPROVED", "Acting authority", 11L);
+        assertEquals("APPROVED", leave.getStatus());
+        assertEquals(11L, leave.getHodDecisionByUserId());
+    }
 
     @Test
     void pendingLeaveUsesEffectiveAuthorityEmployeesIncludingCellFallback() {

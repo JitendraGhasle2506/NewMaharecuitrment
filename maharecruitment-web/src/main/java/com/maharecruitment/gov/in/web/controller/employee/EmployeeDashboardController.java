@@ -32,6 +32,7 @@ import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileDTO;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileUpdateResponse;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeDashboardContentService;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
+import com.maharecruitment.gov.in.recruitment.service.AdditionalChargeService;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -48,12 +49,15 @@ public class EmployeeDashboardController {
 
     private final EmployeeProfileService employeeProfileService;
     private final EmployeeDashboardContentService employeeDashboardContentService;
+    private final AdditionalChargeService additionalChargeService;
 
     public EmployeeDashboardController(
             EmployeeProfileService employeeProfileService,
-            EmployeeDashboardContentService employeeDashboardContentService) {
+            EmployeeDashboardContentService employeeDashboardContentService,
+            AdditionalChargeService additionalChargeService) {
         this.employeeProfileService = employeeProfileService;
         this.employeeDashboardContentService = employeeDashboardContentService;
+        this.additionalChargeService = additionalChargeService;
     }
 
     @GetMapping("/dashboard")
@@ -66,6 +70,9 @@ public class EmployeeDashboardController {
                 ? "Welcome back, " + profile.getFullName() + ". Here is what is happening today."
                 : "Complete your profile to keep MahaIT employee records up to date.");
         model.addAttribute("dashboardContent", employeeDashboardContentService.getDashboardContent(profile));
+        model.addAttribute("personalAdditionalCharges",
+                additionalChargeService.personalActiveCharges(resolveLoginEmail(principal)));
+        addHierarchyAttributes(model);
         return "employee/dashboard";
     }
 
@@ -77,10 +84,14 @@ public class EmployeeDashboardController {
 
     @GetMapping("/employee-hierarchy")
     public String employeeHierarchy(Model model) {
+        addHierarchyAttributes(model);
+        return "employee/employee-hierarchy";
+    }
+
+    private void addHierarchyAttributes(Model model) {
         model.addAttribute("hierarchyApi", "/employee/api/employee-hierarchy");
         model.addAttribute("hierarchyPhotoApi", "");
         model.addAttribute("hierarchySelfMode", true);
-        return "employee/employee-hierarchy";
     }
 
     @GetMapping("/profile/update")
