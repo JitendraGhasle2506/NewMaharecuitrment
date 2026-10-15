@@ -52,13 +52,15 @@ class TeamAttendanceTemplateTest {
                 .contains("Attendance under your authority")
                 .contains("Team attendance overview")
                 .contains("Asha Patil")
-                .contains("EMP101")
-                .contains("Recruitment Portal")
+                .contains("Developer")
+                .contains("Designation")
+                .contains("Attendance status")
                 .contains("status-present")
                 .contains("Present today")
                 .contains("Absent today")
                 .contains("On leave today")
-                .contains("90%");
+                .doesNotContain("09:30", "18:00", "punch-time", "Month summary", "View register",
+                        "Recruitment Portal", "90%");
     }
 
     @Test
