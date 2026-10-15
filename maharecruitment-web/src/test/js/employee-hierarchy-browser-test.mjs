@@ -32,7 +32,8 @@ function node(id, expanded = false) {
         children: expanded ? reports.map(id => node(id)) : [] };
 }
 let page = await readFile(join(base, 'templates/hr/employee-hierarchy.html'), 'utf8');
-page = page.replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"')
+page = page.replace(/\(v=20261015\)/g, '?v=20261015')
+    .replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"')
     .replace(/th:src="@\{([^}]+)\}"/g, 'src="$1"')
     .replace(/th:attr="[^"]+"/, 'data-api="/api/employees/hierarchy" data-context="/" data-photo-api="/api/employees/hierarchy/photo" data-layout="horizontal"')
     .replace('</head>', '<style>body{font-family:system-ui,sans-serif;margin:24px;background:#f4f7fb}.btn{color:#087ba4;text-decoration:none;font-size:13px}</style></head>');

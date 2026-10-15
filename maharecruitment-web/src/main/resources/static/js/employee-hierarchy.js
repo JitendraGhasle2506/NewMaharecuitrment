@@ -7,7 +7,7 @@
     const context = page.dataset.context.replace(/\/$/, '');
     const photoApi = page.dataset.photoApi || '';
     const selfMode = page.dataset.selfMode === 'true';
-    const horizontalLayout = page.dataset.layout === 'horizontal';
+    const horizontalLayout = (page.dataset.layout || (selfMode ? 'vertical' : 'horizontal')) === 'horizontal';
     const viewport = $('ehViewport');
     const stage = $('ehStage');
     const surface = $('ehSurface');
