@@ -1032,7 +1032,8 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 managerEmployeeId,
                 null,
                 List.of(employeeId),
-                authorityType);
+                authorityType,
+                true);
 
         EmployeeReportingMappingEntity mapping = mappingRepository
                 .findFirstByEmployeeIdOrderByMappingIdDesc(employeeId)
@@ -1140,7 +1141,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             Long projectId,
             List<Long> employeeIds) {
         return validateRequest(
-                hodUserId, managerType, managerEmployeeId, projectId, employeeIds, null);
+                hodUserId, managerType, managerEmployeeId, projectId, employeeIds, null, false);
     }
 
     private MappingRequest validateRequest(
@@ -1149,7 +1150,8 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             Long managerEmployeeId,
             Long projectId,
             List<Long> employeeIds,
-            String resolvedAuthorityType) {
+            String resolvedAuthorityType,
+            boolean allowManagerSelection) {
         if (hodUserId == null) {
             throw new IllegalArgumentException("Reporting authority selection is required.");
         }
@@ -1159,7 +1161,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
         String normalizedType = normalizeManagerType(managerType);
         boolean directManagerAuthority = isDirectManagerAuthority(authorityType);
-        if (directManagerAuthority
+        if (directManagerAuthority && !allowManagerSelection
                 && (!authorityType.equals(normalizedType) || managerEmployeeId != null)) {
             throw new IllegalArgumentException(
                     "STM, PM, and Other Employee reporting authorities support direct employee mappings only.");

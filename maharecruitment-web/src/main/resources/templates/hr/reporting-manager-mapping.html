@@ -241,7 +241,7 @@
                                                 Manager type
                                             </label>
                                             <select autocomplete="off" class="form-select" id="changeManagerTypeSelect"
-                                                    name="managerType" disabled>
+                                                    name="managerType">
                                                 <option value="">Report directly to the authority</option>
                                                 <option value="HOD" id="changeHodManagerTypeOption">Head of Department (HOD)</option>
                                                 <option value="STM">Senior Technical Manager (STM)</option>
@@ -590,7 +590,7 @@
                 replaceSelectOptions('#authorityEmployeeSelect', '-- Loading employees... --', []);
                 replaceSelectOptions('#newAuthoritySelect', '-- Select New Reporting Authority --', []);
                 $('#newAuthoritySelect').prop('disabled', true);
-                $('#changeManagerTypeSelect').val('').prop('disabled', true);
+                $('#changeManagerTypeSelect').val('');
                 $('#changeManagerSection').addClass('hidden');
                 replaceSelectOptions('#changeManagerSelect', '-- Select Reporting Manager --', []);
                 $('#changeManagerSelect').prop({ disabled: true, required: false });
@@ -615,7 +615,6 @@
                 $('#changeAuthorityForm')[0].reset();
                 $('#currentAssignmentPanel, #selectedManagerBadge').addClass('hidden');
                 resetChangeManagerSelection();
-                $('#changeManagerTypeSelect').prop('disabled', true);
                 $('#changeManagerTypeHelp').text('Select an authority first.');
                 $('#cellFormTitle').text('Map Cell to Reporting Authority');
                 $('#employeeFormTitle').text('Map Employees to Reporting Managers');
@@ -999,19 +998,16 @@
                     return String(item.id) === String(authorityUserId);
                 });
                 var authorityType = authority ? authority.authorityType : '';
-                var directOnly = isDirectManagerAuthority(authorityType);
                 var managerTypeSelect = $('#changeManagerTypeSelect');
 
                 $('#changeHodManagerTypeOption').prop({
                     hidden: authorityType !== 'COO',
                     disabled: authorityType !== 'COO'
                 });
-                managerTypeSelect.prop('disabled', !authority || directOnly);
+                managerTypeSelect.prop('disabled', false);
                 $('#changeManagerTypeHelp').text(!authority
                     ? 'Select an authority first.'
-                    : directOnly
-                        ? authorityType + ' authorities support direct reporting only.'
-                        : 'Choose a manager type, or leave direct reporting selected.');
+                    : 'Choose a manager type, or leave direct reporting selected.');
             });
 
             $('#changeManagerTypeSelect').change(function() {
@@ -1080,7 +1076,6 @@
                 });
                 $('#newAuthoritySelect').val('').prop('disabled', !assignment);
                 resetChangeManagerSelection();
-                $('#changeManagerTypeSelect').prop('disabled', true);
                 $('#changeManagerTypeHelp').text('Select an authority first.');
                 $('#currentAssignmentPanel, #selectedManagerBadge').addClass('hidden');
                 if(!assignment) {

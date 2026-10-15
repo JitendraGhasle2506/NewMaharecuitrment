@@ -798,12 +798,13 @@ class ReportingManagerServiceImplTest {
         verify(mappingRepository, never()).save(any());
     }
 
-    @Test
-    void changeReportingAuthorityCanAlsoChangeManagerTypeAndManager() {
+    @ParameterizedTest
+    @ValueSource(strings = {"ROLE_HOD", "ROLE_PM", "ROLE_STM"})
+    void changeReportingAuthorityCanAlsoChangeManagerTypeAndManager(String authorityRole) {
         EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
         EmployeeEntity manager = employee(50L, "Project Manager", "EMP050", "INTERNAL", "ACTIVE");
         EmployeeReportingMappingEntity existing = reportingMapping(900L, 101L, 7L, "STM", 40L);
-        when(userRepository.findById(8L)).thenReturn(Optional.of(user(8L, "New HOD")));
+        when(userRepository.findById(8L)).thenReturn(Optional.of(userWithRole(8L, "New Authority", authorityRole)));
         when(employeeRepository.findById(50L)).thenReturn(Optional.of(manager));
         when(employeeRepository.findAllById(Set.of(101L))).thenReturn(List.of(employee));
         when(mappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(101L))
