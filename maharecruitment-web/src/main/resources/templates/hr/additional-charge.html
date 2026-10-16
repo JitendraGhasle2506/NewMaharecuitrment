@@ -27,7 +27,7 @@
         <div class="ac-layout">
             <article class="ac-panel">
                 <div class="ac-panel-title"><span class="ac-step">01</span><div><h2>Assign a charge</h2><p>Fields marked * are required.</p></div></div>
-                <form id="additionalChargeForm" method="post" th:action="@{/hr/additional-charge}" th:object="${chargeForm}" th:attr="data-team-api=@{/hr/additional-charge/team-preview}">
+                <form id="additionalChargeForm" method="post" autocomplete="off" th:action="@{/hr/additional-charge}" th:object="${chargeForm}" th:attr="data-team-api=@{/hr/additional-charge/team-preview}">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                     <div class="alert alert-danger" th:if="${#fields.hasAnyErrors()}" role="alert" tabindex="-1" id="acErrors">
                         <strong>Check the assignment details.</strong>
@@ -83,7 +83,7 @@
                             </td>
                             <td><span th:text="${#temporals.format(charge.startDate, 'dd MMM yyyy')}"></span><small class="d-block" th:text="${charge.endDate == null ? 'Ongoing' : 'to ' + #temporals.format(charge.endDate, 'dd MMM yyyy')}"></small></td>
                             <td><span class="ac-status" th:classappend="${'ac-' + #strings.toLowerCase(charge.status)}" th:text="${charge.status}"></span></td>
-                            <td><form th:if="${charge.status == 'Active' or charge.status == 'Scheduled'}" class="ac-revoke" th:action="@{/hr/additional-charge/{id}/revoke(id=${charge.id})}" method="post"><input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button class="btn btn-sm btn-outline-danger" type="submit">Revoke</button></form><span th:unless="${charge.status == 'Active' or charge.status == 'Scheduled'}" class="text-muted">—</span></td>
+                            <td><form th:if="${charge.status == 'Active' or charge.status == 'Scheduled'}" class="ac-revoke" th:action="@{/hr/additional-charge/{id}/revoke(id=${charge.id})}" method="post" autocomplete="off"><input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button class="btn btn-sm btn-outline-danger" type="submit">Revoke</button></form><span th:unless="${charge.status == 'Active' or charge.status == 'Scheduled'}" class="text-muted">—</span></td>
                         </tr></tbody>
                     </table>
                 </div>
