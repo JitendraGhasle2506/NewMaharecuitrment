@@ -42,6 +42,8 @@ page = page.replace(/\(v=(\d+)\)/g, '?v=$1')
 // Rendered by EmployeeAdditionalChargeDashboardTest; includes the real shared chart fragment.
 const dashboardPage = (await readFile(resolve('maharecruitment-web/target/employee-dashboard-hierarchy-preview.html'), 'utf8'))
     .replace('data-api="/employee/api/employee-hierarchy"', 'data-api="/api/employees/hierarchy"');
+const dashboardDesignPage = (await readFile(resolve('maharecruitment-web/target/employee-dashboard-design-preview.html'), 'utf8'))
+    .replace('data-api="/employee/api/employee-hierarchy"', 'data-api="/api/employees/hierarchy"');
 const teamTemplate = await readFile(join(base, 'templates/employee/employee-hierarchy.html'), 'utf8');
 const backLink = teamTemplate.match(/<a class="eh-secondary"[\s\S]*?<\/a>/)[0]
     .replace(/th:href="@\{([^}]+)\}"/g, 'href="$1"');
@@ -89,14 +91,17 @@ const server = createServer(async (request, response) => {
             response.end(JSON.stringify({ success: true, data }));
         } else if (url.pathname === '/hr/employee-hierarchy') {
             response.setHeader('Content-Type', 'text/html'); response.end(page);
+        } else if (url.pathname === '/employee/dashboard-design-preview') {
+            response.setHeader('Content-Type', 'text/html'); response.end(dashboardDesignPage);
         } else if (url.pathname === '/employee/dashboard') {
             response.setHeader('Content-Type', 'text/html'); response.end(dashboardPage);
         } else if (url.pathname === '/employee/employee-hierarchy') {
             response.setHeader('Content-Type', 'text/html'); response.end(teamPage);
         } else if (['/js/employee-hierarchy.js', '/css/employee-hierarchy.css', '/img/employee-default-avatar.svg',
-            '/css/employee-dashboard.css', '/css/employee-additional-charge.css', '/js/employee-dashboard-community.js'].includes(url.pathname)) {
+            '/css/employee-dashboard.css', '/css/employee-dashboard-home.css', '/css/employee-additional-charge.css', '/js/employee-dashboard-community.js'].includes(url.pathname)
+            || url.pathname.startsWith('/assets/')) {
             response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'text/javascript'
-                : url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css');
+                : url.pathname.endsWith('.svg') ? 'image/svg+xml' : url.pathname.endsWith('.woff2') ? 'font/woff2' : 'text/css');
             response.end(await readFile(join(base, 'static', url.pathname)));
         } else { response.statusCode = 404; response.end(); }
     } catch (error) { response.statusCode = 500; response.end(String(error)); }
@@ -406,6 +411,26 @@ try {
         'Team hierarchy fits the mobile page');
     await evaluate(`document.querySelector('a[href="/employee/dashboard"]').click()`);
     await waitFor(`location.pathname === '/employee/dashboard' && document.querySelector('.quick-actions')`);
+    await send('Page.navigate', {url:`${origin}/employee/dashboard-design-preview`});
+    await waitFor(`document.querySelectorAll('.eh-card').length===4 && document.querySelectorAll('.dashboard-overview-card').length===3`);
+    assert.equal(await evaluate(`document.querySelector('.dashboard-intro h1').textContent`), 'Welcome back, Ananya Deshmukh');
+    assert.ok(await evaluate(`document.querySelector('.profile-facts').textContent.includes('01 Apr 2022')`));
+    assert.ok(await evaluate(`document.querySelector('.quick-actions a[href="/reporting-manager/resources"]') !== null`));
+    for(const [label,width,height] of [['desktop',1440,1080],['tablet',768,1024],['mobile',390,844],['small-mobile',320,740]]) {
+        await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<600});
+        await evaluate(`window.scrollTo(0,0);new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+        assert.ok(await evaluate(`document.documentElement.scrollWidth<=window.innerWidth`),`${label}: dashboard has no horizontal overflow`);
+        assert.ok(await evaluate(`(() => {const boxes=[...document.querySelectorAll('.quick-actions .quick-action')].map(el=>el.getBoundingClientRect());
+            return boxes.every((box,i)=>boxes.every((other,j)=>i===j||box.right<=other.left+1||box.left>=other.right-1||box.bottom<=other.top+1||box.top>=other.bottom-1))})()`),`${label}: quick actions do not overlap`);
+        const screenshot=await send('Page.captureScreenshot',{format:'png'});
+        await writeFile(join(artifacts,`dashboard-${label}.png`),Buffer.from(screenshot.data,'base64'));
+    }
+    await evaluate(`document.querySelector('a[href="#dashboardCelebrations"]').click()`);
+    assert.equal(await evaluate(`location.hash`),'#dashboardCelebrations');
+    await evaluate(`document.querySelector('[data-dashboard-dialog-target="birthdayWishDialog-2"]').click()`);
+    assert.ok(await evaluate(`document.getElementById('birthdayWishDialog-2').open`),'Birthday wish dialog still opens');
+    await evaluate(`document.querySelector('#birthdayWishDialog-2 [data-dashboard-dialog-close]').click()`);
+    assert.equal(await evaluate(`document.getElementById('birthdayWishDialog-2').open`),false);
     assert.deepEqual(exceptions, [], 'No browser JavaScript exceptions');
     console.log('PASS: Dashboard embeds the signed-in employee hierarchy and charge markers; branches expand on mobile, the separate team page opens and Back to Dashboard returns correctly.');
     console.log(`PASS: HOD-only selection, minimal transparent nodes, total subordinate counts (including unloaded branches), photo/fallback, expand/collapse, connectors, non-overlap, live/keyboard search, branch merging, zoom, metrics, full screen, drag-to-pan, empty state, readable mobile view, 320–1440px layouts. Screenshots: ${artifacts}`);

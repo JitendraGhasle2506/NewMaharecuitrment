@@ -26,7 +26,10 @@ import org.thymeleaf.templateresolver.StringTemplateResolver;
 class EmployeeAdditionalChargeDashboardTest {
     @Test void dashboardEmbedsTheSharedSelfHierarchyEvenWithoutAPersonalProfile() throws Exception {
         String page = Files.readString(Path.of("src/main/resources/templates/employee/dashboard.html"))
-                .replaceAll("th:replace=\"~\\{header/header[^\"]*\"", "");
+                .replaceAll("th:replace=\"~\\{header/header[^\"]*\"", "")
+                .replace("</head>", "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                        + "<link rel=\"stylesheet\" href=\"/assets/vendor/bootstrap/bootstrap.min.css\">"
+                        + "<link rel=\"stylesheet\" href=\"/assets/vendor/fontawesome/6.5.2/css/all.min.css\"></head>");
         var request = new MockHttpServletRequest("GET", "/employee/dashboard");
         var application = org.thymeleaf.web.servlet.JakartaServletWebApplication.buildApplication(new MockServletContext());
         var context = new org.thymeleaf.context.WebContext(application.buildExchange(request, new MockHttpServletResponse()));
@@ -34,6 +37,13 @@ class EmployeeAdditionalChargeDashboardTest {
         profile.setEmployeeId(1L);
         profile.setProfileAvailable(true);
         profile.setFullName("Ananya Deshmukh");
+        profile.setEmployeeCode("MAHAIT0123");
+        profile.setDepartment("Technology & Digital Services");
+        profile.setRole("Software Engineer");
+        profile.setEmail("ananya.deshmukh@example.test");
+        profile.setMobileNo("9876543210");
+        profile.setJoiningDate(LocalDate.of(2022, 4, 1));
+        profile.setCompletionPercentage(76);
         context.setVariable("profile", profile);
         context.setVariable("personalAdditionalCharges", List.of());
         context.setVariable("showTeamAttendance", true);
@@ -62,6 +72,17 @@ class EmployeeAdditionalChargeDashboardTest {
                 "href=\"/employee/employee-hierarchy\"");
         // Browser fixture deliberately uses an employee without a separate personal-profile record.
         Files.writeString(Path.of("target/employee-dashboard-hierarchy-preview.html"), withoutPersonalProfile);
+        profile.setProfileAvailable(true);
+        context.setVariable("dashboardContent", new com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView(
+                LocalDate.of(2026, 10, 19), "Monday, 19 October 2026", List.of(),
+                List.of(new com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.CelebrationView(
+                        2L, "Rohan Patil", "BIRTHDAY", "Birthday", "Happy Birthday", false, true, false, null)),
+                List.of(new com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.UpcomingEventView(
+                        "Organization holiday", LocalDate.of(2026, 10, 25), "25", "OCT", "Sunday, 25 October", "In 6 days")),
+                List.of(new com.maharecruitment.gov.in.web.service.employee.model.EmployeeDashboardContentView.AnnouncementView(
+                        "Keep your profile up to date", "Review your contact details and MAHAIT joining date in your profile.", "INFO")),
+                List.of(), List.of()));
+        Files.writeString(Path.of("target/employee-dashboard-design-preview.html"), engine.process("dashboard-hierarchy-preview", context));
     }
 
     @Test void chargesAreLoadedForAuthenticatedLoginRatherThanProfileEmail() {
