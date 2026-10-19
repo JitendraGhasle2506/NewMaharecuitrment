@@ -2,6 +2,8 @@ package com.maharecruitment.gov.in.web.dto.employee;
 
 import java.time.LocalDate;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +23,10 @@ public class EmployeeProfileDTO {
     private String fullName;
 
     private LocalDate dob;
+
+    @PastOrPresent(message = "Date of joining cannot be in the future")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate joiningDate;
 
     private String gender;
 

@@ -84,6 +84,13 @@
 
                         <div class="form-grid">
                             <label>
+                                Date of Joining
+                                <input autocomplete="off" name="joiningDate" type="date" th:value="${profile.joiningDate}"
+                                    aria-describedby="joiningDateHelp joiningDateError">
+                                <small id="joiningDateHelp">Leave blank to keep your current joining date.</small>
+                                <small id="joiningDateError" class="field-error" data-error-for="joiningDate"></small>
+                            </label>
+                            <label>
                                 Date of Birth
                                 <input autocomplete="off" name="dob" type="date" th:value="${profile.dob}">
                                 <small class="field-error" data-error-for="dob"></small>
@@ -238,7 +245,7 @@
         </section>
     </th:block>
     <script th:src="@{/js/sensitive-data-encryption.js}"></script>
-    <script th:src="@{/js/employee-dashboard.js(v='20260930')}"></script>
+    <script th:src="@{/js/employee-dashboard.js(v='20261019-joining')}"></script>
 </body>
 
 </html>

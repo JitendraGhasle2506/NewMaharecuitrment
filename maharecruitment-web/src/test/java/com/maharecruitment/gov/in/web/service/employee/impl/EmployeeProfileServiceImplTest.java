@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.web.service.employee.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,6 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.audit.dto.AuditRecordRequest;
+import com.maharecruitment.gov.in.audit.service.AuditTrailService;
+import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
@@ -54,6 +58,77 @@ class EmployeeProfileServiceImplTest {
 
     @Mock
     private UserAffiliationService userAffiliationService;
+
+    @Mock
+    private AuditTrailService auditTrailService;
+
+    @Test
+    void updatesOwnJoiningDateAndAuditsPreviousAndNewValues() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        employee.setJoiningDate(LocalDate.of(2020, 4, 1));
+        employee.setOnboardingDate(LocalDate.of(2020, 4, 3));
+        EmployeeProfile profile = new EmployeeProfile();
+        prepareProfileUpdate(user, employee, profile);
+        var input = new EmployeeProfileDTO();
+        input.setEmail(user.getEmail());
+        input.setEmployeeId(999L);
+        input.setJoiningDate(LocalDate.of(2020, 3, 30));
+
+        var result = service().updateCurrentEmployeeProfile(user.getEmail(), input);
+
+        assertThat(result.getJoiningDate()).isEqualTo(LocalDate.of(2020, 3, 30));
+        assertThat(result.getEmployeeId()).isEqualTo(101L);
+        assertThat(employee.getJoiningDate()).isEqualTo(result.getJoiningDate());
+        assertThat(employee.getOnboardingDate()).isEqualTo(LocalDate.of(2020, 4, 3));
+        var audit = org.mockito.ArgumentCaptor.forClass(AuditRecordRequest.class);
+        verify(auditTrailService).record(audit.capture());
+        assertThat(audit.getValue().getActionType()).isEqualTo("EMPLOYEE_JOINING_DATE_UPDATED");
+        assertThat(audit.getValue().getActorUserId()).isEqualTo(10L);
+        assertThat(audit.getValue().getEntityId()).isEqualTo("101");
+        assertThat(audit.getValue().getMetadata()).containsEntry("previousJoiningDate", "2020-04-01")
+                .containsEntry("newJoiningDate", "2020-03-30");
+    }
+
+    @Test
+    void omittedJoiningDatePreservesExistingDateAndDoesNotCreateChangeAudit() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        employee.setJoiningDate(LocalDate.of(2020, 4, 1));
+        prepareProfileUpdate(user, employee, new EmployeeProfile());
+        var input = new EmployeeProfileDTO();
+        input.setEmail(user.getEmail());
+        var result = service().updateCurrentEmployeeProfile(user.getEmail(), input);
+        assertThat(result.getJoiningDate()).isEqualTo(LocalDate.of(2020, 4, 1));
+        verify(auditTrailService, never()).record(any());
+    }
+
+    @Test
+    void rejectsFutureJoiningDateAndDatesOnOrBeforeBirthBeforeSaving() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        employee.setDateOfBirth(LocalDate.of(1990, 5, 1));
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(employeeRepository.findEmployeeProfileByUserId(user.getId())).thenReturn(Optional.of(employee));
+        for (LocalDate date : java.util.List.of(LocalDate.now().plusDays(1), LocalDate.of(1990, 5, 1), LocalDate.of(1989, 1, 1))) {
+            var input = new EmployeeProfileDTO();
+            input.setJoiningDate(date);
+            assertThatThrownBy(() -> service().updateCurrentEmployeeProfile(user.getEmail(), input))
+                    .isInstanceOf(RecruitmentNotificationException.class);
+        }
+        verify(employeeRepository, never()).save(any());
+        verify(employeeProfileRepository, never()).save(any());
+        verify(auditTrailService, never()).record(any());
+    }
+
+    @Test
+    void loadsJoiningDateFromEmployeeMasterEvenWithoutPersonalProfile() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        employee.setJoiningDate(LocalDate.of(2020, 4, 1));
+        preparePhotoLookup(user, employee, Optional.empty());
+        assertThat(service().getCurrentEmployeeProfile(user.getEmail()).getJoiningDate()).isEqualTo(employee.getJoiningDate());
+    }
 
     @Test
     void updateProfileSynchronizesChangedEmailToUserAndEmployeeMaster() {
@@ -322,7 +397,8 @@ class EmployeeProfileServiceImplTest {
                 fileStorageService,
                 sensitivePayloadDecryptor,
                 preOnboardingRepository,
-                userAffiliationService);
+                userAffiliationService,
+                auditTrailService);
     }
 
     private User user() {

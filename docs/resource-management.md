@@ -21,6 +21,8 @@ For an already-mapped team resource, choose **Change reporting manager**, select
 yourself or a subordinate, and select **Save reporting manager**. This updates the
 latest PRIMARY mapping in one transaction, preserving its project and other reporting
 types. Moving a manager under their own descendant is rejected to prevent cycles.
+Reporting-manager selectors support searching by employee name or code in both
+mapping and reassignment dialogs, including keyboard selection.
 Choose **Release** to remove a person's primary reporting assignment
 after confirmation. Releasing a manager preserves assignments of their own reports;
 that branch leaves the former manager's reporting scope. Other reporting types are

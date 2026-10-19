@@ -6,6 +6,30 @@
     const api = root.dataset.api;
     const state = { view: 'mapped', page: 0, size: 12, data: null, request: null, action: null, saving: false };
     let searchTimer;
+    let managerPicker;
+
+    function enhanceManagerPicker() {
+        if (!window.jQuery?.fn.select2) return;
+        if (!managerPicker) {
+            managerPicker = window.jQuery(element('Manager'));
+            managerPicker.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                dropdownParent: window.jQuery(element('Dialog')),
+                minimumResultsForSearch: 0,
+                language: { noResults: () => 'No matching employees found' }
+            });
+            managerPicker.on('select2:open', () => {
+                const search = element('Dialog').querySelector('.select2-search__field');
+                if (search) {
+                    search.placeholder = 'Search employee name or code…';
+                    search.setAttribute('aria-label', 'Search reporting manager by employee name or code');
+                    search.focus();
+                }
+            });
+        }
+        managerPicker.trigger('change.select2');
+    }
 
     function node(tag, className, content) {
         const result = document.createElement(tag);
@@ -166,6 +190,7 @@
         element('Confirm').classList.toggle('rm-primary', mapping);
         element('Confirm').classList.toggle('rm-release', !mapping);
         element('Dialog').showModal();
+        if (mapping) enhanceManagerPicker();
     }
 
     async function submit(event) {
@@ -226,6 +251,7 @@
     });
     element('Cancel').addEventListener('click', () => element('Dialog').close());
     element('Dialog').addEventListener('cancel', event => { if (state.saving) event.preventDefault(); });
+    element('Dialog').addEventListener('close', () => managerPicker?.select2('close'));
     element('ActionForm').addEventListener('submit', submit);
     load();
 })();

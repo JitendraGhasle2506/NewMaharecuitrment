@@ -146,6 +146,7 @@
         clearErrors();
         const formData = new FormData(form);
         const dob = String(formData.get('dob') || '').trim();
+        const joiningDate = String(formData.get('joiningDate') || '').trim();
         const marriageDate = String(formData.get('marriageDate') || '').trim();
         const email = String(formData.get('email') || '').trim().toLowerCase();
         let gender = String(formData.get('gender') || '').trim();
@@ -159,6 +160,14 @@
 
         if (dob === '1900-01-01') {
             setError('dob', 'Please select a valid date of birth');
+            valid = false;
+        }
+
+        if (joiningDate && joiningDate > localDateValue(new Date())) {
+            setError('joiningDate', 'Date of joining cannot be in the future');
+            valid = false;
+        } else if (joiningDate && dob && dob !== '1900-01-01' && joiningDate <= dob) {
+            setError('joiningDate', 'Date of joining must be after date of birth');
             valid = false;
         }
 
@@ -300,6 +309,10 @@
     }
 
     const marriageDateInput = field('marriageDate');
+    const joiningDateInput = field('joiningDate');
+    if (joiningDateInput) {
+        joiningDateInput.max = localDateValue(new Date());
+    }
     if (marriageDateInput) {
         marriageDateInput.max = localDateValue(new Date());
     }

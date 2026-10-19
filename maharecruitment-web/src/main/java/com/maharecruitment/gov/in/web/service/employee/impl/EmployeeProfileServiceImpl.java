@@ -16,6 +16,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.Role;
+import com.maharecruitment.gov.in.audit.dto.AuditRecordRequest;
+import com.maharecruitment.gov.in.audit.service.AuditTrailService;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
@@ -53,6 +55,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     private final SensitivePayloadDecryptor sensitivePayloadDecryptor;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final UserAffiliationService userAffiliationService;
+    private final AuditTrailService auditTrailService;
 
     public EmployeeProfileServiceImpl(
             EmployeeProfileRepository employeeProfileRepository,
@@ -61,7 +64,8 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
             FileStorageService fileStorageService,
             SensitivePayloadDecryptor sensitivePayloadDecryptor,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
-            UserAffiliationService userAffiliationService) {
+            UserAffiliationService userAffiliationService,
+            AuditTrailService auditTrailService) {
         this.employeeProfileRepository = employeeProfileRepository;
         this.employeeRepository = employeeRepository;
         this.userRepository = userRepository;
@@ -69,6 +73,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         this.sensitivePayloadDecryptor = sensitivePayloadDecryptor;
         this.preOnboardingRepository = preOnboardingRepository;
         this.userAffiliationService = userAffiliationService;
+        this.auditTrailService = auditTrailService;
     }
 
     @Override
@@ -85,6 +90,8 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     public EmployeeProfileDTO updateCurrentEmployeeProfile(String loginEmail, EmployeeProfileDTO profileDTO) {
         User user = requireUser(loginEmail);
         EmployeeEntity employee = requireEmployee(user);
+        validateJoiningDate(profileDTO, employee);
+        LocalDate previousJoiningDate = employee.getJoiningDate();
         EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElseGet(() -> {
             EmployeeProfile created = new EmployeeProfile();
             created.setEmployee(employee);
@@ -118,8 +125,30 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
             userAffiliationService.synchronizeUserProfile(savedUser);
         }
         EmployeeEntity savedEmployee = employeeRepository.save(employee);
+        if (!Objects.equals(previousJoiningDate, employee.getJoiningDate())) {
+            Map<String, Object> metadata = new LinkedHashMap<>();
+            metadata.put("previousJoiningDate", previousJoiningDate == null ? null : previousJoiningDate.toString());
+            metadata.put("newJoiningDate", employee.getJoiningDate().toString());
+            auditTrailService.record(AuditRecordRequest.builder()
+                    .moduleName("EMPLOYEE_PROFILE").entityType("EMPLOYEE")
+                    .entityId(employee.getEmployeeId().toString()).actionType("EMPLOYEE_JOINING_DATE_UPDATED")
+                    .actorUserId(user.getId()).actorLoginId(loginEmail).actorName(user.getName())
+                    .activitySummary("Employee updated date of joining").metadata(metadata).build());
+        }
         log.info("Employee profile saved for employeeId={} userId={}", employee.getEmployeeId(), user.getId());
         return toDto(savedProfile, user, savedEmployee);
+    }
+
+    private void validateJoiningDate(EmployeeProfileDTO input, EmployeeEntity employee) {
+        LocalDate joiningDate = input.getJoiningDate();
+        if (joiningDate == null) return;
+        if (joiningDate.isAfter(LocalDate.now())) {
+            throw new RecruitmentNotificationException("Date of joining cannot be in the future.");
+        }
+        LocalDate dob = firstDate(normalizeDob(input.getDob()), normalizeDob(employee.getDateOfBirth()));
+        if (dob != null && !joiningDate.isAfter(dob)) {
+            throw new RecruitmentNotificationException("Date of joining must be after date of birth.");
+        }
     }
 
     private void synchronizePreOnboardingEmail(EmployeeEntity employee, String email) {
@@ -211,6 +240,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
         dto.setId(profile != null ? profile.getId() : null);
         dto.setEmployeeId(employee != null ? employee.getEmployeeId() : null);
+        dto.setJoiningDate(employee != null ? employee.getJoiningDate() : null);
         dto.setFullName(firstText(employee != null ? employee.getFullName() : null, user.getName()));
         dto.setDob(firstDate(profile != null ? normalizeDob(profile.getDob()) : null,
                 employee != null ? normalizeDob(employee.getDateOfBirth()) : null));
@@ -248,6 +278,9 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     }
 
     private void syncEmployeeMaster(EmployeeEntity employee, EmployeeProfileDTO profileDTO, EmployeeProfile profile) {
+        if (profileDTO.getJoiningDate() != null) {
+            employee.setJoiningDate(profileDTO.getJoiningDate());
+        }
         LocalDate dob = normalizeDob(profileDTO.getDob());
         if (dob != null) {
             employee.setDateOfBirth(dob);

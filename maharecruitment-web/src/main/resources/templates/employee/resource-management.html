@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manage Resources</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/resource-management.css(v=2026101904)}">
-    <script defer th:src="@{/js/resource-management.js(v=2026101904)}"></script>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
+    <link rel="stylesheet" th:href="@{/css/resource-management.css(v=2026101905)}">
+    <script defer th:src="@{/assets/vendor/jquery/jquery-3.7.1.min.js}"></script>
+    <script defer th:src="@{/assets/vendor/select2/select2.min.js}"></script>
+    <script defer th:src="@{/js/resource-management.js(v=2026101905)}"></script>
 </head>
 <body>
 <th:block th:replace="~{header/header :: var-sidebar-header('Team', 'Manage Resources', ~{::section})}">
@@ -67,7 +71,7 @@
                 <div class="rm-dialog-icon"><i class="fa-solid fa-user-gear" aria-hidden="true"></i></div>
                 <h2 id="rmDialogTitle">Map resource</h2>
                 <p id="rmDialogDescription"></p>
-                <div id="rmManagerField"><label for="rmManager">Reporting manager <span aria-hidden="true">*</span></label><select id="rmManager" required></select><small>Choose yourself or any subordinate at any level in your reporting team. The resource will report directly to the selected manager.</small></div>
+                <div id="rmManagerField"><label for="rmManager">Reporting manager <span aria-hidden="true">*</span></label><select id="rmManager" aria-describedby="rmManagerHelp" required></select><small id="rmManagerHelp">Open the selector and search by employee name or code. Choose yourself or any subordinate in your reporting team.</small></div>
                 <p id="rmDialogError" class="rm-dialog-error" role="alert" hidden></p>
                 <div class="rm-dialog-actions"><button class="rm-button rm-outline" type="button" id="rmCancel">Cancel</button><button class="rm-button rm-primary" type="submit" id="rmConfirm">Map resource</button></div>
             </form>

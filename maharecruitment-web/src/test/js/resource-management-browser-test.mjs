@@ -65,7 +65,7 @@ const server = createServer(async (request, response) => {
             const size = Number(url.searchParams.get('size') || 12);
             const pageIndex = Math.min(Number(url.searchParams.get('page') || 0), Math.max(0, Math.ceil(found.length / size) - 1));
             response.end(JSON.stringify({ resources: found.slice(pageIndex * size, (pageIndex + 1) * size),
-                managers: [{ employeeId: 1, name: 'Me · Manager' }, { employeeId: 2, name: 'Ananya Deshmukh' }],
+                managers: [{ employeeId: 1, name: 'Me · Manager' }, { employeeId: 2, name: 'Ananya Deshmukh (EMP002)' }],
                 total: found.length, page: pageIndex, size, mappedCount: mapped.size, directCount: 1,
                 freeCount: resources.filter(resource => !mapped.has(resource.employeeId) && matchesType(resource)).length }));
         } else if (url.pathname === '/') {
@@ -122,6 +122,13 @@ try {
     const waitFor = expression => evaluate(`new Promise((resolve,reject)=>{let tries=0;const timer=setInterval(()=>{
         if(${expression}){clearInterval(timer);resolve(true)}else if(++tries>200){clearInterval(timer);reject(new Error('Condition timed out'))}},25)})`);
     const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+    const pointerClick = async selector => {
+        const point = await evaluate(`(() => {const target=document.querySelector(${JSON.stringify(selector)});
+            target.scrollIntoView({block:'nearest'});const box=target.getBoundingClientRect();
+            return {x:box.left+box.width/2,y:box.top+box.height/2}})()`);
+        await send('Input.dispatchMouseEvent', {type:'mousePressed',...point,button:'left',clickCount:1});
+        await send('Input.dispatchMouseEvent', {type:'mouseReleased',...point,button:'left',clickCount:1});
+    };
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
     await send('Page.navigate', { url: origin });
     await waitFor(`document.querySelectorAll('#rmRows tr').length===3`);
@@ -140,7 +147,31 @@ try {
     await click('#rmRows button[data-employee-id="3"][data-action="reassign"]');
     await waitFor(`document.getElementById('rmDialog').open`);
     assert.equal(await evaluate(`document.getElementById('rmManager').value`), '1', 'Existing reporting manager is preselected');
-    await evaluate(`document.getElementById('rmManager').value='2'`);
+    await pointerClick('#rmManagerField .select2-selection');
+    await waitFor(`document.querySelector('#rmDialog .select2-search__field') !== null`);
+    const searchManager = async term => {
+        await send('Input.dispatchKeyEvent', {type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
+        await evaluate(`(() => {
+            const search=document.querySelector('#rmDialog .select2-search__field');
+            search.value=${JSON.stringify(term)};search.dispatchEvent(new Event('input',{bubbles:true}));
+        })()`);
+        await send('Input.dispatchKeyEvent', {type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
+    };
+    await searchManager('nobody-matches');
+    await waitFor(`document.querySelector('#rmDialog .select2-results').textContent.includes('No matching employees found')`);
+    assert.equal(await evaluate(`document.getElementById('rmManager').value`), '1', 'Searching does not change the saved selection');
+    await searchManager('ananya');
+    await waitFor(`document.querySelectorAll('#rmDialog .select2-results__option--selectable').length===1`);
+    for (const width of [1440,390,320]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: width < 600 });
+        await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+        assert.ok(await evaluate(`document.getElementById('rmDialog').scrollWidth<=document.getElementById('rmDialog').clientWidth`), `${width}: searchable manager selector fits dialog`);
+        const screenshot = await send('Page.captureScreenshot', { format: 'png' });
+        await writeFile(join(artifacts, `manager-search-${width}.png`), Buffer.from(screenshot.data, 'base64'));
+    }
+    await send('Input.dispatchKeyEvent', {type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+    await send('Input.dispatchKeyEvent', {type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+    await waitFor(`document.getElementById('rmManager').value==='2' && !document.querySelector('#rmDialog .select2-search__field')`);
     await click('#rmConfirm');
     await waitFor(`!document.getElementById('rmDialog').open && document.querySelector('button[data-employee-id="3"]').closest('tr').textContent.includes('Ananya Deshmukh')`);
     assert.equal(actions[0].action, 'reassign');
@@ -184,7 +215,10 @@ try {
     await waitFor(`document.getElementById('rmRange').textContent.startsWith('1–')`);
     await click('#rmRows button[data-employee-id="5"]');
     await waitFor(`document.getElementById('rmDialog').open`);
-    await evaluate(`document.getElementById('rmManager').value='2'`);
+    await pointerClick('#rmManagerField .select2-selection');
+    await searchManager('EMP002');
+    await waitFor(`document.querySelectorAll('#rmDialog .select2-results__option--selectable').length===1`);
+    await pointerClick('#rmDialog .select2-results__option--selectable');
     await click('#rmConfirm');
     await waitFor(`!document.getElementById('rmDialog').open && document.getElementById('rmMappedCount').textContent==='3'`);
     assert.equal(actions[2].action, 'map');
