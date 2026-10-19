@@ -91,7 +91,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         User user = requireUser(loginEmail);
         EmployeeEntity employee = requireEmployee(user);
         validateJoiningDate(profileDTO, employee);
-        LocalDate previousJoiningDate = employee.getJoiningDate();
+        LocalDate previousJoiningDate = employee.getOnboardingDate();
         EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElseGet(() -> {
             EmployeeProfile created = new EmployeeProfile();
             created.setEmployee(employee);
@@ -125,15 +125,16 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
             userAffiliationService.synchronizeUserProfile(savedUser);
         }
         EmployeeEntity savedEmployee = employeeRepository.save(employee);
-        if (!Objects.equals(previousJoiningDate, employee.getJoiningDate())) {
+        if (!Objects.equals(previousJoiningDate, employee.getOnboardingDate())) {
             Map<String, Object> metadata = new LinkedHashMap<>();
             metadata.put("previousJoiningDate", previousJoiningDate == null ? null : previousJoiningDate.toString());
-            metadata.put("newJoiningDate", employee.getJoiningDate().toString());
+            metadata.put("newJoiningDate", employee.getOnboardingDate().toString());
+            metadata.put("column", "mahait_onboarding_date");
             auditTrailService.record(AuditRecordRequest.builder()
                     .moduleName("EMPLOYEE_PROFILE").entityType("EMPLOYEE")
                     .entityId(employee.getEmployeeId().toString()).actionType("EMPLOYEE_JOINING_DATE_UPDATED")
                     .actorUserId(user.getId()).actorLoginId(loginEmail).actorName(user.getName())
-                    .activitySummary("Employee updated date of joining").metadata(metadata).build());
+                    .activitySummary("Employee updated MAHAIT date of joining").metadata(metadata).build());
         }
         log.info("Employee profile saved for employeeId={} userId={}", employee.getEmployeeId(), user.getId());
         return toDto(savedProfile, user, savedEmployee);
@@ -240,7 +241,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
         dto.setId(profile != null ? profile.getId() : null);
         dto.setEmployeeId(employee != null ? employee.getEmployeeId() : null);
-        dto.setJoiningDate(employee != null ? employee.getJoiningDate() : null);
+        dto.setJoiningDate(employee != null ? employee.getOnboardingDate() : null);
         dto.setFullName(firstText(employee != null ? employee.getFullName() : null, user.getName()));
         dto.setDob(firstDate(profile != null ? normalizeDob(profile.getDob()) : null,
                 employee != null ? normalizeDob(employee.getDateOfBirth()) : null));
@@ -279,7 +280,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
     private void syncEmployeeMaster(EmployeeEntity employee, EmployeeProfileDTO profileDTO, EmployeeProfile profile) {
         if (profileDTO.getJoiningDate() != null) {
-            employee.setJoiningDate(profileDTO.getJoiningDate());
+            employee.setOnboardingDate(profileDTO.getJoiningDate());
         }
         LocalDate dob = normalizeDob(profileDTO.getDob());
         if (dob != null) {

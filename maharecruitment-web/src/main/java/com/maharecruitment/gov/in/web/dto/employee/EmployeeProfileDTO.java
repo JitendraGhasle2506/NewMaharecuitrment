@@ -24,6 +24,7 @@ public class EmployeeProfileDTO {
 
     private LocalDate dob;
 
+    /** Employee-facing joining date: employee_master.mahait_onboarding_date. */
     @PastOrPresent(message = "Date of joining cannot be in the future")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate joiningDate;

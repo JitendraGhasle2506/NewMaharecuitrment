@@ -63,7 +63,7 @@ class EmployeeProfileServiceImplTest {
     private AuditTrailService auditTrailService;
 
     @Test
-    void updatesOwnJoiningDateAndAuditsPreviousAndNewValues() {
+    void updatesOwnMahaitJoiningDateAndAuditsPreviousAndNewValues() {
         User user = user();
         EmployeeEntity employee = employee();
         employee.setJoiningDate(LocalDate.of(2020, 4, 1));
@@ -79,15 +79,15 @@ class EmployeeProfileServiceImplTest {
 
         assertThat(result.getJoiningDate()).isEqualTo(LocalDate.of(2020, 3, 30));
         assertThat(result.getEmployeeId()).isEqualTo(101L);
-        assertThat(employee.getJoiningDate()).isEqualTo(result.getJoiningDate());
-        assertThat(employee.getOnboardingDate()).isEqualTo(LocalDate.of(2020, 4, 3));
+        assertThat(employee.getOnboardingDate()).isEqualTo(result.getJoiningDate());
+        assertThat(employee.getJoiningDate()).isEqualTo(LocalDate.of(2020, 4, 1));
         var audit = org.mockito.ArgumentCaptor.forClass(AuditRecordRequest.class);
         verify(auditTrailService).record(audit.capture());
         assertThat(audit.getValue().getActionType()).isEqualTo("EMPLOYEE_JOINING_DATE_UPDATED");
         assertThat(audit.getValue().getActorUserId()).isEqualTo(10L);
         assertThat(audit.getValue().getEntityId()).isEqualTo("101");
-        assertThat(audit.getValue().getMetadata()).containsEntry("previousJoiningDate", "2020-04-01")
-                .containsEntry("newJoiningDate", "2020-03-30");
+        assertThat(audit.getValue().getMetadata()).containsEntry("previousJoiningDate", "2020-04-03")
+                .containsEntry("newJoiningDate", "2020-03-30").containsEntry("column", "mahait_onboarding_date");
     }
 
     @Test
@@ -95,11 +95,13 @@ class EmployeeProfileServiceImplTest {
         User user = user();
         EmployeeEntity employee = employee();
         employee.setJoiningDate(LocalDate.of(2020, 4, 1));
+        employee.setOnboardingDate(LocalDate.of(2020, 4, 3));
         prepareProfileUpdate(user, employee, new EmployeeProfile());
         var input = new EmployeeProfileDTO();
         input.setEmail(user.getEmail());
         var result = service().updateCurrentEmployeeProfile(user.getEmail(), input);
-        assertThat(result.getJoiningDate()).isEqualTo(LocalDate.of(2020, 4, 1));
+        assertThat(result.getJoiningDate()).isEqualTo(LocalDate.of(2020, 4, 3));
+        assertThat(employee.getJoiningDate()).isEqualTo(LocalDate.of(2020, 4, 1));
         verify(auditTrailService, never()).record(any());
     }
 
@@ -122,12 +124,13 @@ class EmployeeProfileServiceImplTest {
     }
 
     @Test
-    void loadsJoiningDateFromEmployeeMasterEvenWithoutPersonalProfile() {
+    void loadsMahaitJoiningDateFromEmployeeMasterEvenWithoutPersonalProfile() {
         User user = user();
         EmployeeEntity employee = employee();
         employee.setJoiningDate(LocalDate.of(2020, 4, 1));
+        employee.setOnboardingDate(LocalDate.of(2020, 4, 3));
         preparePhotoLookup(user, employee, Optional.empty());
-        assertThat(service().getCurrentEmployeeProfile(user.getEmail()).getJoiningDate()).isEqualTo(employee.getJoiningDate());
+        assertThat(service().getCurrentEmployeeProfile(user.getEmail()).getJoiningDate()).isEqualTo(employee.getOnboardingDate());
     }
 
     @Test
