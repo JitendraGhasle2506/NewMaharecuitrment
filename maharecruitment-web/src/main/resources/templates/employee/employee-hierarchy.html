@@ -13,6 +13,9 @@
         <a class="eh-secondary" th:href="@{/employee/dashboard}">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
         </a>
+        <a class="eh-secondary" th:href="@{/reporting-manager/resources}">
+            <i class="fa-solid fa-users-gear" aria-hidden="true"></i> Manage Resources
+        </a>
         <div id="employeeReportingChain" class="eh-reporting-chain"
              th:attr="data-api=@{/employee/api/employee-hierarchy/reporting-chain}">
             <h2>My reporting chain</h2>

@@ -14,6 +14,14 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEnt
 @Repository
 public interface EmployeeReportingMappingRepository extends JpaRepository<EmployeeReportingMappingEntity, Long> {
 
+    @Query("select distinct m.employeeId from EmployeeReportingMappingEntity m")
+    List<Long> findMappedResourceIds();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("delete from EmployeeReportingMappingEntity m where m.employeeId = :employeeId "
+            + "and coalesce(m.reportingType, 'PRIMARY') = 'PRIMARY'")
+    int deletePrimaryResourceMappings(@Param("employeeId") Long employeeId);
+
     List<EmployeeReportingMappingEntity> findByProjectId(Long projectId);
 
     List<EmployeeReportingMappingEntity> findByManagerEmployeeId(Long managerEmployeeId);

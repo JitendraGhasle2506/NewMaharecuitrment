@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
     <th:block th:fragment="var-files-header">
@@ -48,6 +48,13 @@
                         <a th:href="${@contextPathUrl.resolve(contextPath, homePageUrl, '/home')}">
                             <i class="fa fa-house"></i>
                             <span>Home</span>
+                        </a>
+                    </li>
+
+                    <li sec:authorize="hasAnyAuthority('ROLE_EMPLOYEE', 'ROLE_HOD', 'ROLE_STM', 'ROLE_PM', 'ROLE_COO', 'ROLE_CTO', 'ROLE_CFO', 'ROLE_MD')">
+                        <a th:href="@{/reporting-manager/resources}">
+                            <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
+                            <span>Manage Resources</span>
                         </a>
                     </li>
 

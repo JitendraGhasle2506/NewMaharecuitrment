@@ -21,6 +21,10 @@ import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeCell
 @Repository
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from EmployeeEntity e where e.employeeId = :employeeId")
+    Optional<EmployeeEntity> lockForResourceMapping(@Param("employeeId") Long employeeId);
+
     @Query("select employee from EmployeeEntity employee "
             + "where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE' "
             + "and (lower(trim(employee.email)) in :candidateEmails "

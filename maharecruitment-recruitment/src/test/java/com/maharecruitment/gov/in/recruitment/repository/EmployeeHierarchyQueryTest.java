@@ -28,6 +28,15 @@ class EmployeeHierarchyQueryTest {
                     if (query != null) assertThatCode(() -> manager.createQuery(query.value())).doesNotThrowAnyException();
                 }
             }
+            for (var method : EmployeeReportingMappingRepository.class.getDeclaredMethods()) {
+                if (!method.getName().equals("findMappedResourceIds")
+                        && !method.getName().equals("deletePrimaryResourceMappings")) continue;
+                assertThatCode(() -> manager.createQuery(method.getAnnotation(Query.class).value()))
+                        .doesNotThrowAnyException();
+            }
+            assertThatCode(() -> manager.createQuery(EmployeeRepository.class
+                    .getMethod("lockForResourceMapping", Long.class).getAnnotation(Query.class).value()))
+                    .doesNotThrowAnyException();
         } finally {
             factory.destroy();
         }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manage Resources</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/resource-management.css(v=20261019)}">
+    <script defer th:src="@{/js/resource-management.js(v=20261019)}"></script>
+</head>
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header('Team', 'Manage Resources', ~{::section})}">
+    <section class="rm-page" id="resourceManagement" th:attr="data-api=@{/reporting-manager/resources/api}">
+        <a class="rm-back" th:href="@{/home}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to home</a>
+        <header class="rm-hero">
+            <div>
+                <span class="rm-eyebrow">TEAM WORKSPACE</span>
+                <h1>Manage resources</h1>
+                <p>Build your team. Keep every reporting assignment clear.</p>
+            </div>
+            <button class="rm-button rm-primary" type="button" id="rmBrowse"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Find free resources</button>
+        </header>
+
+        <div class="rm-metrics" aria-label="Resource overview">
+            <article><span class="rm-metric-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span><div><span>Mapped resources</span><strong id="rmMappedCount">—</strong><small>Your full reporting team</small></div></article>
+            <article><span class="rm-metric-icon rm-purple"><i class="fa-solid fa-user-group" aria-hidden="true"></i></span><div><span>Direct reports</span><strong id="rmDirectCount">—</strong><small>Assigned directly to you</small></div></article>
+            <article><span class="rm-metric-icon rm-green"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span><div><span>Free resources</span><strong id="rmFreeCount">—</strong><small>Available for a new assignment</small></div></article>
+        </div>
+
+        <div id="rmFeedback" class="rm-feedback" role="status" aria-live="polite" hidden></div>
+        <div class="rm-workspace">
+            <div class="rm-toolbar">
+                <div class="rm-tabs" role="group" aria-label="Resource view">
+                    <button type="button" data-view="mapped" aria-pressed="true">Mapped resources</button>
+                    <button type="button" data-view="free" aria-pressed="false">Free resources</button>
+                </div>
+                <button type="button" class="rm-button rm-outline" id="rmRefresh"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh</button>
+            </div>
+            <div class="rm-filter">
+                <div><h2 id="rmHeading">Your reporting team</h2><p id="rmDescription">Resources assigned to you and your subordinates.</p></div>
+                <label class="rm-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span class="visually-hidden">Search resources</span><input id="rmSearch" type="search" maxlength="100" placeholder="Search name, code, department…" autocomplete="off"></label>
+            </div>
+            <div id="rmState" class="rm-state" role="status">Loading resources…</div>
+            <div class="rm-table-wrap" id="rmTableWrap" hidden>
+                <table class="rm-table">
+                    <thead><tr><th scope="col">Resource</th><th scope="col">Department</th><th scope="col">Reporting person</th><th scope="col">Status</th><th scope="col" class="rm-action-heading">Action</th></tr></thead>
+                    <tbody id="rmRows"></tbody>
+                </table>
+            </div>
+            <footer class="rm-pagination"><span id="rmRange" aria-live="polite"></span><div><button class="rm-button rm-outline" type="button" id="rmPrevious" disabled>Previous</button><button class="rm-button rm-outline" type="button" id="rmNext" disabled>Next</button></div></footer>
+        </div>
+        <p class="rm-help"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Manage primary reporting assignments here. Free resources have no reporting mapping of any type. Releasing a manager keeps their own team's assignments intact.</p>
+
+        <dialog id="rmDialog" class="rm-dialog" aria-labelledby="rmDialogTitle" aria-describedby="rmDialogDescription">
+            <form id="rmActionForm">
+                <div class="rm-dialog-icon"><i class="fa-solid fa-user-gear" aria-hidden="true"></i></div>
+                <h2 id="rmDialogTitle">Map resource</h2>
+                <p id="rmDialogDescription"></p>
+                <div id="rmManagerField"><label for="rmManager">Reporting person <span aria-hidden="true">*</span></label><select id="rmManager" required></select><small>Choose yourself or someone in your reporting team.</small></div>
+                <p id="rmDialogError" class="rm-dialog-error" role="alert" hidden></p>
+                <div class="rm-dialog-actions"><button class="rm-button rm-outline" type="button" id="rmCancel">Cancel</button><button class="rm-button rm-primary" type="submit" id="rmConfirm">Map resource</button></div>
+            </form>
+        </dialog>
+    </section>
+</th:block>
+</body>
+</html>
