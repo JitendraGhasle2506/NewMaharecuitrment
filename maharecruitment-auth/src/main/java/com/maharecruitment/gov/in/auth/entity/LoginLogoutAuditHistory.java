@@ -28,7 +28,8 @@ import lombok.Setter;
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_login_logout_audit_event_session",
                 columnNames = {"event_type", "session_id_hash"}))
-public class LoginLogoutAuditHistory {
+@jakarta.persistence.EntityListeners(com.maharecruitment.gov.in.common.audit.AuditIpEntityListener.class)
+public class LoginLogoutAuditHistory implements com.maharecruitment.gov.in.common.audit.IpAudited {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

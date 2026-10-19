@@ -26,7 +26,7 @@ import lombok.Setter;
                 @Index(name = "idx_commission_rate_audit_rate_id", columnList = "commission_rate_id"),
                 @Index(name = "idx_commission_rate_audit_action_ts", columnList = "action_timestamp")
         })
-public class CommissionRateAuditLog {
+public class CommissionRateAuditLog extends com.maharecruitment.gov.in.common.audit.RequestAudited {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

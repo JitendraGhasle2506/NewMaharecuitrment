@@ -22,7 +22,8 @@ let page = (await readFile(join(base, 'templates/employee/resource-management.ht
 const resources = Array.from({ length: 16 }, (_, index) => ({ employeeId: index + 2,
     name: index === 0 ? 'Ananya Deshmukh' : index === 1 ? '<img src=x onerror=alert(1)>' : `Resource ${index + 2}`,
     code: `EMP${index + 2}`, designation: 'Software Engineer', department: 'Technology',
-    manager: index < 3 ? 'My Team Lead' : null, direct: index === 0 }));
+    employeeType: index === 15 ? 'EXTERNAL' : index === 14 ? 'MAHAIT' : 'INTERNAL',
+    manager: index < 3 ? 'My Team Lead' : null, managerEmployeeId: index < 3 ? 1 : null, direct: index === 0 }));
 const mapped = new Set([2, 3, 4]);
 const actions = [];
 let failNextRead = false;
@@ -35,9 +36,15 @@ const server = createServer(async (request, response) => {
                 assert.equal(request.headers['x-csrf-token'], 'test-token');
                 let body = '';
                 for await (const chunk of request) body += chunk;
-                const [, employee, action] = url.pathname.match(/\/(\d+)\/(map|release)$/);
+                const [, employee, action] = url.pathname.match(/\/(\d+)\/(map|release|reassign)$/);
                 actions.push({ id: Number(employee), action, body: body ? JSON.parse(body) : null });
-                if (action === 'map') mapped.add(Number(employee)); else mapped.delete(Number(employee));
+                if (action === 'release') mapped.delete(Number(employee));
+                else {
+                    mapped.add(Number(employee));
+                    const resource = resources.find(item => item.employeeId === Number(employee));
+                    resource.managerEmployeeId = JSON.parse(body).managerEmployeeId;
+                    resource.manager = resource.managerEmployeeId === 2 ? 'Ananya Deshmukh' : 'Me · Manager';
+                }
                 response.end(JSON.stringify({ success: true, message: 'Assignment saved successfully.' }));
                 return;
             }
@@ -48,15 +55,19 @@ const server = createServer(async (request, response) => {
                 return;
             }
             const free = url.searchParams.get('view') === 'free';
+            const selectedType = url.searchParams.get('employeeType') || 'INTERNAL_MAHAIT';
+            const matchesType = resource => selectedType === 'ALL' || (selectedType === 'INTERNAL_MAHAIT'
+                ? ['INTERNAL', 'MAHAIT'].includes(resource.employeeType) : resource.employeeType === selectedType);
             const query = (url.searchParams.get('q') || '').toLowerCase();
             const found = resources.filter(resource => mapped.has(resource.employeeId) !== free)
+                .filter(resource => !free || matchesType(resource))
                 .filter(resource => `${resource.name} ${resource.code}`.toLowerCase().includes(query));
             const size = Number(url.searchParams.get('size') || 12);
             const pageIndex = Math.min(Number(url.searchParams.get('page') || 0), Math.max(0, Math.ceil(found.length / size) - 1));
             response.end(JSON.stringify({ resources: found.slice(pageIndex * size, (pageIndex + 1) * size),
                 managers: [{ employeeId: 1, name: 'Me · Manager' }, { employeeId: 2, name: 'Ananya Deshmukh' }],
                 total: found.length, page: pageIndex, size, mappedCount: mapped.size, directCount: 1,
-                freeCount: resources.length - mapped.size }));
+                freeCount: resources.filter(resource => !mapped.has(resource.employeeId) && matchesType(resource)).length }));
         } else if (url.pathname === '/') {
             response.setHeader('Content-Type', 'text/html'); response.end(page);
         } else if (/^\/(css|js|assets)\//.test(url.pathname)) {
@@ -122,16 +133,51 @@ try {
         const screenshot = await send('Page.captureScreenshot', { format: 'png' });
         await writeFile(join(artifacts, `resources-${width}.png`), Buffer.from(screenshot.data, 'base64'));
     }
-    await click('#rmRows button');
+    await click('#rmRows button[data-action="release"]');
     await waitFor(`document.getElementById('rmDialog').open`);
     await click('#rmCancel');
     assert.equal(actions.length, 0, 'Cancel leaves mapping unchanged');
-    await click('#rmRows button');
+    await click('#rmRows button[data-employee-id="3"][data-action="reassign"]');
+    await waitFor(`document.getElementById('rmDialog').open`);
+    assert.equal(await evaluate(`document.getElementById('rmManager').value`), '1', 'Existing reporting manager is preselected');
+    await evaluate(`document.getElementById('rmManager').value='2'`);
+    await click('#rmConfirm');
+    await waitFor(`!document.getElementById('rmDialog').open && document.querySelector('button[data-employee-id="3"]').closest('tr').textContent.includes('Ananya Deshmukh')`);
+    assert.equal(actions[0].action, 'reassign');
+    assert.equal(actions[0].body.managerEmployeeId, 2);
+    await click('#rmRows button[data-action="release"]');
     await click('#rmConfirm');
     await waitFor(`!document.getElementById('rmDialog').open && document.getElementById('rmMappedCount').textContent==='2'`);
-    assert.equal(actions[0].action, 'release');
+    assert.equal(actions[1].action, 'release');
     await click('#rmBrowse');
     await waitFor(`document.querySelectorAll('#rmRows tr').length===12 && !document.getElementById('rmNext').disabled`);
+    assert.equal(await evaluate(`document.getElementById('rmEmployeeType').value`), 'INTERNAL_MAHAIT');
+    assert.equal(await evaluate(`document.getElementById('rmTypeFilter').hidden`), false);
+    assert.equal(await evaluate(`document.getElementById('rmRows').textContent.includes('EXTERNAL')`), false);
+    await click('#rmNext');
+    await waitFor(`document.getElementById('rmRange').textContent.startsWith('13')`);
+    const changeType = async value => {
+        await evaluate(`document.getElementById('rmEmployeeType').value=${JSON.stringify(value)};document.getElementById('rmEmployeeType').dispatchEvent(new Event('change'))`);
+    };
+    await changeType('EXTERNAL');
+    await waitFor(`document.getElementById('rmRange').textContent==='1–1 of 1 resources' && document.getElementById('rmRows').textContent.includes('EXTERNAL')`);
+    assert.equal(await evaluate(`document.getElementById('rmPrevious').disabled`), true, 'Changing employee type resets pagination');
+    await changeType('MAHAIT');
+    await waitFor(`document.querySelectorAll('#rmRows tr').length===1 && document.getElementById('rmRows').textContent.includes('MAHAIT')`);
+    await changeType('INTERNAL');
+    await waitFor(`document.querySelectorAll('#rmRows tr').length===12 && document.getElementById('rmNext').disabled`);
+    assert.equal(await evaluate(`document.getElementById('rmRows').textContent.includes('MAHAIT')`), false);
+    await changeType('ALL');
+    await waitFor(`document.getElementById('rmRange').textContent.endsWith('of 14 resources')`);
+    for (const width of [1440, 390, 320]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: width < 600 });
+        await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+        assert.ok(await evaluate('document.documentElement.scrollWidth<=window.innerWidth'), `${width}: employee type filter fits screen`);
+        const screenshot = await send('Page.captureScreenshot', { format: 'png' });
+        await writeFile(join(artifacts, `free-resources-${width}.png`), Buffer.from(screenshot.data, 'base64'));
+    }
+    await changeType('INTERNAL_MAHAIT');
+    await waitFor(`document.getElementById('rmRange').textContent==='1–12 of 13 resources'`);
     await click('#rmNext');
     await waitFor(`document.getElementById('rmRange').textContent.startsWith('13')`);
     await click('#rmPrevious');
@@ -141,8 +187,8 @@ try {
     await evaluate(`document.getElementById('rmManager').value='2'`);
     await click('#rmConfirm');
     await waitFor(`!document.getElementById('rmDialog').open && document.getElementById('rmMappedCount').textContent==='3'`);
-    assert.equal(actions[1].action, 'map');
-    assert.equal(actions[1].body.managerEmployeeId, 2);
+    assert.equal(actions[2].action, 'map');
+    assert.equal(actions[2].body.managerEmployeeId, 2);
     await evaluate(`document.getElementById('rmSearch').value='missing';document.getElementById('rmSearch').dispatchEvent(new Event('input'))`);
     await waitFor(`document.getElementById('rmState').textContent.includes('No matching resources')`);
     failNextRead = true;
@@ -151,7 +197,7 @@ try {
     await click('#rmRefresh');
     await waitFor(`document.getElementById('rmState').textContent.includes('No matching resources')`);
     assert.deepEqual(errors, [], 'No browser runtime errors');
-    console.log(`PASS: desktop/mobile layouts, safe rendering, dialogs, release, mapping, CSRF header, pagination, search and retry. Screenshots: ${artifacts}`);
+    console.log(`PASS: desktop/mobile layouts, default Internal + MAHAIT, all employee-type filters, pagination reset, safe rendering, reassignment, release, mapping, CSRF header, search and retry. Screenshots: ${artifacts}`);
 } finally {
     socket?.close(); child.kill(); server.closeAllConnections(); server.close();
 }

@@ -25,6 +25,7 @@ public class AuditEventView {
     private String actorName;
     private String activitySummary;
     private String activityDetails;
+    private String ipAddress;
     private String metadataJson;
     private LocalDateTime occurredAt;
 }

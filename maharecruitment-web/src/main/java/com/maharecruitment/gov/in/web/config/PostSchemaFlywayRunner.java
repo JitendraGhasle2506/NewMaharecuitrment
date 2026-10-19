@@ -298,6 +298,7 @@ public class PostSchemaFlywayRunner {
                 new db.postmigration.V152__additional_charge_replacement_team(),
                 new db.postmigration.V153__additional_charge_approval_audit(),
                 new db.postmigration.V154__additional_charge_optional_cell(),
+                new db.postmigration.V155__audit_client_ip_support(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

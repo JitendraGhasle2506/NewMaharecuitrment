@@ -28,7 +28,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class EmployeeLocationMappingAuditLogEntity {
+public class EmployeeLocationMappingAuditLogEntity extends com.maharecruitment.gov.in.common.audit.RequestAudited {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

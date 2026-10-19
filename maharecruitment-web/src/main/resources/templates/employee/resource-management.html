@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manage Resources</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/resource-management.css(v=20261019)}">
-    <script defer th:src="@{/js/resource-management.js(v=20261019)}"></script>
+    <link rel="stylesheet" th:href="@{/css/resource-management.css(v=2026101904)}">
+    <script defer th:src="@{/js/resource-management.js(v=2026101904)}"></script>
 </head>
 <body>
 <th:block th:replace="~{header/header :: var-sidebar-header('Team', 'Manage Resources', ~{::section})}">
@@ -37,13 +37,24 @@
                 <button type="button" class="rm-button rm-outline" id="rmRefresh"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh</button>
             </div>
             <div class="rm-filter">
-                <div><h2 id="rmHeading">Your reporting team</h2><p id="rmDescription">Resources assigned to you and your subordinates.</p></div>
+                <div><h2 id="rmHeading">Your reporting team</h2><p id="rmDescription">Use Change reporting manager to assign a team resource directly to yourself or a subordinate.</p></div>
                 <label class="rm-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span class="visually-hidden">Search resources</span><input id="rmSearch" type="search" maxlength="100" placeholder="Search name, code, department…" autocomplete="off"></label>
+            </div>
+            <div id="rmTypeFilter" class="rm-type-filter" hidden>
+                <label for="rmEmployeeType">Employee type</label>
+                <select id="rmEmployeeType" aria-describedby="rmTypeHelp">
+                    <option value="INTERNAL_MAHAIT" selected>Internal + MAHAIT</option>
+                    <option value="INTERNAL">Internal</option>
+                    <option value="MAHAIT">MAHAIT</option>
+                    <option value="EXTERNAL">External</option>
+                    <option value="ALL">All employee types</option>
+                </select>
+                <small id="rmTypeHelp">Internal and MAHAIT employees are shown by default.</small>
             </div>
             <div id="rmState" class="rm-state" role="status">Loading resources…</div>
             <div class="rm-table-wrap" id="rmTableWrap" hidden>
                 <table class="rm-table">
-                    <thead><tr><th scope="col">Resource</th><th scope="col">Department</th><th scope="col">Reporting person</th><th scope="col">Status</th><th scope="col" class="rm-action-heading">Action</th></tr></thead>
+                    <thead><tr><th scope="col">Resource</th><th scope="col">Department</th><th scope="col">Reporting manager</th><th scope="col">Status</th><th scope="col" class="rm-action-heading">Action</th></tr></thead>
                     <tbody id="rmRows"></tbody>
                 </table>
             </div>
@@ -56,7 +67,7 @@
                 <div class="rm-dialog-icon"><i class="fa-solid fa-user-gear" aria-hidden="true"></i></div>
                 <h2 id="rmDialogTitle">Map resource</h2>
                 <p id="rmDialogDescription"></p>
-                <div id="rmManagerField"><label for="rmManager">Reporting person <span aria-hidden="true">*</span></label><select id="rmManager" required></select><small>Choose yourself or someone in your reporting team.</small></div>
+                <div id="rmManagerField"><label for="rmManager">Reporting manager <span aria-hidden="true">*</span></label><select id="rmManager" required></select><small>Choose yourself or any subordinate at any level in your reporting team. The resource will report directly to the selected manager.</small></div>
                 <p id="rmDialogError" class="rm-dialog-error" role="alert" hidden></p>
                 <div class="rm-dialog-actions"><button class="rm-button rm-outline" type="button" id="rmCancel">Cancel</button><button class="rm-button rm-primary" type="submit" id="rmConfirm">Map resource</button></div>
             </form>

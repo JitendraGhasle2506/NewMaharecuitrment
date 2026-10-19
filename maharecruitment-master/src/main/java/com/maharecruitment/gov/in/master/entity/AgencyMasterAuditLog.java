@@ -25,7 +25,7 @@ import lombok.Setter;
                 @Index(name = "idx_agency_audit_agency_id", columnList = "agency_id"),
                 @Index(name = "idx_agency_audit_action_ts", columnList = "action_timestamp")
         })
-public class AgencyMasterAuditLog {
+public class AgencyMasterAuditLog extends com.maharecruitment.gov.in.common.audit.RequestAudited {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

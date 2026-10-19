@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.audit.service.impl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import com.maharecruitment.gov.in.audit.repository.AuditEventRepository;
 import com.maharecruitment.gov.in.audit.service.AuditTrailService;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.UserService;
+import com.maharecruitment.gov.in.common.audit.AuditRequestContext;
 
 @Service
 @Transactional(readOnly = true)
@@ -59,6 +61,10 @@ public class AuditTrailServiceImpl implements AuditTrailService {
             actorUserId = user.getId();
         }
 
+        String ipAddress = AuditRequestContext.ipAddress(request.getIpAddress());
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        if (request.getMetadata() != null) metadata.putAll(request.getMetadata());
+        metadata.put("clientIp", ipAddress);
         AuditEventEntity entity = AuditEventEntity.builder()
                 .moduleName(request.getModuleName().trim())
                 .entityType(request.getEntityType().trim())
@@ -69,8 +75,9 @@ public class AuditTrailServiceImpl implements AuditTrailService {
                 .actorName(actorName)
                 .activitySummary(request.getActivitySummary().trim())
                 .activityDetails(trimToNull(request.getActivityDetails()))
-                .metadataJson(toJson(request.getMetadata()))
+                .metadataJson(toJson(metadata))
                 .build();
+        entity.setIpAddress(ipAddress);
 
         auditEventRepository.save(entity);
     }
@@ -103,6 +110,7 @@ public class AuditTrailServiceImpl implements AuditTrailService {
                 .actorName(entity.getActorName())
                 .activitySummary(entity.getActivitySummary())
                 .activityDetails(entity.getActivityDetails())
+                .ipAddress(entity.getIpAddress())
                 .metadataJson(entity.getMetadataJson())
                 .occurredAt(entity.getOccurredAt())
                 .build();

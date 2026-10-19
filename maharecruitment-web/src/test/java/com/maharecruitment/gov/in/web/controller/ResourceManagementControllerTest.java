@@ -29,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.recruitment.service.organization.ResourceManagementService;
+import com.maharecruitment.gov.in.recruitment.service.organization.ResourceManagementService.EmployeeTypeFilter;
 
 class ResourceManagementControllerTest {
     @Configuration(proxyBeanMethods = false)
@@ -64,18 +65,34 @@ class ResourceManagementControllerTest {
 
     @Test void returnsPageAndUsesSessionIdentityForAllOperations() throws Exception {
         assertThat(controller.page(session)).isEqualTo("employee/resource-management");
-        when(service.list(10L, "mapped", "", 0, 12)).thenReturn(
+        when(service.list(10L, "mapped", "", 0, 12, EmployeeTypeFilter.INTERNAL_MAHAIT)).thenReturn(
                 new ResourceManagementService.Page(List.of(), List.of(), 0, 0, 12, 0, 0, 0));
         mvc.perform(get("/reporting-manager/resources/api").session(session).param("userId", "999"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
-        verify(service).list(10L, "mapped", "", 0, 12);
+        verify(service).list(10L, "mapped", "", 0, 12, EmployeeTypeFilter.INTERNAL_MAHAIT);
         mvc.perform(post("/reporting-manager/resources/api/4/map").session(session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"managerEmployeeId\":2,\"userId\":999}"))
                 .andExpect(status().isOk());
         verify(service).map(10L, 4L, 2L);
+        mvc.perform(post("/reporting-manager/resources/api/3/reassign").session(session)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"managerEmployeeId\":2,\"userId\":999}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.message").value("Reporting manager updated successfully."));
+        verify(service).reassign(10L, 3L, 2L);
         mvc.perform(post("/reporting-manager/resources/api/3/release").session(session))
                 .andExpect(status().isOk());
         verify(service).release(10L, 3L);
+    }
+
+    @Test void defaultsEmployeeTypeAndBindsExplicitFiltersAndRejectsUnknownTypes() throws Exception {
+        mvc.perform(get("/reporting-manager/resources/api").session(session).param("view", "free"))
+                .andExpect(status().isOk());
+        verify(service).list(10L, "free", "", 0, 12, EmployeeTypeFilter.INTERNAL_MAHAIT);
+        mvc.perform(get("/reporting-manager/resources/api").session(session)
+                .param("view", "free").param("employeeType", "EXTERNAL"))
+                .andExpect(status().isOk());
+        verify(service).list(10L, "free", "", 0, 12, EmployeeTypeFilter.EXTERNAL);
+        mvc.perform(get("/reporting-manager/resources/api").session(session).param("employeeType", "INVALID"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test void rejectsExpiredSessionAndInvalidAssignment() throws Exception {
@@ -83,6 +100,8 @@ class ResourceManagementControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
         for (String body : List.of("{}", "{\"managerEmployeeId\":0}", "{\"managerEmployeeId\":-1}")) {
             mvc.perform(post("/reporting-manager/resources/api/4/map").session(session)
+                    .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+            mvc.perform(post("/reporting-manager/resources/api/3/reassign").session(session)
                     .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
         }
         verifyNoInteractions(service);

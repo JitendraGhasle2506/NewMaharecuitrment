@@ -27,7 +27,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class OrganizationAuditLogEntity {
+public class OrganizationAuditLogEntity extends com.maharecruitment.gov.in.common.audit.RequestAudited {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

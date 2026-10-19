@@ -46,12 +46,12 @@
         avatar.setAttribute('aria-hidden', 'true');
         const identity = node('div');
         identity.append(node('strong', '', resource.name || 'Unnamed resource'),
-            node('small', '', [resource.code, resource.designation].filter(Boolean).join(' · ') || 'Details unavailable'));
+            node('small', '', [resource.code, resource.designation, resource.employeeType].filter(Boolean).join(' · ') || 'Details unavailable'));
         person.append(avatar, identity);
         const nameCell = node('td');
         nameCell.append(person);
         row.append(nameCell);
-        for (const [label, value] of [['Department', resource.department], ['Reporting person', resource.manager]]) {
+        for (const [label, value] of [['Department', resource.department], ['Reporting manager', resource.manager]]) {
             const cell = node('td', '', value || '—');
             cell.dataset.label = label;
             row.append(cell);
@@ -62,11 +62,22 @@
         status.append(node('span', `rm-badge ${free ? 'rm-badge-free' : resource.direct ? '' : 'rm-badge-indirect'}`,
             free ? 'Available' : resource.direct ? 'Direct report' : 'Subordinate’s resource'));
         const action = node('td');
+        const actions = node('div', 'rm-row-actions');
+        if (!free) {
+            const reassign = node('button', 'rm-button rm-outline', 'Change reporting manager');
+            reassign.type = 'button';
+            reassign.dataset.employeeId = resource.employeeId;
+            reassign.dataset.action = 'reassign';
+            reassign.setAttribute('aria-label', `Change reporting manager for ${resource.name}`);
+            actions.append(reassign);
+        }
         const button = node('button', `rm-button ${free ? 'rm-primary' : 'rm-release'}`, free ? 'Map resource' : 'Release');
         button.type = 'button';
         button.dataset.employeeId = resource.employeeId;
+        button.dataset.action = free ? 'map' : 'release';
         button.setAttribute('aria-label', `${free ? 'Map' : 'Release'} ${resource.name}`);
-        action.append(button);
+        actions.append(button);
+        action.append(actions);
         row.append(status, action);
         return row;
     }
@@ -103,6 +114,7 @@
         element('Next').disabled = true;
         showState('Loading resources…');
         const params = new URLSearchParams({ view: state.view, q: element('Search').value.trim(), page: state.page, size: state.size });
+        if (state.view === 'free') params.set('employeeType', element('EmployeeType').value);
         try {
             const data = await request(`${api}?${params}`, { signal: controller.signal });
             if (state.request === controller) render(data);
@@ -120,21 +132,23 @@
         clearTimeout(searchTimer);
         state.view = view;
         state.page = 0;
+        element('TypeFilter').hidden = view !== 'free';
         root.querySelectorAll('[data-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.view === view)));
         element('Heading').textContent = view === 'free' ? 'Available resources' : 'Your reporting team';
         element('Description').textContent = view === 'free'
             ? 'People with no reporting assignment. Choose a resource to grow your team.'
-            : 'Resources assigned to you and your subordinates.';
+            : 'Use Change reporting manager to assign a team resource directly to yourself or a subordinate.';
         load();
     }
 
-    function openAction(resource) {
-        state.action = { resource, type: state.view === 'free' ? 'map' : 'release' };
-        const mapping = state.action.type === 'map';
-        element('DialogTitle').textContent = mapping ? 'Map resource' : 'Release resource';
+    function openAction(resource, type) {
+        state.action = { resource, type };
+        const mapping = type !== 'release';
+        const label = type === 'reassign' ? 'Change reporting manager' : mapping ? 'Map resource' : 'Release resource';
+        element('DialogTitle').textContent = label;
         element('DialogDescription').textContent = mapping
-            ? `Assign ${resource.name} to a reporting person in your team.`
-            : `Release ${resource.name} from ${resource.manager || 'their reporting person'}? This removes their primary assignment. Their own team stays assigned to them. Other reporting assignments remain in place.`;
+            ? `Choose who ${resource.name} will report to directly: yourself or any subordinate in your reporting team.`
+            : `Release ${resource.name} from ${resource.manager || 'their reporting manager'}? This removes their primary assignment. Their own team stays assigned to them. Other reporting assignments remain in place.`;
         element('ManagerField').hidden = !mapping;
         element('Manager').required = mapping;
         element('Manager').replaceChildren();
@@ -144,8 +158,11 @@
             option.value = manager.employeeId;
             element('Manager').append(option);
         }
+        if (type === 'reassign' && resource.managerEmployeeId != null) {
+            element('Manager').value = String(resource.managerEmployeeId);
+        }
         element('DialogError').hidden = true;
-        element('Confirm').textContent = mapping ? 'Map resource' : 'Release resource';
+        element('Confirm').textContent = type === 'reassign' ? 'Save reporting manager' : label;
         element('Confirm').classList.toggle('rm-primary', mapping);
         element('Confirm').classList.toggle('rm-release', !mapping);
         element('Dialog').showModal();
@@ -169,7 +186,7 @@
         try {
             const result = await request(`${api}/${resource.employeeId}/${type}`, {
                 method: 'POST', headers,
-                ...(type === 'map' ? { body: JSON.stringify({ managerEmployeeId: Number(element('Manager').value) }) } : {})
+                ...(type !== 'release' ? { body: JSON.stringify({ managerEmployeeId: Number(element('Manager').value) }) } : {})
             });
             element('Dialog').close();
             feedback(result.message);
@@ -189,6 +206,11 @@
     root.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => changeView(button.dataset.view)));
     element('Browse').addEventListener('click', () => { element('Search').value = ''; changeView('free'); });
     element('Refresh').addEventListener('click', () => { clearTimeout(searchTimer); load(); });
+    element('EmployeeType').addEventListener('change', () => {
+        clearTimeout(searchTimer);
+        state.page = 0;
+        load();
+    });
     element('Search').addEventListener('input', () => {
         clearTimeout(searchTimer);
         state.page = 0;
@@ -200,7 +222,7 @@
         const button = event.target.closest('button[data-employee-id]');
         if (!button || state.saving) return;
         const resource = state.data?.resources.find(item => String(item.employeeId) === button.dataset.employeeId);
-        if (resource) openAction(resource);
+        if (resource) openAction(resource, button.dataset.action);
     });
     element('Cancel').addEventListener('click', () => element('Dialog').close());
     element('Dialog').addEventListener('cancel', event => { if (state.saving) event.preventDefault(); });

@@ -24,7 +24,7 @@ public interface EmployeeHierarchyRepository extends Repository<EmployeeEntity, 
             select e.employeeId as employeeId, u.id as userId, e.fullName as employeeName,
                    e.employeeCode as employeeCode, d.departmentId as departmentId,
                    d.departmentName as department, des.designationId as designationId,
-                   des.designationName as designation,
+                   des.designationName as designation, e.recruitmentType as recruitmentType,
                    case when exists (select hu.id from User hu join hu.roles role
                        where hu.id = u.id and upper(role.name) in
                            ('ROLE_STM', 'ROLE_COO', 'ROLE_HOD', 'ROLE_MD', 'ROLE_CTO', 'ROLE_CFO'))
@@ -64,6 +64,7 @@ public interface EmployeeHierarchyRepository extends Repository<EmployeeEntity, 
         String getDepartment();
         Long getDesignationId();
         String getDesignation();
+        String getRecruitmentType();
         Boolean getHod();
         Boolean getHasPhoto();
     }

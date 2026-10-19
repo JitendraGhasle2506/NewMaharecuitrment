@@ -8,9 +8,20 @@ employee and to their descendants. The free-resource view contains active,
 non-relieved employees with no record in `employee_reporting_mapping` of any
 reporting type. It excludes the signed-in employee. Search covers name, employee
 code, designation, department and reporting-person name; results are paginated.
+In **Free resources**, **Employee type** defaults to **Internal + MAHAIT**. Choose
+**Internal**, **MAHAIT**, **External**, or **All employee types** to change the filter.
+Filtering runs before search-result pagination and updates the free-resource count.
+The employee type is displayed with each resource's details. Mapped resources and
+the reporting-manager selector continue to include the full authorized reporting team.
 
 Choose **Map resource** to assign an available person to yourself or one of your
-subordinates. Choose **Release** to remove a person's primary reporting assignment
+subordinates at any level. The selected person becomes the resource's direct reporting
+manager; choosing a subordinate does not make the signed-in user the direct manager.
+For an already-mapped team resource, choose **Change reporting manager**, select
+yourself or a subordinate, and select **Save reporting manager**. This updates the
+latest PRIMARY mapping in one transaction, preserving its project and other reporting
+types. Moving a manager under their own descendant is rejected to prevent cycles.
+Choose **Release** to remove a person's primary reporting assignment
 after confirmation. Releasing a manager preserves assignments of their own reports;
 that branch leaves the former manager's reporting scope. Other reporting types are
 preserved, so an employee with another assignment does not enter the free list.
@@ -33,8 +44,10 @@ preserved, so an employee with another assignment does not enter the free list.
   serialize per resource. Legacy HR writers do not acquire this new lock; a global
   guarantee across those writers would require a shared locking policy or a database
   constraint after cleaning up any historical duplicate rows.
-- Existing CSRF protection applies to both POST actions. Successful mutations log
-  actor/resource IDs through the application's logger.
+- Existing CSRF protection applies to all POST actions. Mapping, reassignment and
+  release write durable `audit_event` records in the same transaction. The records
+  include actor, employee, action, timestamp, IP and before/after mapping snapshots.
+  An audit persistence failure rolls back the resource change.
 
 ## Structure and performance
 
@@ -51,7 +64,9 @@ for each request so releases and new assignments are reflected immediately. Very
 installations may need recursive database queries and database-level pagination; the
 current strategy follows the existing hierarchy implementation.
 
-No schema migration is needed. Normal application rebuild/restart is required.
+Rebuild/restart runs migration **V155**, adding `ip_address` to existing audit tables.
+Historical IPs remain unknown; they cannot be reconstructed from earlier audit rows.
+See [audit IP capture](audit-ip-capture.md) for coverage and proxy configuration.
 
 ## Verification
 

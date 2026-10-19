@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.recruitment.service.organization.ResourceManagementService;
+import com.maharecruitment.gov.in.recruitment.service.organization.ResourceManagementService.EmployeeTypeFilter;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -46,8 +47,9 @@ public class ResourceManagementController {
             @RequestParam(defaultValue = "") String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "INTERNAL_MAHAIT") EmployeeTypeFilter employeeType,
             HttpSession session) {
-        return service.list(currentUserId(session), view, q, page, size);
+        return service.list(currentUserId(session), view, q, page, size, employeeType);
     }
 
     @PostMapping("/api/{employeeId}/map")
@@ -55,6 +57,13 @@ public class ResourceManagementController {
     public Message map(@PathVariable Long employeeId, @Valid @RequestBody Assignment assignment, HttpSession session) {
         service.map(currentUserId(session), employeeId, assignment.managerEmployeeId());
         return new Message(true, "Resource mapped successfully.");
+    }
+
+    @PostMapping("/api/{employeeId}/reassign")
+    @ResponseBody
+    public Message reassign(@PathVariable Long employeeId, @Valid @RequestBody Assignment assignment, HttpSession session) {
+        service.reassign(currentUserId(session), employeeId, assignment.managerEmployeeId());
+        return new Message(true, "Reporting manager updated successfully.");
     }
 
     @PostMapping("/api/{employeeId}/release")

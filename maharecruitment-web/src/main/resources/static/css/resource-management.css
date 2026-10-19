@@ -338,6 +338,42 @@
     background: #fff3f3;
 }
 
+.rm-type-filter {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    padding: 0 24px 20px;
+    color: var(--rm-muted);
+    font-size: .85rem;
+}
+
+.rm-type-filter label {
+    font-weight: 600;
+}
+
+.rm-type-filter select {
+    max-width: 100%;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid #d8e0ec;
+    border-radius: 9px;
+    color: var(--rm-ink);
+    background: white;
+    font: inherit;
+}
+
+.rm-type-filter small {
+    font-size: .75rem;
+}
+
+.rm-row-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .rm-action-heading,.rm-table td:last-child {
     text-align: right;
 }

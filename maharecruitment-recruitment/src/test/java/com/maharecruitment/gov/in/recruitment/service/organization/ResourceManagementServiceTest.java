@@ -10,6 +10,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -20,13 +22,16 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyReposi
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository.ReportingRow;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.service.organization.ResourceManagementService.EmployeeTypeFilter;
 
 class ResourceManagementServiceTest {
     private final EmployeeHierarchyRepository hierarchy = mock(EmployeeHierarchyRepository.class);
     private final EmployeeReportingMappingRepository mappings = mock(EmployeeReportingMappingRepository.class);
     private final EmployeeRepository employees = mock(EmployeeRepository.class);
+    private final com.maharecruitment.gov.in.audit.service.AuditTrailService auditTrail = mock(
+            com.maharecruitment.gov.in.audit.service.AuditTrailService.class);
     private final ResourceManagementService service = new ResourceManagementService(
-            new ResourceReportingScopeResolver(hierarchy), mappings, employees);
+            new ResourceReportingScopeResolver(hierarchy), mappings, employees, auditTrail);
 
     @BeforeEach
     void setUp() {
@@ -59,12 +64,47 @@ class ResourceManagementServiceTest {
     }
 
     @Test
-    void mapsFreeResourceToASubordinateWithExplicitPrimaryType() {
-        service.map(10L, 4L, 2L);
+    void defaultsFreeResourcesToInternalAndMahaitAndAllowsEachEmployeeType() {
+        var internal = person(4L, null, "Internal resource");
+        var mahait = person(6L, null, "MAHAIT resource");
+        var external = person(7L, null, "External resource");
+        var unknown = person(8L, null, "Unknown resource");
+        when(mahait.getRecruitmentType()).thenReturn(" mahait ");
+        when(external.getRecruitmentType()).thenReturn("EXTERNAL");
+        when(unknown.getRecruitmentType()).thenReturn(null);
+        doReturn(List.of(person(1L, 10L, "Manager"), internal, mahait, external, unknown))
+                .when(hierarchy).findActiveEmployees();
+
+        var defaultPage = service.list(10L, "free", "", 0, 12);
+        assertThat(defaultPage.resources()).extracting(ResourceManagementService.Resource::employeeId).containsExactly(4L, 6L);
+        assertThat(defaultPage.freeCount()).isEqualTo(2);
+        assertThat(service.list(10L, "free", "", 0, 12, EmployeeTypeFilter.INTERNAL).resources())
+                .extracting(ResourceManagementService.Resource::employeeId).containsExactly(4L);
+        assertThat(service.list(10L, "free", "", 0, 12, EmployeeTypeFilter.MAHAIT).resources())
+                .extracting(ResourceManagementService.Resource::employeeId).containsExactly(6L);
+        var externalPage = service.list(10L, "free", "external", 99, 1, EmployeeTypeFilter.EXTERNAL);
+        assertThat(externalPage.resources()).extracting(ResourceManagementService.Resource::employeeId).containsExactly(7L);
+        assertThat(externalPage.page()).isZero();
+        assertThat(externalPage.freeCount()).isEqualTo(1);
+        assertThat(service.list(10L, "free", "", 0, 12, EmployeeTypeFilter.ALL).total()).isEqualTo(4);
+        assertThat(service.list(10L, "free", "External", 0, 12).total()).isZero();
+    }
+
+    @Test
+    void employeeTypeFilterDoesNotRestrictMappedTeamOrReportingManagerOptions() {
+        var page = service.list(10L, "mapped", "", 0, 12, EmployeeTypeFilter.EXTERNAL);
+        assertThat(page.resources()).extracting(ResourceManagementService.Resource::employeeId).containsExactly(2L, 3L);
+        assertThat(page.managers()).extracting(ResourceManagementService.Manager::employeeId).containsExactly(1L, 2L, 3L);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {1L, 2L, 3L})
+    void mapsFreeResourceDirectlyToSelfOrAnyLevelOfSubordinate(long managerId) {
+        service.map(10L, 4L, managerId);
         var mapping = org.mockito.ArgumentCaptor.forClass(EmployeeReportingMappingEntity.class);
         verify(mappings).save(mapping.capture());
         assertThat(mapping.getValue().getEmployeeId()).isEqualTo(4L);
-        assertThat(mapping.getValue().getManagerEmployeeId()).isEqualTo(2L);
+        assertThat(mapping.getValue().getManagerEmployeeId()).isEqualTo(managerId);
         assertThat(mapping.getValue().getHodUserId()).isEqualTo(10L);
         assertThat(mapping.getValue().getReportingType()).isEqualTo("PRIMARY");
         var order = inOrder(employees, hierarchy, mappings);
@@ -73,6 +113,53 @@ class ResourceManagementServiceTest {
         order.verify(hierarchy).findReportingRelationships("PRIMARY");
         order.verify(mappings).findByEmployeeIdIn(List.of(4L));
         order.verify(mappings).save(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {1L, 2L})
+    void changesReportingManagerForExistingTeamResource(long managerId) {
+        var latest = mapping(20L, "PRIMARY");
+        latest.setProjectId(101L);
+        var older = mapping(10L, "PRIMARY");
+        var project = mapping(30L, "PROJECT");
+        when(mappings.findByEmployeeIdIn(List.of(3L))).thenReturn(List.of(older, latest, project));
+        service.reassign(10L, 3L, managerId);
+        verify(mappings).save(latest);
+        assertThat(latest.getManagerEmployeeId()).isEqualTo(managerId);
+        assertThat(latest.getProjectId()).isEqualTo(101L);
+        assertThat(project.getManagerEmployeeId()).isNull();
+        assertThat(older.getManagerEmployeeId()).isNull();
+        verify(mappings, never()).deletePrimaryResourceMappings(any());
+    }
+
+    @Test
+    void normalizesLegacyPrimaryTypeWhenChangingReportingManager() {
+        var legacy = mapping(20L, null);
+        when(mappings.findByEmployeeIdIn(List.of(3L))).thenReturn(List.of(legacy));
+        service.reassign(10L, 3L, 1L);
+        assertThat(legacy.getReportingType()).isEqualTo("PRIMARY");
+        verify(mappings).save(legacy);
+    }
+
+    @Test
+    void rejectsReassigningAnotherTeamsResourceOrSelectingAnOutsideManager() {
+        assertStatus(() -> service.reassign(10L, 5L, 2L), HttpStatus.FORBIDDEN);
+        assertStatus(() -> service.reassign(10L, 3L, 5L), HttpStatus.FORBIDDEN);
+        assertStatus(() -> service.reassign(10L, 1L, 2L), HttpStatus.FORBIDDEN);
+        verify(mappings, never()).save(any());
+    }
+
+    @Test
+    void rejectsMovingAManagerUnderItsOwnDescendantOrItself() {
+        assertStatus(() -> service.reassign(10L, 2L, 3L), HttpStatus.CONFLICT);
+        assertStatus(() -> service.reassign(10L, 2L, 2L), HttpStatus.CONFLICT);
+        verify(mappings, never()).save(any());
+    }
+
+    @Test
+    void rejectsReassignmentWhenPrimaryRecordIsNoLongerAvailable() {
+        assertStatus(() -> service.reassign(10L, 3L, 1L), HttpStatus.CONFLICT);
+        verify(mappings, never()).save(any());
     }
 
     @Test
@@ -147,12 +234,21 @@ class ResourceManagementServiceTest {
                 error -> assertThat(error.getStatusCode()).isEqualTo(status));
     }
 
+    private static EmployeeReportingMappingEntity mapping(Long id, String type) {
+        var mapping = new EmployeeReportingMappingEntity();
+        mapping.setMappingId(id);
+        mapping.setEmployeeId(3L);
+        mapping.setReportingType(type);
+        return mapping;
+    }
+
     private static EmployeeRow person(long id, Long user, String name) {
         EmployeeRow row = mock(EmployeeRow.class);
         when(row.getEmployeeId()).thenReturn(id);
         when(row.getUserId()).thenReturn(user);
         when(row.getEmployeeName()).thenReturn(name);
         when(row.getEmployeeCode()).thenReturn("EMP" + id);
+        when(row.getRecruitmentType()).thenReturn("INTERNAL");
         return row;
     }
 

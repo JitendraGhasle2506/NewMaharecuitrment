@@ -24,5 +24,6 @@ public class AuditRecordRequest {
     private String actorName;
     private String activitySummary;
     private String activityDetails;
+    private String ipAddress;
     private Map<String, Object> metadata;
 }

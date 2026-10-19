@@ -24,7 +24,7 @@ import lombok.Setter;
                 @Index(name = "idx_mahait_profile_audit_profile_id", columnList = "mahait_profile_id"),
                 @Index(name = "idx_mahait_profile_audit_action_ts", columnList = "action_timestamp")
 })
-public class MahaItProfileAuditLog {
+public class MahaItProfileAuditLog extends com.maharecruitment.gov.in.common.audit.RequestAudited {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)

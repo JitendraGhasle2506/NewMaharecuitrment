@@ -22,7 +22,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AssetAuditLogEntity {
+@jakarta.persistence.EntityListeners(com.maharecruitment.gov.in.common.audit.AuditIpEntityListener.class)
+public class AssetAuditLogEntity implements com.maharecruitment.gov.in.common.audit.IpAudited {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
