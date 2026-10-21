@@ -90,7 +90,7 @@
                             <div class="sync-metric-card">
                                 <div class="sync-metric-label">Eligible Employees</div>
                                 <div class="sync-metric-value" th:text="${eligibleEmployeeCount}">0</div>
-                                <div class="text-muted small mt-2">Internal employees in <code>employee_master</code> with Aadhaar available.</div>
+                                <div class="text-muted small mt-2">INTERNAL and MAHAIT employees in <code>employee_master</code>, regardless of Aadhaar or joining date.</div>
                             </div>
                         </div>
                         <div class="col-md-6 col-xl-3">
@@ -110,7 +110,7 @@
                         <div class="col-md-6 col-xl-3">
                             <div class="sync-metric-card">
                                 <div class="sync-metric-label">Unique Code Rule</div>
-                                <div class="sync-metric-value" th:text="${uniqueCodeRule}">MahaIT + Aadhaar last 4 digits</div>
+                                <div class="sync-metric-value" th:text="${uniqueCodeRule}">Stored employee code</div>
                                 <div class="text-muted small mt-2">Saved into <code>employee_master.employee_code</code> and used to match upstream attendance rows.</div>
                             </div>
                         </div>
@@ -121,8 +121,8 @@
                             <div class="sync-panel">
                                 <div class="sync-panel-title">Manual Admin Sync</div>
                                 <p class="sync-panel-copy">
-                                    Fetch organization attendance data from the MahaIT API, update
-                                    <code>employee_master.employee_code</code> from Aadhaar, and match rows to internal employees.
+                                    Fetch organization attendance data from the MahaIT API and use
+                                    <code>employee_master.employee_code</code> to match rows to INTERNAL and MAHAIT employees.
                                 </p>
 
                                 <form autocomplete="off" th:object="${syncForm}" th:action="@{/admin/attendance/internal-sync}" method="post" class="row g-3">
@@ -187,7 +187,7 @@
                                         </tr>
                                         <tr>
                                             <td>Employee Scope</td>
-                                            <td>Only <code>INTERNAL</code> employees with Aadhaar present.</td>
+                                            <td><code>INTERNAL</code> and <code>MAHAIT</code> employees. Aadhaar and joining date do not restrict eligibility.</td>
                                         </tr>
                                     </tbody>
                                 </table>

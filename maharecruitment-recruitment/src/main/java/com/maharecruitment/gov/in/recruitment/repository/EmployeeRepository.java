@@ -868,8 +868,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     List<EmployeeEntity> findByFullNameIgnoreCaseAndStatusIgnoreCase(String fullName, String status);
 
     @Query("select employee from EmployeeEntity employee "
-            + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
-            + "and trim(coalesce(employee.aadhaarNumber, '')) <> '' "
+            + "where upper(trim(coalesce(employee.recruitmentType, ''))) in ('INTERNAL', 'MAHAIT') "
             + "order by employee.employeeId")
     List<EmployeeEntity> findInternalAttendanceSyncCandidates();
 
@@ -893,8 +892,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             @Param("employeeStatus") String employeeStatus);
 
     @Query("select count(employee) from EmployeeEntity employee "
-            + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
-            + "and trim(coalesce(employee.aadhaarNumber, '')) <> ''")
+            + "where upper(trim(coalesce(employee.recruitmentType, ''))) in ('INTERNAL', 'MAHAIT')")
     long countInternalAttendanceSyncCandidates();
 
     @Query("select e from EmployeeEntity e "

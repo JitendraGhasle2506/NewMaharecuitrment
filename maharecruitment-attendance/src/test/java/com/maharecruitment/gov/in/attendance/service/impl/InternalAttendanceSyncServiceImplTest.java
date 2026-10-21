@@ -363,6 +363,32 @@ class InternalAttendanceSyncServiceImplTest {
     }
 
     @Test
+    void syncAttendanceIncludesBothRecruitmentTypesWithoutAadhaarOrJoiningDateRestrictions() {
+        LocalDate attendanceDate = LocalDate.of(2026, 10, 19);
+        for (String type : List.of("INTERNAL", "MAHAIT")) {
+            for (String aadhaar : new String[] { null, "", "   " }) {
+                for (LocalDate joiningDate : new LocalDate[] { null, attendanceDate.plusDays(10) }) {
+                    EmployeeEntity employee = buildEmployee(501L);
+                    employee.setRecruitmentType(type);
+                    employee.setEmployeeCode("MahaIT0501");
+                    employee.setAadhaarNumber(aadhaar);
+                    employee.setJoiningDate(joiningDate);
+                    candidateEmployees = List.of(employee);
+                    apiResponse = List.of(new InternalAttendanceDayRecord(
+                            "Test Employee", "MahaIT0501", attendanceDate, "09:00", "18:00", "P"));
+
+                    InternalAttendanceSyncResult result = service.syncAttendance(attendanceDate, attendanceDate);
+
+                    assertEquals(1, result.getEmployeesSynced());
+                    assertEquals(0, result.getEmployeesSkipped());
+                    assertEquals(1, result.getAttendanceRowsInserted());
+                    assertEquals(attendanceDate, savedEntities.get().get(0).getAttendanceDate());
+                }
+            }
+        }
+    }
+
+    @Test
     void syncAttendanceReportsUpstreamUnavailabilityForAllTargets() {
         LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
         candidateEmployees = List.of(buildEmployee(301L, "123412341234"), buildEmployee(302L, "567856785678"));

@@ -90,6 +90,15 @@ class EmployeeRepositoryEmployeeListIntegrationTest {
     }
 
     @Test
+    void attendanceEligibilityIncludesInternalAndMahaitWithoutAadhaarOrJoiningDateColumns() throws Exception {
+        assertThat(repository.countInternalAttendanceSyncCandidates()).isEqualTo(6);
+        String candidateQuery = EmployeeRepository.class.getMethod("findInternalAttendanceSyncCandidates")
+                .getAnnotation(org.springframework.data.jpa.repository.Query.class).value();
+        assertThat(manager.createQuery(candidateQuery.replace("select employee from", "select employee.employeeId from"), Long.class)
+                .getResultList()).containsExactly(1L, 2L, 4L, 5L, 6L, 10L);
+    }
+
+    @Test
     void threeCellAuthoritiesDoNotDuplicateEmployeesWithOrWithoutExplicitReporting() {
         Page<EmployeeListProjection> page = search("%DUPLICATION%", PageRequest.of(0, 10, sort));
         assertThat(page.getContent()).extracting(EmployeeListProjection::getEmployeeId).containsExactly(1L, 2L);

@@ -95,7 +95,7 @@ public class AdminInternalAttendanceSyncPageController {
         model.addAttribute("eligibleEmployeeCount", internalAttendanceSyncService.countEligibleInternalEmployees());
         model.addAttribute(
                 "uniqueCodeRule",
-                internalAttendanceSyncProperties.getUniqueCodePrefix() + " + employee Aadhaar last 4 digits");
+                "Stored employee code");
         model.addAttribute(
                 "manualApiExample",
                 "/attendance/internal-sync/run-now?startDate=2026-05-01&endDate=2026-05-31");

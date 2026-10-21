@@ -88,7 +88,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         int skippedEmployees = 0;
 
         for (EmployeeEntity employee : candidates) {
-            if (employee == null || isFutureJoining(employee, endDate)) {
+            if (employee == null) {
                 skippedEmployees++;
                 continue;
             }
@@ -335,10 +335,6 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 skippedRows++;
                 continue;
             }
-            if (employee.getJoiningDate() != null && attendanceDate.isBefore(employee.getJoiningDate())) {
-                skippedRows++;
-                continue;
-            }
             if (approvedManualAttendanceDates.contains(attendanceDate)) {
                 log.debug("Skipping API overwrite for approved manual attendance. employeeId={}, date={}",
                         employee.getEmployeeId(),
@@ -519,12 +515,6 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
 
     private String preferText(String preferred, String fallback) {
         return StringUtils.hasText(preferred) ? preferred.trim() : normalizeText(fallback);
-    }
-
-    private boolean isFutureJoining(EmployeeEntity employee, LocalDate endDate) {
-        return employee != null
-                && employee.getJoiningDate() != null
-                && employee.getJoiningDate().isAfter(endDate);
     }
 
     private LocalDate resolveSyncStartDate(LocalDate today) {
