@@ -31,6 +31,8 @@ import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 import com.maharecruitment.gov.in.web.filter.AgencyAccountStatusFilter;
+import com.maharecruitment.gov.in.web.filter.ActiveAccountStatusFilter;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.web.filter.CookieAttributeFilter;
 import com.maharecruitment.gov.in.web.filter.HttpMethodPolicyFilter;
 import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
@@ -101,6 +103,19 @@ public class SecurityConfig {
     @Bean
     AgencyAccountStatusFilter agencyAccountStatusFilter(AgencyAccessService agencyAccessService) {
         return new AgencyAccountStatusFilter(agencyAccessService);
+    }
+
+    @Bean
+    ActiveAccountStatusFilter activeAccountStatusFilter(UserRepository users) {
+        return new ActiveAccountStatusFilter(users);
+    }
+
+    @Bean
+    FilterRegistrationBean<ActiveAccountStatusFilter> activeAccountStatusFilterRegistration(
+            ActiveAccountStatusFilter filter) {
+        FilterRegistrationBean<ActiveAccountStatusFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
@@ -176,6 +191,7 @@ public class SecurityConfig {
             HttpMethodPolicyFilter httpMethodPolicyFilter,
             MobileBearerTokenAuthenticationFilter mobileBearerTokenAuthenticationFilter,
             AgencyAccountStatusFilter agencyAccountStatusFilter,
+            ActiveAccountStatusFilter activeAccountStatusFilter,
             com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
             CustomLoginFailureHandler loginFailureHandler,
             CustomAccessDeniedHandler accessDeniedHandler,
@@ -187,6 +203,7 @@ public class SecurityConfig {
         http.addFilterBefore(hostHeaderValidationFilter, ChannelProcessingFilter.class);
         http.addFilterBefore(mobileBearerTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterAfter(agencyAccountStatusFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(activeAccountStatusFilter, AgencyAccountStatusFilter.class);
 
         http
             // 🔥 (Optional) disable CSRF temporarily if needed

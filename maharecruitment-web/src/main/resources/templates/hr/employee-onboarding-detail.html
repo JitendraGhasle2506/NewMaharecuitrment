@@ -258,6 +258,10 @@
                         </small>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
+                        <a th:if="${showHrExitAction == true}" class="btn btn-outline-danger btn-sm"
+                           th:href="@{/hr/employees/{id}/exit(id=${employeeDetail.employeeId})}">
+                            <i class="fa-solid fa-user-slash me-1" aria-hidden="true"></i> Exit / deactivate
+                        </a>
                         <a class="btn btn-outline-primary btn-sm"
                             th:if="${employeeDetail.status == 'ACTIVE'}"
                             th:href="@{/hr/employee-location-mappings/{employeeId}(employeeId=${employeeDetail.employeeId},type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
@@ -270,6 +274,9 @@
                     </div>
                 </div>
                 <div class="card-body" th:with="detail=${employeeDetail.onboardingForm}">
+                    <div class="alert alert-secondary" th:if="${employeeDetail.resignationDate != null}">
+                        Last working date: <strong th:text="${#temporals.format(employeeDetail.resignationDate, 'dd MMM yyyy')}"></strong>
+                    </div>
                     <div class="pre-onboarding-hero hero-hr employee-hero-shell">
                         <div class="pre-onboarding-hero-copy employee-hero-copy">
                             <span class="pre-onboarding-eyebrow">

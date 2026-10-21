@@ -93,7 +93,8 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
         relievingRepository.save(entity);
         
         // If status is completed or exit date is passed, we can optionally update employee status to INACTIVE.
-        if ("COMPLETED".equalsIgnoreCase(dto.getStatus()) || "Relieved".equalsIgnoreCase(dto.getStatus())) {
+        if (!"RESIGNED".equalsIgnoreCase(employee.getStatus())
+                && ("COMPLETED".equalsIgnoreCase(dto.getStatus()) || "Relieved".equalsIgnoreCase(dto.getStatus()))) {
             employee.setStatus("INACTIVE");
             employeeRepository.save(employee);
         }
@@ -117,6 +118,9 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
             
         if ("COMPLETED".equalsIgnoreCase(entity.getStatus()) || "Relieved".equalsIgnoreCase(entity.getStatus())) {
             throw new IllegalStateException("Cannot cancel an already completed relieving record.");
+        }
+        if (entity.getEmployee() != null && "RESIGNED".equalsIgnoreCase(entity.getEmployee().getStatus())) {
+            throw new IllegalStateException("HR has already recorded this employee's exit. Cancelling a resignation cannot reactivate them.");
         }
         
         entity.setStatus("Cancelled");

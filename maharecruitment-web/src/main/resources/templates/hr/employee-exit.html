@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Record Employee Exit</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-exit.css}">
+</head>
+<body class="hr-shell">
+<th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Employee Exit', ~{::section})}">
+    <section class="employee-exit-page">
+        <a class="btn btn-outline-secondary mb-3" th:href="@{/hr/employees/{id}(id=${employeeDetail.employeeId})}">
+            <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i> Back to employee
+        </a>
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <span class="badge bg-light text-danger mb-3">HR · Employee exit</span>
+                <h1 class="h3">Record exit and deactivate access</h1>
+                <p class="text-muted">For an employee who has already left the organisation. HR can complete this action independently of resignation approvals, handover, or clearance formalities.</p>
+                <dl class="exit-employee-summary">
+                    <div><dt>Employee</dt><dd th:text="${employeeDetail.onboardingForm.name}">Employee name</dd></div>
+                    <div><dt>Employee code</dt><dd th:text="${employeeDetail.employeeCode}">Code</dd></div>
+                    <div><dt>Recruitment type</dt><dd th:text="${employeeDetail.recruitmentType}">INTERNAL</dd></div>
+                    <div><dt>Current status</dt><dd th:text="${employeeDetail.status}">ACTIVE</dd></div>
+                </dl>
+                <div class="alert alert-warning" role="note">
+                    This records the employee as resigned and disables their linked account immediately, including existing signed-in access. Employment and attendance history will be retained. This action does not complete any pending clearance formalities.
+                </div>
+                <form method="post" autocomplete="off" th:action="@{/hr/employees/{id}/exit(id=${employeeDetail.employeeId})}" th:object="${exitForm}">
+                    <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
+                        <p class="mb-0" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lastWorkingDate" class="form-label">Last working date <span aria-hidden="true">*</span></label>
+                        <input id="lastWorkingDate" type="date" class="form-control" th:field="*{lastWorkingDate}" th:max="${today}" required
+                               th:classappend="${#fields.hasErrors('lastWorkingDate')} ? 'is-invalid'" aria-describedby="exit-date-help exit-date-error">
+                        <div id="exit-date-help" class="form-text">Select today or an earlier date. Access is disabled when you save.</div>
+                        <div id="exit-date-error" class="invalid-feedback" th:errors="*{lastWorkingDate}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason / HR remarks <span aria-hidden="true">*</span></label>
+                        <textarea id="reason" class="form-control" rows="4" maxlength="1000" required th:field="*{reason}"
+                                  th:classappend="${#fields.hasErrors('reason')} ? 'is-invalid'" aria-describedby="exit-reason-help exit-reason-error"></textarea>
+                        <div id="exit-reason-help" class="form-text">Explain why the employee is being exited. Up to 1,000 characters.</div>
+                        <div id="exit-reason-error" class="invalid-feedback" th:errors="*{reason}"></div>
+                    </div>
+                    <div class="form-check mb-4">
+                        <input id="confirmed" type="checkbox" class="form-check-input" required th:field="*{confirmed}"
+                               th:classappend="${#fields.hasErrors('confirmed')} ? 'is-invalid'" aria-describedby="exit-confirm-error">
+                        <label for="confirmed" class="form-check-label">I confirm this employee has left the organisation and their system access must be disabled.</label>
+                        <div id="exit-confirm-error" class="invalid-feedback" th:errors="*{confirmed}"></div>
+                    </div>
+                    <div class="exit-form-actions">
+                        <a class="btn btn-outline-secondary" th:href="@{/hr/employees/{id}(id=${employeeDetail.employeeId})}">Cancel</a>
+                        <button type="submit" class="btn btn-danger"><i class="fa-solid fa-user-slash me-1" aria-hidden="true"></i> Record exit &amp; deactivate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+</th:block>
+</body>
+</html>

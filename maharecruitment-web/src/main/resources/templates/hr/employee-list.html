@@ -248,6 +248,9 @@
                                             th:attr="aria-label=|View details for ${emp.fullName}|">
                                             View <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                         </a>
+                                        <a th:if="${currentStatus == 'ACTIVE'}" class="employee-view-link text-danger mt-2"
+                                           th:href="@{/hr/employees/{id}/exit(id=${emp.employeeId})}"
+                                           th:attr="aria-label=|Exit and deactivate ${emp.fullName}|">Exit / deactivate</a>
                                     </td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(employees)}">

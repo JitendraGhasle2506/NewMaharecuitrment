@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Record Employee Exit</title>
+    
+    <link rel="stylesheet" href="/portal/css/employee-exit.css">
+</head>
+<body class="hr-shell">
+
+    <section class="employee-exit-page">
+        <a class="btn btn-outline-secondary mb-3" href="/portal/hr/employees/5">
+            <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i> Back to employee
+        </a>
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <span class="badge bg-light text-danger mb-3">HR · Employee exit</span>
+                <h1 class="h3">Record exit and deactivate access</h1>
+                <p class="text-muted">For an employee who has already left the organisation. HR can complete this action independently of resignation approvals, handover, or clearance formalities.</p>
+                <dl class="exit-employee-summary">
+                    <div><dt>Employee</dt><dd>Test &lt;Employee&gt;</dd></div>
+                    <div><dt>Employee code</dt><dd>EMP005</dd></div>
+                    <div><dt>Recruitment type</dt><dd>MAHAIT</dd></div>
+                    <div><dt>Current status</dt><dd>ACTIVE</dd></div>
+                </dl>
+                <div class="alert alert-warning" role="note">
+                    This records the employee as resigned and disables their linked account immediately, including existing signed-in access. Employment and attendance history will be retained. This action does not complete any pending clearance formalities.
+                </div>
+                <form method="post" autocomplete="off" action="/portal/hr/employees/5/exit">
+                    
+                    <div class="mb-3">
+                        <label for="lastWorkingDate" class="form-label">Last working date <span aria-hidden="true">*</span></label>
+                        <input id="lastWorkingDate" type="date" class="form-control" max="2026-10-21" required
+                               aria-describedby="exit-date-help exit-date-error" name="lastWorkingDate" value="2026-10-21">
+                        <div id="exit-date-help" class="form-text">Select today or an earlier date. Access is disabled when you save.</div>
+                        
+                    </div>
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason / HR remarks <span aria-hidden="true">*</span></label>
+                        <textarea id="reason" class="form-control" rows="4" maxlength="1000" required aria-describedby="exit-reason-help exit-reason-error" name="reason"></textarea>
+                        <div id="exit-reason-help" class="form-text">Explain why the employee is being exited. Up to 1,000 characters.</div>
+                        
+                    </div>
+                    <div class="form-check mb-4">
+                        <input id="confirmed" type="checkbox" class="form-check-input" required aria-describedby="exit-confirm-error" name="confirmed" value="true"><input type="hidden" name="_confirmed" value="on"/>
+                        <label for="confirmed" class="form-check-label">I confirm this employee has left the organisation and their system access must be disabled.</label>
+                        
+                    </div>
+                    <div class="exit-form-actions">
+                        <a class="btn btn-outline-secondary" href="/portal/hr/employees/5">Cancel</a>
+                        <button type="submit" class="btn btn-danger"><i class="fa-solid fa-user-slash me-1" aria-hidden="true"></i> Record exit &amp; deactivate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>

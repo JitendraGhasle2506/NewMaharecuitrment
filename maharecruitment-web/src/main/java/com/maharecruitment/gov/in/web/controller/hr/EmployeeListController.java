@@ -131,6 +131,7 @@ public class EmployeeListController {
         try {
             EmployeeOnboardingDetailView employeeDetail = hrOnboardingPageService.loadEmployeeDetail(employeeId);
             model.addAttribute("employeeDetail", employeeDetail);
+            model.addAttribute("showHrExitAction", true);
             model.addAttribute("employeeWorkOrders", hrWorkOrderService.getEmployeeWorkOrders(employeeId));
             model.addAttribute("currentStatus", normalizedStatus);
             model.addAttribute("currentType", normalizedType);
