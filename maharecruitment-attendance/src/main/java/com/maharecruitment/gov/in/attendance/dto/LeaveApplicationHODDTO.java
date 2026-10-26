@@ -20,4 +20,5 @@ public class LeaveApplicationHODDTO {
     private String description;
     private LocalDateTime applicationDate;
     private String status;
+    private boolean decisionAllowed = true;
 }

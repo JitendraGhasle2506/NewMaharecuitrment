@@ -36,19 +36,22 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     private final RecruitmentTypeApprovalRoutingService approvalRoutingService;
     private final UserRepository userRepository;
     private final AdditionalChargeApprovalService additionalChargeApprovals;
+    private final InternalEmployeeApprovalPolicy internalApprovalPolicy;
 
     public TourApplicationServiceImpl(
             TourApplicationRepository tourApplicationRepository,
             ReportingManagerService reportingManagerService,
             EmployeeRepository employeeRepository,
             RecruitmentTypeApprovalRoutingService approvalRoutingService,
-            UserRepository userRepository, AdditionalChargeApprovalService additionalChargeApprovals) {
+            UserRepository userRepository, AdditionalChargeApprovalService additionalChargeApprovals,
+            InternalEmployeeApprovalPolicy internalApprovalPolicy) {
         this.tourApplicationRepository = tourApplicationRepository;
         this.reportingManagerService = reportingManagerService;
         this.employeeRepository = employeeRepository;
         this.approvalRoutingService = approvalRoutingService;
         this.userRepository = userRepository;
         this.additionalChargeApprovals = additionalChargeApprovals;
+        this.internalApprovalPolicy = internalApprovalPolicy;
     }
 
     @Override
@@ -118,7 +121,8 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             return List.of();
         }
 
-        return convertToHODDTO(tours, applicationEmployeeIds(tours), search);
+        return convertToHODDTO(tours, applicationEmployeeIds(tours), search,
+                internalApprovalPolicy.hasInternalApproverRole(hodUserId));
     }
 
     @Override
@@ -134,7 +138,8 @@ public class TourApplicationServiceImpl implements TourApplicationService {
         tours = additionalChargePending(hodUserId, tours, legacyIds, searchPattern(search), searchDate);
         return tours.isEmpty()
                 ? List.of()
-                : convertToHODDTO(tours, applicationEmployeeIds(tours), null);
+                : convertToHODDTO(tours, applicationEmployeeIds(tours), null,
+                        internalApprovalPolicy.hasInternalApproverRole(hodUserId));
     }
 
     @Override
@@ -150,7 +155,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             return List.of();
         }
 
-        return convertToHODDTO(tours, applicationEmployeeIds(tours), search);
+        return convertToHODDTO(tours, applicationEmployeeIds(tours), search, true);
     }
 
     @Override
@@ -167,7 +172,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             return new PageImpl<>(List.of(), pageable, page.getTotalElements());
         }
         List<TourApplicationHODDTO> content = convertToHODDTO(
-                page.getContent(), applicationEmployeeIds(page.getContent()), null);
+                page.getContent(), applicationEmployeeIds(page.getContent()), null, true);
         return new PageImpl<>(content, pageable, page.getTotalElements());
     }
 
@@ -205,7 +210,8 @@ public class TourApplicationServiceImpl implements TourApplicationService {
         return tours.stream().map(TourApplicationEntity::getEmployeeId).distinct().toList();
     }
 
-    private List<TourApplicationHODDTO> convertToHODDTO(List<TourApplicationEntity> tours, List<Long> employeeIds, String search) {
+    private List<TourApplicationHODDTO> convertToHODDTO(List<TourApplicationEntity> tours, List<Long> employeeIds,
+            String search, boolean actorMayDecideInternal) {
         Map<Long, EmployeeEntity> employeeMap = employeeRepository
                 .findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds).stream()
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, emp -> emp));
@@ -247,6 +253,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             dto.setApplicationDate(tour.getApplicationDate());
             dto.setStatus(tour.getStatus());
             dto.setHodRemarks(tour.getHodRemarks());
+            dto.setDecisionAllowed(actorMayDecideInternal || !internalApprovalPolicy.isInternal(emp));
             dtos.add(dto);
         }
         return dtos;
@@ -260,6 +267,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
         if (!"PENDING".equalsIgnoreCase(normalize(tour.getStatus()))) {
             throw new IllegalArgumentException("Only pending tour applications can be processed.");
         }
+        internalApprovalPolicy.requireCanDecide(actorUserId, tour.getEmployeeId(), "tour");
 
         if (!approvalRoutingService.isTwoLevelStage(tour.getApprovalStage())) {
             if (!additionalChargeApprovals.snapshot().canActLegacy(actorUserId, tour.getEmployeeId(),

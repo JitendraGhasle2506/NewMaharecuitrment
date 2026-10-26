@@ -58,7 +58,53 @@ class TourApplicationServiceImplTest {
                 reportingManagerService,
                 employeeRepository,
                 approvalRoutingService,
-                userRepository, additionalChargeApprovals);
+                userRepository, additionalChargeApprovals,
+                new InternalEmployeeApprovalPolicy(employeeRepository, userRepository));
+    }
+
+    @Test
+    void internalEmployeeTourCannotBeDecidedWithoutSeniorApproverRole() {
+        var tour = tour(601L, 101L, "PENDING");
+        when(tourApplicationRepository.findByTourIdForUpdate(601L)).thenReturn(java.util.Optional.of(tour));
+        when(employeeRepository.findById(101L)).thenReturn(java.util.Optional.of(internalEmployee(101L)));
+        when(userRepository.findById(7L)).thenReturn(java.util.Optional.of(userWithRole(7L, "ROLE_EMPLOYEE")));
+
+        var error = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateTourStatus(601L, "APPROVED", "ok", 7L));
+
+        assertThat(error.getMessage()).contains("internal employees");
+        assertThat(tour.getStatus()).isEqualTo("PENDING");
+        org.mockito.Mockito.verify(tourApplicationRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void internalEmployeeTourCanBeDecidedByHodInReportingAuthority() {
+        var tour = tour(602L, 101L, "PENDING");
+        when(tourApplicationRepository.findByTourIdForUpdate(602L)).thenReturn(java.util.Optional.of(tour));
+        when(employeeRepository.findById(101L)).thenReturn(java.util.Optional.of(internalEmployee(101L)));
+        when(userRepository.findById(7L)).thenReturn(java.util.Optional.of(userWithRole(7L, "ROLE_HOD")));
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+
+        service.updateTourStatus(602L, "APPROVED", "ok", 7L);
+
+        assertThat(tour.getStatus()).isEqualTo("APPROVED");
+        assertThat(tour.getHodDecisionByUserId()).isEqualTo(7L);
+    }
+
+    @Test
+    void pendingInternalTourIsViewOnlyForApproverWithoutSeniorRole() {
+        List<Long> employeeIds = List.of(101L);
+        EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
+        employee.setRecruitmentType("INTERNAL");
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
+        when(tourApplicationRepository.findPendingForApprover(7L, employeeIds, "PENDING"))
+                .thenReturn(List.of(tour(603L, 101L, "PENDING")));
+        when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds))
+                .thenReturn(List.of(employee));
+        when(userRepository.findById(7L)).thenReturn(java.util.Optional.of(userWithRole(7L, "ROLE_PM")));
+
+        assertThat(service.getPendingToursForHOD(7L, null)).singleElement()
+                .satisfies(dto -> assertThat(dto.isDecisionAllowed()).isFalse());
     }
 
     @Test
@@ -236,5 +282,20 @@ class TourApplicationServiceImplTest {
         employee.setFullName(name);
         employee.setDesignation(designation);
         return employee;
+    }
+
+    private EmployeeEntity internalEmployee(Long employeeId) {
+        EmployeeEntity employee = employee(employeeId, "EMP" + employeeId, "Internal Employee", "Developer");
+        employee.setRecruitmentType("INTERNAL");
+        return employee;
+    }
+
+    private User userWithRole(Long userId, String roleName) {
+        com.maharecruitment.gov.in.auth.entity.Role role = new com.maharecruitment.gov.in.auth.entity.Role();
+        role.setName(roleName);
+        User user = new User();
+        user.setId(userId);
+        user.setRoles(List.of(role));
+        return user;
     }
 }

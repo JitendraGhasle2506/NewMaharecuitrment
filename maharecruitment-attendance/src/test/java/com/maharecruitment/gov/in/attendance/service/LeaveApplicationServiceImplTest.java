@@ -60,6 +60,8 @@ class LeaveApplicationServiceImplTest {
 
     @Mock private AdditionalChargeApprovalService additionalChargeApprovals;
 
+    @Mock private InternalEmployeeApprovalPolicy internalApprovalPolicy;
+
     @BeforeEach void noAdditionalChargesByDefault() {
         org.mockito.Mockito.lenient().when(additionalChargeApprovals.snapshot()).thenReturn(AdditionalChargeApprovalService.Snapshot.empty());
     }
@@ -202,6 +204,24 @@ class LeaveApplicationServiceImplTest {
         assertEquals(RecruitmentTypeApprovalRoutingService.STAGE_HOD, leave.getApprovalStage());
         assertEquals("Recommended", leave.getManagerRemarks());
         verify(leaveApplicationRepository).save(leave);
+    }
+
+    @Test
+    void internalEmployeeLeaveIsNotDecidedWhenApproverRoleCheckFails() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setLeaveId(1L);
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+
+        when(leaveApplicationRepository.findByLeaveIdForUpdate(1L)).thenReturn(java.util.Optional.of(leave));
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("only senior roles"))
+                .when(internalApprovalPolicy).requireCanDecide(7L, 101L, "leave");
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateLeaveStatus(1L, "APPROVED", "ok", 7L));
+
+        assertEquals("PENDING", leave.getStatus());
+        verify(leaveApplicationRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test

@@ -342,10 +342,13 @@
                                                 <small class="text-muted d-block" th:text="${#temporals.format(leave.applicationDate, 'HH:mm')}"></small>
                                             </td>
                                             <td class="remarks-column" data-label="Remarks">
-                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'leave-remarks-' + ${leave.leaveId}" placeholder="Enter remarks...">
+                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'leave-remarks-' + ${leave.leaveId}" placeholder="Enter remarks..."
+                                                       th:disabled="${!leave.decisionAllowed}">
                                             </td>
                                             <td class="actions-column text-center" data-label="Actions">
-                                                <div class="btn-group">
+                                                <span th:unless="${leave.decisionAllowed}" class="badge bg-secondary"
+                                                      title="Only HOD, STM, COO, CTO, CFO or MD can approve internal employee requests.">View only</span>
+                                                <div class="btn-group" th:if="${leave.decisionAllowed}">
                                                     <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
                                                             th:data-request-id="${leave.leaveId}" data-action="approve" data-type="Leave">
                                                         <i class="fa fa-check"></i>
@@ -418,10 +421,13 @@
                                                 <small class="text-muted d-block" th:text="${#temporals.format(tour.applicationDate, 'HH:mm')}"></small>
                                             </td>
                                             <td class="remarks-column" data-label="Remarks">
-                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'tour-remarks-' + ${tour.tourId}" placeholder="Enter remarks...">
+                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'tour-remarks-' + ${tour.tourId}" placeholder="Enter remarks..."
+                                                       th:disabled="${!tour.decisionAllowed}">
                                             </td>
                                             <td class="actions-column text-center" data-label="Actions">
-                                                <div class="btn-group">
+                                                <span th:unless="${tour.decisionAllowed}" class="badge bg-secondary"
+                                                      title="Only HOD, STM, COO, CTO, CFO or MD can approve internal employee requests.">View only</span>
+                                                <div class="btn-group" th:if="${tour.decisionAllowed}">
                                                     <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
                                                             th:data-request-id="${tour.tourId}" data-action="approve" data-type="Tour">
                                                         <i class="fa fa-check"></i>

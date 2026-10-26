@@ -64,6 +64,9 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Autowired
     private AdditionalChargeApprovalService additionalChargeApprovals;
 
+    @Autowired
+    private InternalEmployeeApprovalPolicy internalApprovalPolicy;
+
     @Override
     public void saveLeaveApplication(LeaveApplicationEntity leaveApplication) {
         prepareAndValidateLeaveApplication(leaveApplication);
@@ -248,7 +251,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             return List.of();
         }
 
-        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search);
+        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search,
+                internalApprovalPolicy.hasInternalApproverRole(hodUserId));
     }
 
     @Override
@@ -264,7 +268,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         leaves = additionalChargePending(hodUserId, leaves, legacyIds, searchPattern(search), searchDate);
         return leaves.isEmpty()
                 ? List.of()
-                : convertToHODDTO(leaves, applicationEmployeeIds(leaves), null);
+                : convertToHODDTO(leaves, applicationEmployeeIds(leaves), null,
+                        internalApprovalPolicy.hasInternalApproverRole(hodUserId));
     }
 
     @Override
@@ -278,7 +283,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             return List.of();
         }
 
-        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search);
+        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search, true);
     }
 
     @Override
@@ -295,7 +300,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             return new PageImpl<>(List.of(), pageable, page.getTotalElements());
         }
         List<LeaveApplicationHODDTO> content = convertToHODDTO(
-                page.getContent(), applicationEmployeeIds(page.getContent()), null);
+                page.getContent(), applicationEmployeeIds(page.getContent()), null, true);
         return new PageImpl<>(content, pageable, page.getTotalElements());
     }
 
@@ -331,7 +336,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         return leaves.stream().map(LeaveApplicationEntity::getEmployeeId).distinct().toList();
     }
 
-    private List<LeaveApplicationHODDTO> convertToHODDTO(List<LeaveApplicationEntity> leaves, List<Long> employeeIds, String search) {
+    private List<LeaveApplicationHODDTO> convertToHODDTO(List<LeaveApplicationEntity> leaves, List<Long> employeeIds,
+            String search, boolean actorMayDecideInternal) {
         Map<Long, EmployeeEntity> employeeMap = employeeRepository.findAllById(employeeIds).stream()
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, emp -> emp));
 
@@ -370,6 +376,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             dto.setApplicationDate(leave.getApplicationDate());
             dto.setStatus(leave.getStatus());
             dto.setHodRemarks(leave.getHodRemarks());
+            dto.setDecisionAllowed(actorMayDecideInternal || !internalApprovalPolicy.isInternal(emp));
             dtos.add(dto);
         }
         return dtos;
@@ -381,6 +388,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         LeaveApplicationEntity leave = leaveApplicationRepository.findByLeaveIdForUpdate(leaveId)
                 .orElseThrow(() -> new IllegalArgumentException("Leave application not found."));
         requirePending(leave.getStatus());
+        internalApprovalPolicy.requireCanDecide(actorUserId, leave.getEmployeeId(), "leave");
 
         if (!approvalRoutingService.isTwoLevelStage(leave.getApprovalStage())) {
             requireLegacyAuthority(actorUserId, leave.getEmployeeId());

@@ -19,4 +19,5 @@ public class TourApplicationHODDTO {
     private String description;
     private LocalDateTime applicationDate;
     private String status;
+    private boolean decisionAllowed = true;
 }
