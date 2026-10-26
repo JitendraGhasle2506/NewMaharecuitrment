@@ -20,7 +20,7 @@ class EmployeeExitServiceImplTest {
     private final UserRepository users = mock(UserRepository.class);
     private final RecruitmentDesignationVacancyRepository vacancies = mock(RecruitmentDesignationVacancyRepository.class);
     private final AuditTrailService audit = mock(AuditTrailService.class);
-    private final EmployeeExitServiceImpl service = new EmployeeExitServiceImpl(employees, users, vacancies, audit);
+    private final EmployeeOffboardingServiceImpl service = new EmployeeOffboardingServiceImpl(employees, users, vacancies, audit);
     private final LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
     private EmployeeEntity employee;
     private User account;
@@ -47,7 +47,7 @@ class EmployeeExitServiceImplTest {
             employee.setStatus("ACTIVE");
             employee.setRecruitmentType(type);
             account.setActive(true);
-            service.exitEmployee(5L, today.minusDays(2), " Left the organisation ", "hr@example.test");
+            service.exitEmployee(5L, today.minusDays(2), " Left the organisation ", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR);
             assertThat(employee.getStatus()).isEqualTo("RESIGNED");
             assertThat(employee.getResignationDate()).isEqualTo(today.minusDays(2));
             assertThat(account.getActive()).isFalse();
@@ -63,7 +63,7 @@ class EmployeeExitServiceImplTest {
 
     @Test void exitsEmployeeWithoutLinkedAccount() {
         employee.setUser(null);
-        service.exitEmployee(5L, today, "Employee left", "hr@example.test");
+        service.exitEmployee(5L, today, "Employee left", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR);
         assertThat(employee.getStatus()).isEqualTo("RESIGNED");
         verify(users, never()).save(any());
         verify(audit).record(any());
@@ -71,7 +71,7 @@ class EmployeeExitServiceImplTest {
 
     @Test void canDisableAnAccountLeftActiveByTheOldResignationFlow() {
         employee.setStatus("RESIGNED");
-        service.exitEmployee(5L, today, "Disable access after exit", "hr@example.test");
+        service.exitEmployee(5L, today, "Disable access after exit", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR);
         assertThat(account.getActive()).isFalse();
         verifyNoInteractions(vacancies);
     }
@@ -79,7 +79,7 @@ class EmployeeExitServiceImplTest {
     @Test void rejectsDuplicateExitAndDoesNotReleaseVacancyTwice() {
         employee.setStatus("RESIGNED");
         account.setActive(false);
-        assertThatThrownBy(() -> service.exitEmployee(5L, today, "Employee left", "hr@example.test"))
+        assertThatThrownBy(() -> service.exitEmployee(5L, today, "Employee left", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR))
                 .hasMessageContaining("already exited");
         verifyNoInteractions(audit, vacancies);
         verify(employees, never()).save(any());
@@ -87,11 +87,11 @@ class EmployeeExitServiceImplTest {
 
     @Test void rejectsInvalidDatesAndReasonsBeforeAnyWrites() {
         for (LocalDate invalid : new LocalDate[] { null, today.plusDays(1) }) {
-            assertThatThrownBy(() -> service.exitEmployee(5L, invalid, "Employee left", "hr@example.test"))
+            assertThatThrownBy(() -> service.exitEmployee(5L, invalid, "Employee left", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR))
                     .hasMessageContaining("cannot be in the future");
         }
         for (String invalid : new String[] { null, "  ", "x".repeat(1001) }) {
-            assertThatThrownBy(() -> service.exitEmployee(5L, today, invalid, "hr@example.test"))
+            assertThatThrownBy(() -> service.exitEmployee(5L, today, invalid, "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR))
                     .hasMessageContaining("exit reason");
         }
         verifyNoInteractions(audit, vacancies);
@@ -111,18 +111,18 @@ class EmployeeExitServiceImplTest {
         onboarding.setInterviewDetail(interview);
         employee.setPreOnboarding(onboarding);
         when(vacancies.findByIdForFinalDecisionUpdate(20L, 30L)).thenReturn(Optional.of(vacancy));
-        service.exitEmployee(5L, today, "Employee left", "hr@example.test");
+        service.exitEmployee(5L, today, "Employee left", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR);
         assertThat(vacancy.getFillPost()).isZero();
         verify(vacancies).save(vacancy);
-        assertThatThrownBy(() -> service.exitEmployee(5L, today, "Employee left", "hr@example.test"))
+        assertThatThrownBy(() -> service.exitEmployee(5L, today, "Employee left", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR))
                 .hasMessageContaining("already exited");
         verify(vacancies, times(1)).save(vacancy);
     }
 
     @Test void inactiveActorCannotExitEmployees() {
         when(users.findByEmailIgnoreCaseAndActiveTrue("hr@example.test")).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.exitEmployee(5L, today, "Employee left", "hr@example.test"))
-                .hasMessageContaining("active HR account");
+        assertThatThrownBy(() -> service.exitEmployee(5L, today, "Employee left", "hr@example.test", com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService.Source.HR))
+                .hasMessageContaining("active account");
         verifyNoInteractions(audit, vacancies);
         verify(employees, never()).save(any());
     }

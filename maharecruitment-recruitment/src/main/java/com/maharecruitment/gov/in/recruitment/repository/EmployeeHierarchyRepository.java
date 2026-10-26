@@ -39,6 +39,17 @@ public interface EmployeeHierarchyRepository extends Repository<EmployeeEntity, 
     List<EmployeeRow> findActiveEmployees();
 
     @Query("""
+            select e.employeeId as employeeId, u.id as userId, e.fullName as employeeName,
+                   e.employeeCode as employeeCode, e.status as employeeStatus, u.active as userActive, e.recruitmentType as recruitmentType,
+                   d.departmentId as departmentId, d.departmentName as department,
+                   des.designationId as designationId, des.designationName as designation,
+                   false as hod, false as hasPhoto
+            from EmployeeEntity e left join e.user u left join e.department d left join e.designation des
+            order by lower(e.fullName), e.employeeId
+            """)
+    List<EmployeeRow> findEmployeesIncludingInactive();
+
+    @Query("""
             select m.mappingId as mappingId, m.employeeId as employeeId,
                    m.managerEmployeeId as managerEmployeeId, m.hodUserId as hodUserId
             from EmployeeReportingMappingEntity m
@@ -56,6 +67,8 @@ public interface EmployeeHierarchyRepository extends Repository<EmployeeEntity, 
     List<PhotoRow> findPhotoSources(@Param("employeeId") Long employeeId);
 
     interface EmployeeRow {
+        String getEmployeeStatus();
+        Boolean getUserActive();
         Long getEmployeeId();
         Long getUserId();
         String getEmployeeName();

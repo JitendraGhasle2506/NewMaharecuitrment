@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PIP Reviews and Feedback</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-pip.css}">
+    <script defer th:src="@{/js/employee-pip.js}"></script>
+</head>
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header('Home', 'PIP Review', ~{::section})}">
+<section class="pip-page">
+    <a class="btn btn-outline-secondary mb-3" th:href="${hrReadOnly == true} ? @{/hr/pip} : @{/reporting-manager/pip}"
+       th:text="${hrReadOnly == true} ? 'Back to all employee PIP plans' : 'Back to team reviews'">Back to team reviews</a>
+    <div th:if="${hrReadOnly == true}" class="alert alert-info" role="note">HR oversight · Read-only view. Performance actions are managed by authorised reporting managers.</div>
+    <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+    <div class="pip-hero"><span class="pip-eyebrow" th:text="${detail.plan.code}"></span><h1 th:text="${detail.plan.name}"></h1>
+        <p><span th:text="${#temporals.format(detail.plan.startDate, 'dd MMM yyyy')}"></span> – <span th:text="${#temporals.format(detail.plan.endDate, 'dd MMM yyyy')}"></span>
+            · <span th:text="${detail.plan.durationMonths + (detail.plan.durationMonths == 1 ? ' month' : ' months')}"></span></p>
+        <span class="badge bg-light text-dark" th:text="${detail.plan.status.name() == 'UNDER_REVIEW' ? 'Under review' : (detail.plan.status.name() == 'COMPLETED' ? 'Continue employment' : 'Exit recorded')}"></span>
+    </div>
+    <div class="alert alert-info" th:if="${detail.plan.status.name() == 'UNDER_REVIEW' and detail.plan.endDate.isBefore(today)}">The review period has ended and a final outcome is pending. Employment does not end automatically.</div>
+    <div class="card mb-4"><div class="card-body"><h2 class="h5">Reason for PIP</h2>
+        <p class="pip-feedback mb-0" th:text="${!#strings.isEmpty(detail.reason) ? detail.reason : 'Not recorded for this existing plan.'}"></p></div></div>
+    <div class="card mb-4"><div class="card-body"><h2 class="h5">Improvement objectives</h2><p class="pip-feedback mb-0" th:text="${detail.objectives}"></p></div></div>
+    <div class="pip-layout" th:classappend="${hrReadOnly == true} ? 'pip-layout-readonly'">
+        <div class="card"><div class="card-body"><h2 class="h5">Performance &amp; feedback history</h2>
+            <p th:if="${#lists.isEmpty(detail.reviews)}" class="text-muted">No performance reviews recorded yet.</p>
+            <article class="pip-review" th:each="review : ${detail.reviews}">
+                <div class="pip-heading"><strong th:text="${review.reviewer}"></strong><span class="badge bg-light text-dark" th:text="${review.rating + ' / 5'}"></span></div>
+                <small class="text-muted" th:text="${#temporals.format(review.date, 'dd MMM yyyy')}"></small>
+                <p class="pip-feedback mt-2 mb-0" th:text="${review.feedback}"></p>
+            </article>
+            <article class="pip-review" th:if="${detail.decisionFeedback != null}"><h3 class="h6">Final outcome feedback</h3><p class="pip-feedback" th:text="${detail.decisionFeedback}"></p>
+                <p th:if="${detail.exitDate != null}">Last working date: <strong th:text="${#temporals.format(detail.exitDate, 'dd MMM yyyy')}"></strong></p></article>
+        </div></div>
+        <div th:if="${hrReadOnly != true and detail.plan.status.name() == 'UNDER_REVIEW' and detail.employeeActive}">
+            <div class="card mb-4"><div class="card-body"><h2 class="h5">Add a performance review</h2><p class="text-muted small">New feedback is added to the history so earlier reviews are retained.</p>
+                <form method="post" autocomplete="off" th:action="@{/reporting-manager/pip/{id}/reviews(id=${detail.plan.id})}" th:object="${reviewForm}">
+                    <div th:if="${#fields.hasErrors()}" class="alert alert-danger" role="alert"><p class="mb-0" th:each="error : ${#fields.allErrors()}" th:text="${error}"></p></div>
+                    <div class="row g-3 mb-3"><div class="col-sm-6"><label for="reviewDate" class="form-label">Review date *</label><input id="reviewDate" class="form-control" type="date" th:field="*{reviewDate}" th:min="${detail.plan.startDate}" th:max="${today}" required></div>
+                        <div class="col-sm-6"><label for="rating" class="form-label">Performance rating *</label><select id="rating" class="form-select" th:field="*{rating}" required><option value="">Select</option><option value="1">1 – Poor</option><option value="2">2 – Needs improvement</option><option value="3">3 – Meets expectations</option><option value="4">4 – Good</option><option value="5">5 – Excellent</option></select></div></div>
+                    <label for="reviewFeedback" class="form-label">Performance &amp; feedback *</label><textarea id="reviewFeedback" class="form-control mb-3" th:field="*{feedback}" rows="4" maxlength="2000" required></textarea>
+                    <button type="submit" class="btn btn-primary">Save review</button>
+                </form>
+            </div></div>
+            <div class="card"><div class="card-body"><h2 class="h5">Record the final outcome</h2>
+                <form method="post" autocomplete="off" th:action="@{/reporting-manager/pip/{id}/decision(id=${detail.plan.id})}" th:object="${decisionForm}" id="pipDecisionForm">
+                    <div th:if="${#fields.hasErrors()}" class="alert alert-danger" role="alert"><p class="mb-0" th:each="error : ${#fields.allErrors()}" th:text="${error}"></p></div>
+                    <label for="decision" class="form-label">Outcome *</label><select id="decision" class="form-select mb-3" th:field="*{decision}" required><option value="">Select outcome</option><option value="CONTINUE">Satisfactory – continue normal employment</option><option value="EXIT">Unsatisfactory – record exit and deactivate</option></select>
+                    <div id="pipExitFields" class="mb-3"><label for="exitDate" class="form-label">Last working date (for exit)</label><input id="exitDate" class="form-control" type="date" th:field="*{exitDate}" th:min="${detail.plan.startDate}" th:max="${today}"><div class="form-text">For an employee who has left. Recording an exit disables their account and signed-in access immediately.</div></div>
+                    <label for="decisionFeedback" class="form-label">Decision feedback *</label><textarea id="decisionFeedback" class="form-control mb-3" th:field="*{feedback}" rows="4" maxlength="2000" required></textarea>
+                    <div class="form-check mb-3"><input id="confirmed" class="form-check-input" type="checkbox" th:field="*{confirmed}" required><label for="confirmed" class="form-check-label">I confirm the feedback and selected outcome are correct.</label></div>
+                    <button type="submit" class="btn btn-outline-primary">Save final outcome</button>
+                </form>
+            </div></div>
+        </div>
+        <div th:if="${!detail.employeeActive and detail.plan.status.name() == 'UNDER_REVIEW'}" class="alert alert-secondary">The employee is no longer active. Review history is retained; further performance actions are unavailable.</div>
+    </div>
+</section>
+</th:block>
+</body></html>

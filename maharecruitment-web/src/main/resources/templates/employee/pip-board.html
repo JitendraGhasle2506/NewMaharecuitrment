@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Team Performance Reviews</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
+    <link rel="stylesheet" th:href="@{/css/employee-pip.css}">
+    <script defer th:src="@{/assets/vendor/jquery/jquery-3.7.1.min.js}"></script>
+    <script defer th:src="@{/assets/vendor/select2/select2.min.js}"></script>
+    <script defer th:src="@{/js/employee-pip.js}"></script>
+</head>
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Performance Reviews', ~{::section})}">
+<section class="pip-page">
+    <div class="pip-hero"><span class="pip-eyebrow">Your reporting team</span><h1>Performance reviews &amp; PIP</h1>
+        <p>Set clear improvement goals, record feedback, and decide the next step for your team members.</p></div>
+    <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+    <div class="pip-layout">
+        <div class="card pip-start-card"><div class="card-body">
+            <h2 class="h5">Start an improvement plan</h2>
+            <p class="text-muted">Only your subordinates are available. Employees remain active throughout their review.</p>
+            <div th:if="${#lists.isEmpty(board.employees)}" class="alert alert-info">No eligible team members. Employees already under review are excluded.</div>
+            <form th:unless="${#lists.isEmpty(board.employees)}" autocomplete="off" method="post" th:action="@{/reporting-manager/pip}" th:object="${startForm}">
+                <div th:if="${#fields.hasErrors()}" class="alert alert-danger" role="alert"><p class="mb-0" th:each="error : ${#fields.allErrors()}" th:text="${error}"></p></div>
+                <div class="mb-3"><label for="employeeId" class="form-label">Employee *</label>
+                    <select id="employeeId" class="form-select pip-employee-select" th:field="*{employeeId}" required>
+                        <option value="">Search an employee by name or code</option>
+                        <option th:each="person : ${board.employees}" th:value="${person.id}" th:text="${person.name + ' (' + person.code + ')'}"></option>
+                    </select></div>
+                <div class="row g-3 mb-3"><div class="col-sm-6"><label for="startDate" class="form-label">Start date *</label>
+                    <input id="startDate" type="date" class="form-control" th:field="*{startDate}" th:max="${today}" required></div>
+                    <div class="col-sm-6"><label for="months" class="form-label">Review period *</label>
+                        <select id="months" class="form-select" th:field="*{months}" required><option value="1">1 month</option><option value="2">2 months</option></select></div></div>
+                <div class="mb-3"><label for="reason" class="form-label">Reason for PIP *</label>
+                    <textarea id="reason" class="form-control" rows="3" maxlength="2000" th:field="*{reason}" required aria-describedby="pipReasonHelp"></textarea>
+                    <div id="pipReasonHelp" class="form-text">Explain the performance concerns that led to this plan. Maximum 2,000 characters.</div></div>
+                <div class="mb-3"><label for="objectives" class="form-label">Improvement objectives *</label>
+                    <textarea id="objectives" class="form-control" rows="5" maxlength="2000" th:field="*{objectives}" required aria-describedby="goalsHelp"></textarea>
+                    <div id="goalsHelp" class="form-text">Describe expected results and how performance will be assessed. Maximum 2,000 characters.</div></div>
+                <button type="submit" class="btn btn-primary w-100">Start PIP review</button>
+            </form>
+        </div></div>
+        <div class="card"><div class="card-body">
+            <div class="pip-heading"><h2 class="h5">Team review history</h2><span class="badge bg-light text-dark" th:text="${board.plans.totalElements + (board.plans.totalElements == 1 ? ' plan' : ' plans')}"></span></div>
+            <form autocomplete="off" method="get" th:action="@{/reporting-manager/pip}" class="pip-search mb-4">
+                <label class="visually-hidden" for="pipSearch">Search by employee name or code</label>
+                <input id="pipSearch" name="q" type="search" class="form-control" maxlength="100" th:value="${q}" placeholder="Search employee name or code">
+                <button type="submit" class="btn btn-outline-primary">Search</button>
+            </form>
+            <p th:if="${board.plans.empty}" class="pip-empty">No PIP plans found for your reporting team.</p>
+            <article th:each="plan : ${board.plans.content}" class="pip-plan-card">
+                <div class="pip-heading"><div><h3 class="h6 mb-1" th:text="${plan.name}">Employee</h3><small class="text-muted" th:text="${plan.code}"></small></div>
+                    <span class="badge" th:classappend="${plan.status.name() == 'UNDER_REVIEW'} ? 'bg-warning text-dark' : 'bg-light text-dark'"
+                          th:text="${plan.status.name() == 'UNDER_REVIEW' ? 'Under review' : (plan.status.name() == 'COMPLETED' ? 'Continue employment' : 'Exit recorded')}"></span></div>
+                <p class="text-muted small mt-3"><span th:text="${#temporals.format(plan.startDate, 'dd MMM yyyy')}"></span> – <span th:text="${#temporals.format(plan.endDate, 'dd MMM yyyy')}"></span>
+                    · <span th:text="${plan.durationMonths + (plan.durationMonths == 1 ? ' month' : ' months')}"></span></p>
+                <a class="btn btn-outline-primary btn-sm" th:href="@{/reporting-manager/pip/{id}(id=${plan.id})}">View reviews &amp; feedback</a>
+            </article>
+            <nav th:if="${board.plans.totalPages > 1}" class="pip-heading mt-3" aria-label="PIP history pages">
+                <a th:if="${board.plans.hasPrevious()}" class="btn btn-outline-secondary btn-sm" th:href="@{/reporting-manager/pip(q=${q},page=${board.plans.number - 1})}">Previous</a>
+                <span th:text="${'Page ' + (board.plans.number + 1) + ' of ' + board.plans.totalPages}"></span>
+                <a th:if="${board.plans.hasNext()}" class="btn btn-outline-secondary btn-sm" th:href="@{/reporting-manager/pip(q=${q},page=${board.plans.number + 1})}">Next</a>
+            </nav>
+        </div></div>
+    </div>
+</section>
+</th:block>
+</body></html>

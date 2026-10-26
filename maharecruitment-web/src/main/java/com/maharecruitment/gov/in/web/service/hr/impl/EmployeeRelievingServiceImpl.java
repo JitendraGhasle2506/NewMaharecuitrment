@@ -54,6 +54,7 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
     @Override
     @Transactional
     public void saveRelieving(EmployeeRelievingDto dto) {
+        rejectLegacyPip(dto.getReasonOfRelieving());
         EmployeeRelievingEntity entity;
         if (dto.getRelievingId() != null) {
             entity = relievingRepository.findById(dto.getRelievingId())
@@ -68,6 +69,7 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
             entity = new EmployeeRelievingEntity();
         }
 
+        rejectLegacyPip(entity.getReasonOfRelieving());
         EmployeeEntity employee = employeeRepository.findById(dto.getEmployeeId())
             .orElseThrow(() -> new IllegalArgumentException("Invalid Employee ID"));
         entity.setEmployee(employee);
@@ -105,6 +107,7 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
     public void markExitDate(Long relievingId, java.time.LocalDate exitDate) {
         EmployeeRelievingEntity entity = relievingRepository.findById(relievingId)
             .orElseThrow(() -> new IllegalArgumentException("Invalid relieving ID"));
+        rejectLegacyPip(entity.getReasonOfRelieving());
         entity.setExitDate(exitDate);
         entity.setStatus("Exit Date Marked");
         relievingRepository.save(entity);
@@ -115,6 +118,7 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
     public void cancelResignation(Long relievingId) {
         EmployeeRelievingEntity entity = relievingRepository.findById(relievingId)
             .orElseThrow(() -> new IllegalArgumentException("Invalid relieving ID"));
+        rejectLegacyPip(entity.getReasonOfRelieving());
             
         if ("COMPLETED".equalsIgnoreCase(entity.getStatus()) || "Relieved".equalsIgnoreCase(entity.getStatus())) {
             throw new IllegalStateException("Cannot cancel an already completed relieving record.");
@@ -136,16 +140,13 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
     @Override
     @Transactional
     public void updatePip(Long relievingId, java.time.LocalDate pipStartDate, String pipDuration) {
-        EmployeeRelievingEntity entity = relievingRepository.findById(relievingId)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid relieving ID"));
-        
-        if (!"PIP".equalsIgnoreCase(entity.getReasonOfRelieving())) {
-            throw new IllegalArgumentException("This record is not a PIP record.");
+        throw new IllegalArgumentException("PIP must be managed from Performance Reviews by an authorised reporting manager.");
+    }
+
+    private void rejectLegacyPip(String reason) {
+        if (reason != null && "PIP".equalsIgnoreCase(reason.trim())) {
+            throw new IllegalArgumentException("PIP must be managed from Performance Reviews by an authorised reporting manager.");
         }
-        
-        entity.setPipStartDate(pipStartDate);
-        entity.setPipDuration(pipDuration);
-        relievingRepository.save(entity);
     }
 
     private EmployeeRelievingDto mapToDto(EmployeeRelievingEntity entity) {

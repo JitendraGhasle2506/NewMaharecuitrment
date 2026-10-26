@@ -103,7 +103,6 @@
                                             <option value="">-- Select Reason --</option>
                                             <option value="Resignation">Resignation</option>
                                             <option value="Released">Released</option>
-                                            <option value="PIP">PIP (Performance Improvement Plan)</option>
                                             <option value="Return of Service">Return of Service</option>
                                         </select>
                                         <div class="invalid-feedback">Please select a reason.</div>
@@ -252,11 +251,11 @@
                                                 <i class="fas fa-eye me-1"></i> View
                                             </button>
                                             
-                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#markExitDateModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}">End / Mark Exit</button>
+                                            <button th:if="${record.reasonOfRelieving != 'PIP'}" type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#markExitDateModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}">End / Mark Exit</button>
                                             
-                                            <button th:if="${record.reasonOfRelieving == 'PIP'}" type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editPipModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}, data-start-date=${record.pipStartDate}, data-duration=${record.pipDuration}">Edit PIP</button>
+                                            <span th:if="${record.reasonOfRelieving == 'PIP'}" class="text-muted small">Legacy PIP record (read-only)</span>
 
-                                            <form autocomplete="off" th:action="@{/hr/relieving/cancel-record}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this process? The employee will be restored to ACTIVE status.');">
+                                            <form th:if="${record.reasonOfRelieving != 'PIP'}" autocomplete="off" th:action="@{/hr/relieving/cancel-record}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this process? The employee will be restored to ACTIVE status.');">
                                                 <input autocomplete="off" type="hidden" name="relievingId" th:value="${record.relievingId}">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel Process">
                                                     <i class="fas fa-times me-1"></i> Cancel

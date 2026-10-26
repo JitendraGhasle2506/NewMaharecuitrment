@@ -249,6 +249,8 @@ public class SecurityConfig {
 
                 .requestMatchers("/home", "/common/**").authenticated()
                 .requestMatchers("/reporting-manager/attendance/**").authenticated()
+                .requestMatchers("/reporting-manager/pip", "/reporting-manager/pip/**")
+                    .hasAnyAuthority("ROLE_COO", "ROLE_HOD", "ROLE_MD", "ROLE_CTO", "ROLE_CFO")
                 .requestMatchers("/reporting-manager/resources", "/reporting-manager/resources/**")
                     .hasAnyAuthority("ROLE_EMPLOYEE", "ROLE_HOD", "ROLE_STM", "ROLE_PM", "ROLE_COO", "ROLE_CTO", "ROLE_CFO", "ROLE_MD")
                 .requestMatchers(

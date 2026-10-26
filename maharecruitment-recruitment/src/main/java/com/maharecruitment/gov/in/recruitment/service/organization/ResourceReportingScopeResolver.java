@@ -27,9 +27,18 @@ public class ResourceReportingScopeResolver {
     public record Scope(Long self, Map<Long, EmployeeRow> people, Map<Long, Long> parents, Set<Long> team) { }
 
     public Scope resolve(Long userId) {
+        return resolve(userId, hierarchy.findActiveEmployees());
+    }
+
+    /** Retain reporting ownership for exited employees so PIP history remains accessible to their current team. */
+    public Scope resolveIncludingInactive(Long userId) {
+        return resolve(userId, hierarchy.findEmployeesIncludingInactive());
+    }
+
+    private Scope resolve(Long userId, List<EmployeeRow> rows) {
         Map<Long, EmployeeRow> people = new LinkedHashMap<>();
         Map<Long, Long> byUser = new HashMap<>();
-        for (EmployeeRow employee : hierarchy.findActiveEmployees()) {
+        for (EmployeeRow employee : rows) {
             people.put(employee.getEmployeeId(), employee);
             if (employee.getUserId() != null) byUser.put(employee.getUserId(), employee.getEmployeeId());
         }

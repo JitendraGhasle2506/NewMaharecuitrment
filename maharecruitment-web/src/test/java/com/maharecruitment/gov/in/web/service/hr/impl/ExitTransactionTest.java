@@ -49,9 +49,12 @@ class ExitTransactionTest {
         @Bean AuditEventRepository auditRepository() { return mock(AuditEventRepository.class); }
         @Bean UserService userService() { return mock(UserService.class); }
         @Bean AuditTrailService audit(AuditEventRepository records, UserService users) { return new AuditTrailServiceImpl(records, users); }
-        @Bean EmployeeExitService exits(EmployeeRepository employees, UserRepository users,
+        @Bean com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService offboarding(EmployeeRepository employees, UserRepository users,
                 RecruitmentDesignationVacancyRepository vacancies, AuditTrailService audit) {
-            return new EmployeeExitServiceImpl(employees, users, vacancies, audit);
+            return new EmployeeOffboardingServiceImpl(employees, users, vacancies, audit);
+        }
+        @Bean EmployeeExitService exits(com.maharecruitment.gov.in.web.service.hr.EmployeeOffboardingService offboarding) {
+            return new EmployeeExitServiceImpl(offboarding);
         }
     }
     private AnnotationConfigApplicationContext context;

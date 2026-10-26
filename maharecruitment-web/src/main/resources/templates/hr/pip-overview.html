@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Employee PIP Overview</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-pip.css}">
+</head>
+<body class="hr-shell">
+<th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Employee PIP Overview', ~{::section})}">
+<section class="pip-page">
+    <div class="pip-hero"><span class="pip-eyebrow">HR · Across all employees</span><h1>Employee PIP overview</h1>
+        <p>Monitor employees under review and past PIP outcomes across the organisation.</p>
+        <span class="badge bg-light text-dark">Read-only oversight</span>
+    </div>
+    <div class="pip-status-counts mb-4" aria-label="Company-wide PIP plan counts">
+        <div class="card"><div class="card-body"><span class="text-muted">Under review</span><strong th:text="${report.underReview}">0</strong></div></div>
+        <div class="card"><div class="card-body"><span class="text-muted">Continue employment</span><strong th:text="${report.completed}">0</strong></div></div>
+        <div class="card"><div class="card-body"><span class="text-muted">Exit recorded</span><strong th:text="${report.exited}">0</strong></div></div>
+    </div>
+    <div class="card"><div class="card-body">
+        <div class="pip-heading mb-3"><h2 class="h5 mb-0">All employee PIP plans</h2>
+            <span class="badge bg-light text-dark" th:text="${report.plans.totalElements + (report.plans.totalElements == 1 ? ' matching plan' : ' matching plans')}"></span></div>
+        <form autocomplete="off" method="get" th:action="@{/hr/pip}" class="row g-3 align-items-end mb-4">
+            <div class="col-md-6"><label for="hrPipSearch" class="form-label">Employee name or code</label>
+                <input id="hrPipSearch" name="q" type="search" class="form-control" maxlength="100" th:value="${q}" placeholder="Search all employees"></div>
+            <div class="col-md-4"><label for="hrPipStatus" class="form-label">PIP status</label>
+                <select id="hrPipStatus" name="status" class="form-select">
+                    <option value="" th:selected="${currentStatus == ''}">All statuses</option>
+                    <option value="UNDER_REVIEW" th:selected="${currentStatus == 'UNDER_REVIEW'}">Under review</option>
+                    <option value="COMPLETED" th:selected="${currentStatus == 'COMPLETED'}">Continue employment</option>
+                    <option value="EXIT_RECORDED" th:selected="${currentStatus == 'EXIT_RECORDED'}">Exit recorded</option>
+                </select></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Apply filters</button></div>
+            <div th:if="${currentStatus != '' or !#strings.isEmpty(q)}" class="col-12"><a th:href="@{/hr/pip}">Clear filters</a></div>
+        </form>
+        <div class="table-responsive">
+            <table class="table align-middle pip-report-table">
+                <thead><tr><th scope="col">Employee</th><th scope="col">PIP status</th><th scope="col">Review period</th><th scope="col">Duration</th><th scope="col">Details</th></tr></thead>
+                <tbody>
+                    <tr th:each="plan : ${report.plans.content}">
+                        <td><strong th:text="${plan.name}"></strong><div class="text-muted small" th:text="${plan.code}"></div></td>
+                        <td><span class="pip-mobile-label">PIP status</span><span class="badge" th:classappend="${plan.status.name() == 'UNDER_REVIEW'} ? 'bg-warning text-dark' : (${plan.status.name() == 'COMPLETED'} ? 'bg-success' : 'bg-secondary')"
+                                  th:text="${plan.status.name() == 'UNDER_REVIEW' ? 'Under review' : (plan.status.name() == 'COMPLETED' ? 'Continue employment' : 'Exit recorded')}"></span></td>
+                        <td><span class="pip-mobile-label">Review period</span><span th:text="${#temporals.format(plan.startDate, 'dd MMM yyyy')}"></span><br><span class="text-muted small" th:text="${'to ' + #temporals.format(plan.endDate, 'dd MMM yyyy')}"></span></td>
+                        <td><span class="pip-mobile-label">Duration</span><span th:text="${plan.durationMonths + (plan.durationMonths == 1 ? ' month' : ' months')}"></span></td>
+                        <td><a class="btn btn-outline-primary btn-sm" th:href="@{/hr/pip/{id}(id=${plan.id})}" th:attr="aria-label=|View PIP details for ${plan.name}|">View details</a></td>
+                    </tr>
+                    <tr th:if="${report.plans.empty}"><td colspan="5" class="pip-empty">No PIP plans match these filters.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <nav th:if="${report.plans.totalPages > 1}" class="pip-heading mt-3" aria-label="Employee PIP report pages">
+            <a th:if="${report.plans.hasPrevious()}" class="btn btn-outline-secondary btn-sm" th:href="@{/hr/pip(q=${q},status=${currentStatus},page=${report.plans.number - 1})}">Previous</a>
+            <span th:text="${'Page ' + (report.plans.number + 1) + ' of ' + report.plans.totalPages}"></span>
+            <a th:if="${report.plans.hasNext()}" class="btn btn-outline-secondary btn-sm" th:href="@{/hr/pip(q=${q},status=${currentStatus},page=${report.plans.number + 1})}">Next</a>
+        </nav>
+    </div></div>
+</section>
+</th:block>
+</body></html>
