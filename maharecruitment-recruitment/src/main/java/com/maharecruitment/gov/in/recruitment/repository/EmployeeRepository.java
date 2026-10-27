@@ -59,6 +59,9 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     Optional<EmployeeEntity> findByUser_Id(Long userId);
 
+    @EntityGraph(attributePaths = { "designation", "user" })
+    List<EmployeeEntity> findByUser_IdIn(Collection<Long> userIds);
+
     Optional<EmployeeEntity> findByUser_IdAndStatusIgnoreCase(Long userId, String status);
 
     @EntityGraph(attributePaths = { "designation", "subDepartment" })

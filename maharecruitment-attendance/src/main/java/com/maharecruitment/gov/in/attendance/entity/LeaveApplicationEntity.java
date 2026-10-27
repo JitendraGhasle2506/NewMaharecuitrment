@@ -87,4 +87,10 @@ public class LeaveApplicationEntity {
 
     @Transient
     private String hodApproverName;
+
+    @Transient
+    private String decidedByName;
+
+    @Transient
+    private String decidedByDesignation;
 }

@@ -48,6 +48,8 @@ class TourApplicationServiceImplTest {
 
     @Mock private AdditionalChargeApprovalService additionalChargeApprovals;
 
+    @Mock private LeaveTourAuditService leaveTourAudit;
+
     private TourApplicationServiceImpl service;
 
     @BeforeEach
@@ -59,7 +61,8 @@ class TourApplicationServiceImplTest {
                 employeeRepository,
                 approvalRoutingService,
                 userRepository, additionalChargeApprovals,
-                new InternalEmployeeApprovalPolicy(employeeRepository, userRepository));
+                new InternalEmployeeApprovalPolicy(employeeRepository, userRepository),
+                leaveTourAudit);
     }
 
     @Test
@@ -75,6 +78,7 @@ class TourApplicationServiceImplTest {
         assertThat(error.getMessage()).contains("internal employees");
         assertThat(tour.getStatus()).isEqualTo("PENDING");
         org.mockito.Mockito.verify(tourApplicationRepository, org.mockito.Mockito.never()).save(any());
+        org.mockito.Mockito.verifyNoInteractions(leaveTourAudit);
     }
 
     @Test
@@ -89,6 +93,7 @@ class TourApplicationServiceImplTest {
 
         assertThat(tour.getStatus()).isEqualTo("APPROVED");
         assertThat(tour.getHodDecisionByUserId()).isEqualTo(7L);
+        verify(leaveTourAudit).tourDecided(tour, "APPROVED", null, "ok", 7L);
     }
 
     @Test

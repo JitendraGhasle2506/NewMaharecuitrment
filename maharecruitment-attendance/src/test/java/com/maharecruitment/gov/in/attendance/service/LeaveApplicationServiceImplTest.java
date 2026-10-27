@@ -62,6 +62,8 @@ class LeaveApplicationServiceImplTest {
 
     @Mock private InternalEmployeeApprovalPolicy internalApprovalPolicy;
 
+    @Mock private LeaveTourAuditService leaveTourAudit;
+
     @BeforeEach void noAdditionalChargesByDefault() {
         org.mockito.Mockito.lenient().when(additionalChargeApprovals.snapshot()).thenReturn(AdditionalChargeApprovalService.Snapshot.empty());
     }
@@ -204,6 +206,8 @@ class LeaveApplicationServiceImplTest {
         assertEquals(RecruitmentTypeApprovalRoutingService.STAGE_HOD, leave.getApprovalStage());
         assertEquals("Recommended", leave.getManagerRemarks());
         verify(leaveApplicationRepository).save(leave);
+        verify(leaveTourAudit).leaveDecided(
+                leave, "APPROVED", RecruitmentTypeApprovalRoutingService.STAGE_MANAGER, "Recommended", 7L);
     }
 
     @Test
@@ -222,6 +226,7 @@ class LeaveApplicationServiceImplTest {
 
         assertEquals("PENDING", leave.getStatus());
         verify(leaveApplicationRepository, org.mockito.Mockito.never()).save(any());
+        org.mockito.Mockito.verifyNoInteractions(leaveTourAudit);
     }
 
     @Test
@@ -271,5 +276,128 @@ class LeaveApplicationServiceImplTest {
 
         assertEquals("Reporting Manager", result.getFirst().getManagerApproverName());
         assertEquals("Reporting HOD", result.getFirst().getHodApproverName());
+    }
+
+    @Test
+    void leaveHistoryShowsNameAndDesignationOfWhoApproved() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setEmployeeId(101L);
+        leave.setStatus("APPROVED");
+        leave.setHodDecisionByUserId(9L);
+        User hod = new User();
+        hod.setId(9L);
+        hod.setName("Ravi Deshmukh");
+        var designation = new com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster();
+        designation.setDesignationName("Head of Department");
+        EmployeeEntity hodEmployee = new EmployeeEntity();
+        hodEmployee.setUser(hod);
+        hodEmployee.setDesignation(designation);
+
+        when(leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(101L))
+                .thenReturn(List.of(leave));
+        when(userRepository.findAllById(any())).thenReturn(List.of(hod));
+        when(employeeRepository.findByUser_IdIn(any())).thenReturn(List.of(hodEmployee));
+
+        LeaveApplicationEntity result = service.getLeaveApplicationsByEmployee(101L).getFirst();
+
+        assertEquals("Ravi Deshmukh", result.getDecidedByName());
+        assertEquals("Head of Department", result.getDecidedByDesignation());
+    }
+
+    @Test
+    void leaveRejectedByManagerShowsManagerAndFallsBackToRoleWithoutEmployeeRecord() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setEmployeeId(101L);
+        leave.setStatus("REJECTED");
+        leave.setManagerDecisionByUserId(7L);
+        var role = new com.maharecruitment.gov.in.auth.entity.Role();
+        role.setName("ROLE_COO");
+        User coo = new User();
+        coo.setId(7L);
+        coo.setName("Chief Officer");
+        coo.setRoles(List.of(role));
+
+        when(leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(101L))
+                .thenReturn(List.of(leave));
+        when(userRepository.findAllById(any())).thenReturn(List.of(coo));
+
+        LeaveApplicationEntity result = service.getLeaveApplicationsByEmployee(101L).getFirst();
+
+        assertEquals("Chief Officer", result.getDecidedByName());
+        assertEquals("COO", result.getDecidedByDesignation());
+    }
+
+    @Test
+    void twoLevelLeaveApprovedBeforeDeciderWasRecordedFallsBackToStoredHod() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setEmployeeId(101L);
+        leave.setStatus("APPROVED");
+        leave.setApprovalStage("HOD");
+        leave.setManagerApproverUserId(7L);
+        leave.setHodApproverUserId(9L);
+        User manager = new User();
+        manager.setId(7L);
+        manager.setName("Reporting Manager");
+        User hod = new User();
+        hod.setId(9L);
+        hod.setName("Reporting HOD");
+
+        when(leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(101L))
+                .thenReturn(List.of(leave));
+        when(userRepository.findAllById(any())).thenReturn(List.of(manager, hod));
+
+        LeaveApplicationEntity result = service.getLeaveApplicationsByEmployee(101L).getFirst();
+
+        assertEquals("Reporting HOD", result.getDecidedByName());
+    }
+
+    @Test
+    void twoLevelLeaveRejectedAtManagerStageBeforeDeciderWasRecordedShowsManager() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setEmployeeId(101L);
+        leave.setStatus("REJECTED");
+        leave.setApprovalStage("MANAGER");
+        leave.setManagerApproverUserId(7L);
+        leave.setHodApproverUserId(9L);
+        User manager = new User();
+        manager.setId(7L);
+        manager.setName("Reporting Manager");
+
+        when(leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(101L))
+                .thenReturn(List.of(leave));
+        when(userRepository.findAllById(any())).thenReturn(List.of(manager));
+
+        LeaveApplicationEntity result = service.getLeaveApplicationsByEmployee(101L).getFirst();
+
+        assertEquals("Reporting Manager", result.getDecidedByName());
+    }
+
+    @Test
+    void legacyLeaveApprovedBeforeDeciderWasRecordedHasNoDecider() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setEmployeeId(101L);
+        leave.setStatus("APPROVED");
+
+        when(leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(101L))
+                .thenReturn(List.of(leave));
+
+        LeaveApplicationEntity result = service.getLeaveApplicationsByEmployee(101L).getFirst();
+
+        assertEquals(null, result.getDecidedByName());
+    }
+
+    @Test
+    void pendingLeaveHasNoDecider() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+        leave.setManagerDecisionByUserId(7L);
+
+        when(leaveApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(101L))
+                .thenReturn(List.of(leave));
+
+        LeaveApplicationEntity result = service.getLeaveApplicationsByEmployee(101L).getFirst();
+
+        assertEquals(null, result.getDecidedByName());
     }
 }

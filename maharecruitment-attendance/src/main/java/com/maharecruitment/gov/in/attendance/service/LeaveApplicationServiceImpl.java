@@ -25,6 +25,7 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
+import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
@@ -67,6 +68,9 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Autowired
     private InternalEmployeeApprovalPolicy internalApprovalPolicy;
 
+    @Autowired
+    private LeaveTourAuditService leaveTourAudit;
+
     @Override
     public void saveLeaveApplication(LeaveApplicationEntity leaveApplication) {
         prepareAndValidateLeaveApplication(leaveApplication);
@@ -78,6 +82,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         }
         initializeApprovalRoute(leaveApplication);
         leaveApplicationRepository.save(leaveApplication);
+        leaveTourAudit.leaveApplied(leaveApplication);
     }
 
     private void initializeApprovalRoute(LeaveApplicationEntity leaveApplication) {
@@ -219,25 +224,81 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             if (application.getHodApproverUserId() != null) {
                 approverIds.add(application.getHodApproverUserId());
             }
+            if (decidedByUserId(application) != null) {
+                approverIds.add(decidedByUserId(application));
+            }
         }
         if (approverIds.isEmpty()) {
             return;
         }
 
-        Map<Long, String> approverNames = userRepository.findAllById(approverIds).stream()
-                .collect(Collectors.toMap(User::getId, this::approverDisplayName));
+        Map<Long, User> approvers = userRepository.findAllById(approverIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        Map<Long, String> designations = employeeRepository.findByUser_IdIn(approverIds).stream()
+                .filter(employee -> employee.getUser() != null
+                        && employee.getDesignation() != null
+                        && StringUtils.hasText(employee.getDesignation().getDesignationName()))
+                .collect(Collectors.toMap(
+                        employee -> employee.getUser().getId(),
+                        employee -> employee.getDesignation().getDesignationName().trim(),
+                        (first, second) -> first));
         for (LeaveApplicationEntity application : applications) {
             application.setManagerApproverName(
-                    approverNames.get(application.getManagerApproverUserId()));
+                    approverName(approvers.get(application.getManagerApproverUserId())));
             application.setHodApproverName(
-                    approverNames.get(application.getHodApproverUserId()));
+                    approverName(approvers.get(application.getHodApproverUserId())));
+            User decidedBy = approvers.get(decidedByUserId(application));
+            if (decidedBy != null) {
+                application.setDecidedByName(approverDisplayName(decidedBy));
+                application.setDecidedByDesignation(
+                        designations.getOrDefault(decidedBy.getId(), roleDesignation(decidedBy)));
+            }
         }
+    }
+
+    // The final decision maker: the HOD for approvals, or whoever rejected (manager or HOD).
+    private Long decidedByUserId(LeaveApplicationEntity leave) {
+        String status = leave.getStatus() == null ? "" : leave.getStatus().trim().toUpperCase(Locale.ROOT);
+        if (!"REJECTED".equals(status) && !APPROVED_APPLICATION_STATUSES.contains(status)) {
+            return null;
+        }
+        if (leave.getHodDecisionByUserId() != null) {
+            return leave.getHodDecisionByUserId();
+        }
+        if (leave.getManagerDecisionByUserId() != null) {
+            return leave.getManagerDecisionByUserId();
+        }
+        // Decided before the actor was recorded (V153). Two-level requests could then only be decided by the
+        // stored approver of the current stage; legacy requests kept no approver at all.
+        if (RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(leave.getApprovalStage())) {
+            return leave.getManagerApproverUserId();
+        }
+        if (RecruitmentTypeApprovalRoutingService.STAGE_HOD.equalsIgnoreCase(leave.getApprovalStage())) {
+            return leave.getHodApproverUserId();
+        }
+        return null;
+    }
+
+    private String approverName(User user) {
+        return user == null ? null : approverDisplayName(user);
     }
 
     private String approverDisplayName(User user) {
         return user.getName() == null || user.getName().isBlank()
                 ? "Approver"
                 : user.getName().trim();
+    }
+
+    // Senior approvers (MD, COO, ...) may not have an employee record, so fall back to their role.
+    private String roleDesignation(User user) {
+        return user.getRoles().stream()
+                .map(Role::getName)
+                .filter(StringUtils::hasText)
+                .map(name -> name.trim().toUpperCase(Locale.ROOT))
+                .filter(name -> !"ROLE_EMPLOYEE".equals(name) && !"ROLE_USER".equals(name))
+                .map(name -> name.startsWith("ROLE_") ? name.substring("ROLE_".length()) : name)
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -389,6 +450,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
                 .orElseThrow(() -> new IllegalArgumentException("Leave application not found."));
         requirePending(leave.getStatus());
         internalApprovalPolicy.requireCanDecide(actorUserId, leave.getEmployeeId(), "leave");
+        String previousStage = leave.getApprovalStage();
 
         if (!approvalRoutingService.isTwoLevelStage(leave.getApprovalStage())) {
             requireLegacyAuthority(actorUserId, leave.getEmployeeId());
@@ -405,6 +467,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             applyStagedDecision(leave, status, remarks, actorUserId);
         }
         leaveApplicationRepository.save(leave);
+        leaveTourAudit.leaveDecided(leave, status, previousStage, remarks, actorUserId);
     }
 
     private void applyStagedDecision(LeaveApplicationEntity leave, String status, String remarks, Long actorUserId) {
@@ -472,5 +535,6 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         leave.setStatus("CANCELLED");
         leave.setManagerRemarks("Cancelled by employee before approval.");
         leaveApplicationRepository.save(leave);
+        leaveTourAudit.leaveCancelled(leave);
     }
 }
