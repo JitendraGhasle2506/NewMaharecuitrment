@@ -3,6 +3,13 @@
 Open **Manage Resources** in the sidebar or the employee dashboard, or visit
 `/reporting-manager/resources` under the application's context path.
 
+The sidebar entry is a DB-driven menu (`mst_menu` + `menu_role`), loaded like every
+other menu. Migration **V159** seeds it once for ROLE_HOD, ROLE_COO, ROLE_CTO and
+ROLE_CFO; change the roles afterwards through Admin menu management. The dashboard
+quick action and the team-hierarchy shortcut appear only when the signed-in user's
+menus include this URL. Users already signed in see the change after signing in again,
+because menus are cached in the session.
+
 The responsive workspace shows primary resources mapped directly to the signed-in
 employee and to their descendants. The free-resource view contains active,
 non-relieved employees with no record in `employee_reporting_mapping` of any

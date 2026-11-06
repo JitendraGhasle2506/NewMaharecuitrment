@@ -13,7 +13,8 @@
         <a class="eh-secondary" th:href="@{/employee/dashboard}">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
         </a>
-        <a class="eh-secondary" th:href="@{/reporting-manager/resources}">
+        <a class="eh-secondary" th:href="@{/reporting-manager/resources}"
+           th:if="${session.menus != null and !session.menus.?[url == '/reporting-manager/resources'].isEmpty()}">
             <i class="fa-solid fa-users-gear" aria-hidden="true"></i> Manage Resources
         </a>
         <div id="employeeReportingChain" class="eh-reporting-chain"

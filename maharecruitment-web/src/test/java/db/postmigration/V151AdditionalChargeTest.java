@@ -19,7 +19,9 @@ class V151AdditionalChargeTest {
         var sql = ArgumentCaptor.forClass(String.class);
         verify(statement, atLeastOnce()).execute(sql.capture());
         assertThat(String.join(" ", sql.getAllValues())).contains("chk_additional_charge_assignee",
-                "chk_additional_charge_scope", "chk_additional_charge_dates", "revoked_by", "assigned_by");
+                "chk_additional_charge_scope", "chk_additional_charge_dates", "revoked_by", "assigned_by",
+                "check (department_id is null or cell_id is null)")
+                .doesNotContain("(department_id is null) <> (cell_id is null)");
         assertThat(java.nio.file.Files.readString(java.nio.file.Path.of(
                 "src/main/java/com/maharecruitment/gov/in/web/config/PostSchemaFlywayRunner.java")))
                 .contains("new db.postmigration.V151__employee_additional_charge()");
