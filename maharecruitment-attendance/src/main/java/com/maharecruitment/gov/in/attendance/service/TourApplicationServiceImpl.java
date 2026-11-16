@@ -37,6 +37,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     private final UserRepository userRepository;
     private final AdditionalChargeApprovalService additionalChargeApprovals;
     private final InternalEmployeeApprovalPolicy internalApprovalPolicy;
+    private final LeaveTourAuditService leaveTourAudit;
 
     public TourApplicationServiceImpl(
             TourApplicationRepository tourApplicationRepository,
@@ -44,7 +45,8 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             EmployeeRepository employeeRepository,
             RecruitmentTypeApprovalRoutingService approvalRoutingService,
             UserRepository userRepository, AdditionalChargeApprovalService additionalChargeApprovals,
-            InternalEmployeeApprovalPolicy internalApprovalPolicy) {
+            InternalEmployeeApprovalPolicy internalApprovalPolicy,
+            LeaveTourAuditService leaveTourAudit) {
         this.tourApplicationRepository = tourApplicationRepository;
         this.reportingManagerService = reportingManagerService;
         this.employeeRepository = employeeRepository;
@@ -52,6 +54,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
         this.userRepository = userRepository;
         this.additionalChargeApprovals = additionalChargeApprovals;
         this.internalApprovalPolicy = internalApprovalPolicy;
+        this.leaveTourAudit = leaveTourAudit;
     }
 
     @Override
@@ -68,6 +71,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
         tourApplication.setManagerApproverUserId(route.managerUserId());
         tourApplication.setHodApproverUserId(route.hodUserId());
         tourApplicationRepository.save(tourApplication);
+        leaveTourAudit.tourApplied(tourApplication);
     }
 
     @Override
@@ -268,6 +272,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             throw new IllegalArgumentException("Only pending tour applications can be processed.");
         }
         internalApprovalPolicy.requireCanDecide(actorUserId, tour.getEmployeeId(), "tour");
+        String previousStage = tour.getApprovalStage();
 
         if (!approvalRoutingService.isTwoLevelStage(tour.getApprovalStage())) {
             if (!additionalChargeApprovals.snapshot().canActLegacy(actorUserId, tour.getEmployeeId(),
@@ -295,6 +300,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             applyStagedDecision(tour, status, remarks, actorUserId);
         }
         tourApplicationRepository.save(tour);
+        leaveTourAudit.tourDecided(tour, status, previousStage, remarks, actorUserId);
     }
 
     private void applyStagedDecision(TourApplicationEntity tour, String status, String remarks, Long actorUserId) {

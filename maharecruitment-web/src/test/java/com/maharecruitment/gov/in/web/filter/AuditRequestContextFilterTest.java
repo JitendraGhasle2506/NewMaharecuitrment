@@ -32,7 +32,8 @@ class AuditRequestContextFilterTest {
                 new com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationAuditLogEntity(),
                 new com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingAuditLogEntity(),
                 new com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingAuditLogEntity(),
-                new com.maharecruitment.gov.in.recruitment.entity.EmployeeTypeConversionAuditEntity());
+                new com.maharecruitment.gov.in.recruitment.entity.EmployeeTypeConversionAuditEntity(),
+                new com.maharecruitment.gov.in.attendance.entity.AttendanceRequestAuditLogEntity());
         assertThatThrownBy(() -> filter.doFilter(request, new MockHttpServletResponse(), (req, response) -> {
             var listener = new AuditIpEntityListener();
             for (var audit : auditRecords) {

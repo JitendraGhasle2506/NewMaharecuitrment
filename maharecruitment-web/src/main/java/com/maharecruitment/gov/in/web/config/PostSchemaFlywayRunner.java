@@ -301,6 +301,7 @@ public class PostSchemaFlywayRunner {
                 new db.postmigration.V155__audit_client_ip_support(),
                 new db.postmigration.V156__employee_pip_reviews(),
                 new db.postmigration.V157__employee_pip_reason(),
+                new db.postmigration.V158__attendance_request_audit_log(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

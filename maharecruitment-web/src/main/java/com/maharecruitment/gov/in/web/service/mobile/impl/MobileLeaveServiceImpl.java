@@ -17,6 +17,7 @@ import com.maharecruitment.gov.in.attendance.dto.LeaveApplicationHODDTO;
 import com.maharecruitment.gov.in.attendance.entity.LeaveApplicationEntity;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.service.LeaveApplicationService;
+import com.maharecruitment.gov.in.attendance.service.LeaveTourAuditService;
 import com.maharecruitment.gov.in.master.entity.LeaveEntity;
 import com.maharecruitment.gov.in.master.repository.LeaveRepository;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileCompOffValidationResponse;
@@ -49,16 +50,19 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
     private final LeaveApplicationService leaveApplicationService;
     private final LeaveApplicationRepository leaveApplicationRepository;
     private final LeaveRepository leaveRepository;
+    private final LeaveTourAuditService leaveTourAudit;
 
     public MobileLeaveServiceImpl(
             MobileEmployeeAccessService mobileEmployeeAccessService,
             LeaveApplicationService leaveApplicationService,
             LeaveApplicationRepository leaveApplicationRepository,
-            LeaveRepository leaveRepository) {
+            LeaveRepository leaveRepository,
+            LeaveTourAuditService leaveTourAudit) {
         this.mobileEmployeeAccessService = mobileEmployeeAccessService;
         this.leaveApplicationService = leaveApplicationService;
         this.leaveApplicationRepository = leaveApplicationRepository;
         this.leaveRepository = leaveRepository;
+        this.leaveTourAudit = leaveTourAudit;
     }
 
     @Override
@@ -156,6 +160,7 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
         leave.setStatus("CANCELLED");
         leave.setManagerRemarks("Cancelled by employee before approval.");
         leaveApplicationRepository.save(leave);
+        leaveTourAudit.leaveCancelled(leave);
         return new MobileLeaveApplicationResponse(
                 true,
                 "Leave application cancelled successfully.",

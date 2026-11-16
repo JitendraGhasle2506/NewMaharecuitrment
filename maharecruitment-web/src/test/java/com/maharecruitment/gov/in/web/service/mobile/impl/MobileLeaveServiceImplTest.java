@@ -51,6 +51,9 @@ class MobileLeaveServiceImplTest {
     @Mock
     private LeaveRepository leaveRepository;
 
+    @Mock
+    private com.maharecruitment.gov.in.attendance.service.LeaveTourAuditService leaveTourAudit;
+
     private MobileLeaveServiceImpl service;
 
     @BeforeEach
@@ -59,7 +62,8 @@ class MobileLeaveServiceImplTest {
                 mobileEmployeeAccessService,
                 leaveApplicationService,
                 leaveApplicationRepository,
-                leaveRepository);
+                leaveRepository,
+                leaveTourAudit);
     }
 
     @Test
