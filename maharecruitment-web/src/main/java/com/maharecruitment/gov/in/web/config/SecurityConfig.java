@@ -259,6 +259,8 @@ public class SecurityConfig {
                     "/hod1/approveTour", "/hod1/rejectTour")
                     .authenticated()
                 .requestMatchers("/api/employees/hierarchy/**").hasAuthority("ROLE_HR")
+                .requestMatchers("/admin/internal-approver-roles", "/admin/internal-approver-roles/**")
+                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 
                 .requestMatchers("/hr/department/payment/**")

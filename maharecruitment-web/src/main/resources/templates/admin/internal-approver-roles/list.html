@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Approver Roles</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/admin-management.css(v='20260812')}">
+    <style>
+        .approver-rule-note { border: 1px solid #dbe6f3; border-radius: .8rem; padding: .9rem 1rem; margin-bottom: 1rem; background: #f8fbff; color: #334155; }
+        .approver-rule-note h3 { margin: 0 0 .4rem; font-size: 1rem; color: #183b63; }
+        .approver-rule-note ul { margin: 0; padding-left: 1.2rem; }
+        .approver-rule-note li + li { margin-top: .2rem; }
+        .approver-role-form { border: 1px solid #e2e8f0; border-radius: .8rem; padding: 1rem; margin-bottom: 1.25rem; background: #fff; }
+        .approver-role-form legend { font-size: 1.05rem; font-weight: 600; color: #183b63; margin-bottom: .2rem; }
+        .approver-role-form .form-hint { color: #64748b; margin-bottom: .8rem; }
+        .approver-role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .6rem; margin-bottom: 1rem; }
+        .approver-role-option { display: flex; gap: .6rem; align-items: center; border: 1px solid #dbe3ee; border-radius: .6rem; padding: .6rem .75rem; cursor: pointer; background: #fbfdff; }
+        .approver-role-option:has(input:checked) { border-color: #1e5790; background: #eef5fd; }
+        .approver-role-option .form-check-input { margin: 0; flex: none; }
+        .approver-role-option strong { display: block; color: #1e293b; }
+        .approver-role-option small { display: block; color: #64748b; }
+        .approver-role-actions { display: flex; justify-content: flex-end; margin-top: .8rem; }
+        @media (max-width: 576px) { .approver-role-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header(${adminUser} ? 'Admin' : 'HR', 'Internal Approver Roles', ~{::section})}">
+    <section class="admin-management-page">
+        <div class="card add-emp-card management-card">
+            <header class="management-header">
+                <div class="management-title-wrap">
+                    <span class="management-title-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
+                    <div>
+                        <div class="management-eyebrow">Leave &amp; tour approvals</div>
+                        <h2>Internal approver roles</h2>
+                        <p>Choose which roles can approve or reject leave and tour requests of INTERNAL employees.</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="card-body management-body">
+                <nav class="admin-quick-links" aria-label="User administration links" th:if="${adminUser}">
+                    <span class="admin-quick-links-label">Quick links</span>
+                    <a class="admin-quick-link" th:href="@{/admin/users}">
+                        <i class="fa-solid fa-users" aria-hidden="true"></i> Users
+                    </a>
+                    <a class="admin-quick-link" th:href="@{/admin/roles}">
+                        <i class="fa-solid fa-user-shield" aria-hidden="true"></i> Roles
+                    </a>
+                    <a class="admin-quick-link" th:href="@{/admin/role-menu-mappings}">
+                        <i class="fa-solid fa-diagram-project" aria-hidden="true"></i> Role menu mapping
+                    </a>
+                    <a class="admin-quick-link active" th:href="@{/admin/internal-approver-roles}" aria-current="page">
+                        <i class="fa-solid fa-user-check" aria-hidden="true"></i> Internal approver roles
+                    </a>
+                </nav>
+
+                <div class="management-alert alert alert-success" role="status" th:if="${successMessage}">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i><span th:text="${successMessage}"></span>
+                </div>
+                <div class="management-alert alert alert-danger" role="alert" th:if="${errorMessage}">
+                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span th:text="${errorMessage}"></span>
+                </div>
+
+                <div class="management-summary-grid">
+                    <div class="management-summary-card">
+                        <span class="summary-icon summary-icon-blue" aria-hidden="true"><i class="fa-solid fa-user-shield"></i></span>
+                        <div><span class="summary-label">Approver roles</span><strong th:text="${selectedRoleCount}">0</strong></div>
+                    </div>
+                    <div class="management-summary-card">
+                        <span class="summary-icon summary-icon-green" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span>
+                        <div>
+                            <span class="summary-label">Can approve now</span>
+                            <strong th:text="${#strings.isEmpty(approverLabel) ? 'No role set' : approverLabel}">HOD or PM</strong>
+                        </div>
+                    </div>
+                    <div class="management-summary-card">
+                        <span class="summary-icon summary-icon-amber" aria-hidden="true"><i class="fa-solid fa-id-card"></i></span>
+                        <div><span class="summary-label">Applies to</span><strong>INTERNAL employees only</strong></div>
+                    </div>
+                </div>
+
+                <div class="approver-rule-note">
+                    <h3>How this rule works</h3>
+                    <ul>
+                        <li>The approver must also be above the employee in the reporting hierarchy. A role alone does not give access to anyone's requests.</li>
+                        <li>Managers without a selected role still see their team's requests, marked <strong>View only</strong>.</li>
+                        <li>MAHAIT and other recruitment types keep their own approval route and are not affected.</li>
+                        <li>A change applies to the next approve or reject action, including requests that are already pending. Users do not need to sign in again.</li>
+                    </ul>
+                </div>
+
+                <form autocomplete="off" class="approver-role-form js-confirm-action" method="post"
+                      th:action="@{/admin/internal-approver-roles}"
+                      data-confirm-message="Save these approver roles for internal employee leave and tour requests? The change will be recorded in the log.">
+                    <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <fieldset>
+                        <legend>Roles that can approve or reject</legend>
+                        <p class="form-hint">Select at least one role.</p>
+                        <div class="approver-role-grid">
+                            <label class="approver-role-option" th:each="role : ${roleOptions}"
+                                   th:for="${'approver-role-' + role.roleId}">
+                                <input autocomplete="off" type="checkbox" class="form-check-input" name="roleIds"
+                                       th:id="${'approver-role-' + role.roleId}" th:value="${role.roleId}"
+                                       th:checked="${role.selected}">
+                                <span>
+                                    <strong th:text="${role.shortName}">HOD</strong>
+                                    <small th:text="${role.roleName}">ROLE_HOD</small>
+                                </span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <label class="form-label fw-semibold" for="approverRoleRemarks">Reason for change <span class="text-muted fw-normal">(optional, saved in the log)</span></label>
+                    <textarea autocomplete="off" id="approverRoleRemarks" class="form-control" name="remarks" rows="2" maxlength="500"
+                              th:text="${remarks}" placeholder="For example: PMs approve internal team leave from this month"></textarea>
+                    <div class="approver-role-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save approver roles
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+</th:block>
+<script th:src="@{/js/admin-management.js(v='20260806')}" defer></script>
+</body>
+</html>

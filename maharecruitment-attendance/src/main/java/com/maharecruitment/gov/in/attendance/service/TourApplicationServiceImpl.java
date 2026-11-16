@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -116,34 +117,36 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     @Override
     @Transactional(readOnly = true)
     public List<TourApplicationHODDTO> getPendingToursForHOD(Long hodUserId, String search) {
-        List<Long> legacyEmployeeIds = legacyEmployeeIds(hodUserId);
+        List<Long> teamIds = teamEmployeeIds(hodUserId);
+        var coverage = additionalChargeApprovals.snapshot();
         List<TourApplicationEntity> tours = tourApplicationRepository
-                .findPendingForApprover(hodUserId, legacyEmployeeIds, "PENDING");
-        tours = additionalChargePending(hodUserId, tours, legacyEmployeeIds, null, null);
-        
+                .findPendingForApprover(hodUserId, teamIds, "PENDING");
+        tours = additionalChargePending(hodUserId, coverage, tours, teamIds, null, null);
+
         if (tours.isEmpty()) {
             return List.of();
         }
 
         return convertToHODDTO(tours, applicationEmployeeIds(tours), search,
-                internalApprovalPolicy.hasInternalApproverRole(hodUserId));
+                decisionRule(hodUserId, coverage, teamIds));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TourApplicationHODDTO> getPendingToursForHOD(
             Long hodUserId, String search, LocalDate searchDate) {
-        List<Long> legacyIds = legacyEmployeeIds(hodUserId);
+        List<Long> teamIds = teamEmployeeIds(hodUserId);
+        var coverage = additionalChargeApprovals.snapshot();
         List<TourApplicationEntity> tours = tourApplicationRepository.findPendingForApproverFiltered(
                 hodUserId,
-                legacyIds,
+                teamIds,
                 searchPattern(search),
                 searchDate);
-        tours = additionalChargePending(hodUserId, tours, legacyIds, searchPattern(search), searchDate);
+        tours = additionalChargePending(hodUserId, coverage, tours, teamIds, searchPattern(search), searchDate);
         return tours.isEmpty()
                 ? List.of()
                 : convertToHODDTO(tours, applicationEmployeeIds(tours), null,
-                        internalApprovalPolicy.hasInternalApproverRole(hodUserId));
+                        decisionRule(hodUserId, coverage, teamIds));
     }
 
     @Override
@@ -152,14 +155,14 @@ public class TourApplicationServiceImpl implements TourApplicationService {
         List<TourApplicationEntity> tours = tourApplicationRepository
                 .findProcessedForApprover(
                         hodUserId,
-                        legacyEmployeeIds(hodUserId),
+                        teamEmployeeIds(hodUserId),
                         List.of("APPROVED", "REJECTED"));
-        
+
         if (tours.isEmpty()) {
             return List.of();
         }
 
-        return convertToHODDTO(tours, applicationEmployeeIds(tours), search, true);
+        return convertToHODDTO(tours, applicationEmployeeIds(tours), search, PROCESSED);
     }
 
     @Override
@@ -168,7 +171,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             Long hodUserId, String search, LocalDate searchDate, Pageable pageable) {
         Page<TourApplicationEntity> page = tourApplicationRepository.findProcessedForApproverPage(
                 hodUserId,
-                legacyEmployeeIds(hodUserId),
+                teamEmployeeIds(hodUserId),
                 searchPattern(search),
                 searchDate,
                 pageable);
@@ -176,7 +179,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             return new PageImpl<>(List.of(), pageable, page.getTotalElements());
         }
         List<TourApplicationHODDTO> content = convertToHODDTO(
-                page.getContent(), applicationEmployeeIds(page.getContent()), null, true);
+                page.getContent(), applicationEmployeeIds(page.getContent()), null, PROCESSED);
         return new PageImpl<>(content, pageable, page.getTotalElements());
     }
 
@@ -186,9 +189,55 @@ public class TourApplicationServiceImpl implements TourApplicationService {
                 : "%" + search.trim().toUpperCase(Locale.ROOT) + "%";
     }
 
-    private List<TourApplicationEntity> additionalChargePending(Long actor, List<TourApplicationEntity> baseline,
+    /** Processed history carries no pending decision. */
+    private static final BiFunction<TourApplicationEntity, EmployeeEntity, String> PROCESSED = (tour, employee) -> null;
+
+    /**
+     * Team members' requests are visible at every level. Returns why the actor can only view a pending
+     * request, or null when the actor may decide it: staged requests stay with their stored approver and
+     * internal employees' requests need an internal approver role.
+     */
+    private BiFunction<TourApplicationEntity, EmployeeEntity, String> decisionRule(
+            Long actorUserId, AdditionalChargeApprovalService.Snapshot coverage, List<Long> teamIds) {
+        boolean internalApprover = internalApprovalPolicy.hasInternalApproverRole(actorUserId);
+        String internalViewOnlyReason = internalApprover ? null : internalApprovalPolicy.viewOnlyReason();
+        return (tour, employee) -> {
+            boolean staged = approvalRoutingService.isTwoLevelStage(tour.getApprovalStage());
+            boolean authority = staged
+                    ? stageAllows(coverage, actorUserId, tour)
+                    : coverage.canActLegacy(actorUserId, tour.getEmployeeId(), teamIds);
+            if (!authority) {
+                return staged
+                        ? "Awaiting the reporting "
+                                + (RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(
+                                        tour.getApprovalStage()) ? "manager" : "HOD")
+                                + "'s decision. You can view it because the employee is in your team."
+                        : "Your approval for this employee is currently handled under an additional charge.";
+            }
+            if (!internalApprover && internalApprovalPolicy.isInternal(employee)) {
+                return internalViewOnlyReason;
+            }
+            return null;
+        };
+    }
+
+    private boolean stageAllows(
+            AdditionalChargeApprovalService.Snapshot coverage, Long actorUserId, TourApplicationEntity tour) {
+        Long original = RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(tour.getApprovalStage())
+                ? tour.getManagerApproverUserId() : tour.getHodApproverUserId();
+        return coverage.replaces(tour.getEmployeeId(), original)
+                ? coverage.canAct(actorUserId, tour.getEmployeeId(), tour.getApprovalStage(),
+                        tour.getManagerApproverUserId(), tour.getHodApproverUserId())
+                : approvalRoutingService.canAct(
+                        actorUserId,
+                        tour.getApprovalStage(),
+                        tour.getManagerApproverUserId(),
+                        tour.getHodApproverUserId());
+    }
+
+    private List<TourApplicationEntity> additionalChargePending(Long actor,
+            AdditionalChargeApprovalService.Snapshot coverage, List<TourApplicationEntity> baseline,
             List<Long> legacyIds, String searchPattern, LocalDate searchDate) {
-        var coverage = additionalChargeApprovals.snapshot();
         if (!coverage.affects(actor)) return baseline;
         Map<Long, TourApplicationEntity> pending = new LinkedHashMap<>();
         baseline.forEach(tour -> pending.put(tour.getTourId(), tour));
@@ -205,8 +254,9 @@ public class TourApplicationServiceImpl implements TourApplicationService {
                         Comparator.nullsLast(Comparator.reverseOrder()))).toList();
     }
 
-    private List<Long> legacyEmployeeIds(Long actorUserId) {
-        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId);
+    /** Everyone below the actor at any level; a sentinel keeps the JPQL "in" clause valid when empty. */
+    private List<Long> teamEmployeeIds(Long actorUserId) {
+        List<Long> employeeIds = reportingManagerService.getTeamEmployeeIdsForAuthority(actorUserId);
         return employeeIds.isEmpty() ? List.of(-1L) : employeeIds;
     }
 
@@ -215,7 +265,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     }
 
     private List<TourApplicationHODDTO> convertToHODDTO(List<TourApplicationEntity> tours, List<Long> employeeIds,
-            String search, boolean actorMayDecideInternal) {
+            String search, BiFunction<TourApplicationEntity, EmployeeEntity, String> decisionRule) {
         Map<Long, EmployeeEntity> employeeMap = employeeRepository
                 .findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds).stream()
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, emp -> emp));
@@ -257,7 +307,9 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             dto.setApplicationDate(tour.getApplicationDate());
             dto.setStatus(tour.getStatus());
             dto.setHodRemarks(tour.getHodRemarks());
-            dto.setDecisionAllowed(actorMayDecideInternal || !internalApprovalPolicy.isInternal(emp));
+            String decisionNote = decisionRule.apply(tour, emp);
+            dto.setDecisionAllowed(decisionNote == null);
+            dto.setDecisionNote(decisionNote);
             dtos.add(dto);
         }
         return dtos;
@@ -276,25 +328,14 @@ public class TourApplicationServiceImpl implements TourApplicationService {
 
         if (!approvalRoutingService.isTwoLevelStage(tour.getApprovalStage())) {
             if (!additionalChargeApprovals.snapshot().canActLegacy(actorUserId, tour.getEmployeeId(),
-                    reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId))) {
+                    reportingManagerService.getTeamEmployeeIdsForAuthority(actorUserId))) {
                 throw new IllegalArgumentException("This tour application is outside your reporting authority.");
             }
             tour.setStatus(status);
             tour.setHodRemarks(remarks);
             tour.setHodDecisionByUserId(actorUserId);
         } else {
-            var coverage = additionalChargeApprovals.snapshot();
-            Long original = RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(tour.getApprovalStage())
-                    ? tour.getManagerApproverUserId() : tour.getHodApproverUserId();
-            boolean allowed = coverage.replaces(tour.getEmployeeId(), original)
-                    ? coverage.canAct(actorUserId, tour.getEmployeeId(), tour.getApprovalStage(),
-                            tour.getManagerApproverUserId(), tour.getHodApproverUserId())
-                    : approvalRoutingService.canAct(
-                    actorUserId,
-                    tour.getApprovalStage(),
-                    tour.getManagerApproverUserId(),
-                    tour.getHodApproverUserId());
-            if (!allowed) {
+            if (!stageAllows(additionalChargeApprovals.snapshot(), actorUserId, tour)) {
                 throw new IllegalArgumentException("This tour application is not pending at your approval level.");
             }
             applyStagedDecision(tour, status, remarks, actorUserId);

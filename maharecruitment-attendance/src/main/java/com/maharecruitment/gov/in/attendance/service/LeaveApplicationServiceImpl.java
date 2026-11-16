@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -303,48 +304,50 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Override
     public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(Long hodUserId, String search) {
-        List<Long> legacyEmployeeIds = legacyEmployeeIds(hodUserId);
+        List<Long> teamIds = teamEmployeeIds(hodUserId);
+        var coverage = additionalChargeApprovals.snapshot();
         List<LeaveApplicationEntity> leaves = leaveApplicationRepository
-                .findPendingForApprover(hodUserId, legacyEmployeeIds, "PENDING");
-        leaves = additionalChargePending(hodUserId, leaves, legacyEmployeeIds, null, null);
-        
+                .findPendingForApprover(hodUserId, teamIds, "PENDING");
+        leaves = additionalChargePending(hodUserId, coverage, leaves, teamIds, null, null);
+
         if (leaves.isEmpty()) {
             return List.of();
         }
 
         return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search,
-                internalApprovalPolicy.hasInternalApproverRole(hodUserId));
+                decisionRule(hodUserId, coverage, teamIds));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(
             Long hodUserId, String search, LocalDate searchDate) {
-        List<Long> legacyIds = legacyEmployeeIds(hodUserId);
+        List<Long> teamIds = teamEmployeeIds(hodUserId);
+        var coverage = additionalChargeApprovals.snapshot();
         List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findPendingForApproverFiltered(
                 hodUserId,
-                legacyIds,
+                teamIds,
                 searchPattern(search),
                 searchDate);
-        leaves = additionalChargePending(hodUserId, leaves, legacyIds, searchPattern(search), searchDate);
+        leaves = additionalChargePending(hodUserId, coverage, leaves, teamIds, searchPattern(search), searchDate);
         return leaves.isEmpty()
                 ? List.of()
                 : convertToHODDTO(leaves, applicationEmployeeIds(leaves), null,
-                        internalApprovalPolicy.hasInternalApproverRole(hodUserId));
+                        decisionRule(hodUserId, coverage, teamIds));
     }
 
     @Override
     public List<LeaveApplicationHODDTO> getProcessedLeavesForHOD(Long hodUserId, String search) {
         List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findProcessedForApprover(
                 hodUserId,
-                legacyEmployeeIds(hodUserId),
+                teamEmployeeIds(hodUserId),
                 List.of("APPROVED", "REJECTED"));
-        
+
         if (leaves.isEmpty()) {
             return List.of();
         }
 
-        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search, true);
+        return convertToHODDTO(leaves, applicationEmployeeIds(leaves), search, PROCESSED);
     }
 
     @Override
@@ -353,7 +356,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             Long hodUserId, String search, LocalDate searchDate, Pageable pageable) {
         Page<LeaveApplicationEntity> page = leaveApplicationRepository.findProcessedForApproverPage(
                 hodUserId,
-                legacyEmployeeIds(hodUserId),
+                teamEmployeeIds(hodUserId),
                 searchPattern(search),
                 searchDate,
                 pageable);
@@ -361,7 +364,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             return new PageImpl<>(List.of(), pageable, page.getTotalElements());
         }
         List<LeaveApplicationHODDTO> content = convertToHODDTO(
-                page.getContent(), applicationEmployeeIds(page.getContent()), null, true);
+                page.getContent(), applicationEmployeeIds(page.getContent()), null, PROCESSED);
         return new PageImpl<>(content, pageable, page.getTotalElements());
     }
 
@@ -369,9 +372,44 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         return StringUtils.hasText(search) ? "%" + search.trim().toUpperCase(Locale.ROOT) + "%" : null;
     }
 
-    private List<LeaveApplicationEntity> additionalChargePending(Long actor, List<LeaveApplicationEntity> baseline,
+    /** Processed history carries no pending decision. */
+    private static final BiFunction<LeaveApplicationEntity, EmployeeEntity, String> PROCESSED = (leave, employee) -> null;
+
+    /**
+     * Team members' requests are visible at every level. Returns why the actor can only view a pending
+     * request, or null when the actor may decide it: staged requests stay with their stored approver and
+     * internal employees' requests need an internal approver role.
+     */
+    private BiFunction<LeaveApplicationEntity, EmployeeEntity, String> decisionRule(
+            Long actorUserId, AdditionalChargeApprovalService.Snapshot coverage, List<Long> teamIds) {
+        boolean internalApprover = internalApprovalPolicy.hasInternalApproverRole(actorUserId);
+        String internalViewOnlyReason = internalApprover ? null : internalApprovalPolicy.viewOnlyReason();
+        return (leave, employee) -> {
+            boolean staged = approvalRoutingService.isTwoLevelStage(leave.getApprovalStage());
+            boolean authority = staged
+                    ? stageAllows(coverage, actorUserId, leave.getEmployeeId(), leave.getApprovalStage(),
+                            leave.getManagerApproverUserId(), leave.getHodApproverUserId())
+                    : coverage.canActLegacy(actorUserId, leave.getEmployeeId(), teamIds);
+            if (!authority) {
+                return staged
+                        ? "Awaiting the reporting " + stageLabel(leave.getApprovalStage())
+                                + "'s decision. You can view it because the employee is in your team."
+                        : "Your approval for this employee is currently handled under an additional charge.";
+            }
+            if (!internalApprover && internalApprovalPolicy.isInternal(employee)) {
+                return internalViewOnlyReason;
+            }
+            return null;
+        };
+    }
+
+    private static String stageLabel(String stage) {
+        return RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(stage) ? "manager" : "HOD";
+    }
+
+    private List<LeaveApplicationEntity> additionalChargePending(Long actor,
+            AdditionalChargeApprovalService.Snapshot coverage, List<LeaveApplicationEntity> baseline,
             List<Long> legacyIds, String searchPattern, LocalDate searchDate) {
-        var coverage = additionalChargeApprovals.snapshot();
         if (!coverage.affects(actor)) return baseline;
         Map<Long, LeaveApplicationEntity> pending = new LinkedHashMap<>();
         baseline.forEach(leave -> pending.put(leave.getLeaveId(), leave));
@@ -388,8 +426,9 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
                         Comparator.nullsLast(Comparator.reverseOrder()))).toList();
     }
 
-    private List<Long> legacyEmployeeIds(Long actorUserId) {
-        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId);
+    /** Everyone below the actor at any level; a sentinel keeps the JPQL "in" clause valid when empty. */
+    private List<Long> teamEmployeeIds(Long actorUserId) {
+        List<Long> employeeIds = reportingManagerService.getTeamEmployeeIdsForAuthority(actorUserId);
         return employeeIds.isEmpty() ? List.of(-1L) : employeeIds;
     }
 
@@ -398,7 +437,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     }
 
     private List<LeaveApplicationHODDTO> convertToHODDTO(List<LeaveApplicationEntity> leaves, List<Long> employeeIds,
-            String search, boolean actorMayDecideInternal) {
+            String search, BiFunction<LeaveApplicationEntity, EmployeeEntity, String> decisionRule) {
         Map<Long, EmployeeEntity> employeeMap = employeeRepository.findAllById(employeeIds).stream()
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, emp -> emp));
 
@@ -437,7 +476,9 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             dto.setApplicationDate(leave.getApplicationDate());
             dto.setStatus(leave.getStatus());
             dto.setHodRemarks(leave.getHodRemarks());
-            dto.setDecisionAllowed(actorMayDecideInternal || !internalApprovalPolicy.isInternal(emp));
+            String decisionNote = decisionRule.apply(leave, emp);
+            dto.setDecisionAllowed(decisionNote == null);
+            dto.setDecisionNote(decisionNote);
             dtos.add(dto);
         }
         return dtos;
@@ -500,7 +541,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     private void requireLegacyAuthority(Long actorUserId, Long employeeId) {
         if (!additionalChargeApprovals.snapshot().canActLegacy(actorUserId, employeeId,
-                reportingManagerService.getEffectiveEmployeeIdsForAuthority(actorUserId))) {
+                reportingManagerService.getTeamEmployeeIdsForAuthority(actorUserId))) {
             throw new IllegalArgumentException("This leave application is outside your reporting authority.");
         }
     }
@@ -511,15 +552,24 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             String stage,
             Long managerApproverUserId,
             Long hodApproverUserId) {
-        var coverage = additionalChargeApprovals.snapshot();
-        Long original = RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(stage)
-                ? managerApproverUserId : hodApproverUserId;
-        boolean allowed = coverage.replaces(employeeId, original)
-                ? coverage.canAct(actorUserId, employeeId, stage, managerApproverUserId, hodApproverUserId)
-                : approvalRoutingService.canAct(actorUserId, stage, managerApproverUserId, hodApproverUserId);
-        if (!allowed) {
+        if (!stageAllows(additionalChargeApprovals.snapshot(), actorUserId, employeeId, stage,
+                managerApproverUserId, hodApproverUserId)) {
             throw new IllegalArgumentException("This leave application is not pending at your approval level.");
         }
+    }
+
+    private boolean stageAllows(
+            AdditionalChargeApprovalService.Snapshot coverage,
+            Long actorUserId,
+            Long employeeId,
+            String stage,
+            Long managerApproverUserId,
+            Long hodApproverUserId) {
+        Long original = RecruitmentTypeApprovalRoutingService.STAGE_MANAGER.equalsIgnoreCase(stage)
+                ? managerApproverUserId : hodApproverUserId;
+        return coverage.replaces(employeeId, original)
+                ? coverage.canAct(actorUserId, employeeId, stage, managerApproverUserId, hodApproverUserId)
+                : approvalRoutingService.canAct(actorUserId, stage, managerApproverUserId, hodApproverUserId);
     }
 
     @Override

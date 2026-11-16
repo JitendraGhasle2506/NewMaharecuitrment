@@ -1,8 +1,10 @@
 package com.maharecruitment.gov.in.recruitment.service.impl;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -26,12 +28,14 @@ import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeReportingType;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus;
 import com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus;
 import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellCountProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingHodProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -108,6 +112,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     @Autowired
     private EmployeeReportingMappingRepository mappingRepository;
+
+    @Autowired
+    private EmployeeHierarchyRepository hierarchyRepository;
 
     @Override
     public List<Map<String, Object>> getHodUsers() {
@@ -1109,6 +1116,40 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         Long managerEmployeeId = employeeRepository.findByUser_Id(authorityUserId)
                 .map(EmployeeEntity::getEmployeeId)
                 .orElse(null);
+        return List.copyOf(effectiveEmployeeIds(authorityUserId, managerEmployeeId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getTeamEmployeeIdsForAuthority(Long authorityUserId) {
+        if (authorityUserId == null) {
+            return List.of();
+        }
+
+        Long ownEmployeeId = employeeRepository.findByUser_Id(authorityUserId)
+                .map(EmployeeEntity::getEmployeeId)
+                .orElse(null);
+        LinkedHashSet<Long> team = effectiveEmployeeIds(authorityUserId, ownEmployeeId);
+        Map<Long, List<Long>> children = primaryReportingChildren();
+        ArrayDeque<Long> pending = new ArrayDeque<>(team);
+        if (ownEmployeeId != null) {
+            pending.add(ownEmployeeId);
+        }
+        // Iterative breadth-first walk: depth is unrestricted and the visited set cuts reporting cycles.
+        while (!pending.isEmpty()) {
+            for (Long child : children.getOrDefault(pending.remove(), List.of())) {
+                if (team.add(child)) {
+                    pending.add(child);
+                }
+            }
+        }
+        if (ownEmployeeId != null) {
+            team.remove(ownEmployeeId);
+        }
+        return List.copyOf(team);
+    }
+
+    private LinkedHashSet<Long> effectiveEmployeeIds(Long authorityUserId, Long managerEmployeeId) {
         LinkedHashSet<Long> employeeIds = new LinkedHashSet<>(
                 mappingRepository.findEmployeeIdsByAuthorityIdentity(authorityUserId, managerEmployeeId));
         List<Long> cellIds = cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(authorityUserId);
@@ -1116,7 +1157,43 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             employeeIds.addAll(employeeCellMappingRepository.findEmployeeIdsWithoutExplicitReportingMapping(
                     cellIds, authorityUserId));
         }
-        return List.copyOf(employeeIds);
+        return employeeIds;
+    }
+
+    /** Parent -> direct reports from each employee's newest PRIMARY mapping, as the hierarchy views use. */
+    private Map<Long, List<Long>> primaryReportingChildren() {
+        List<EmployeeHierarchyRepository.ReportingRow> rows = hierarchyRepository.findReportingRelationships(
+                EmployeeReportingType.PRIMARY.name());
+        Set<Long> hodUserIds = new HashSet<>();
+        for (EmployeeHierarchyRepository.ReportingRow row : rows) {
+            if (row.getManagerEmployeeId() == null && row.getHodUserId() != null) {
+                hodUserIds.add(row.getHodUserId());
+            }
+        }
+        Map<Long, Long> employeeByUser = new HashMap<>();
+        if (!hodUserIds.isEmpty()) {
+            for (EmployeeEntity hod : employeeRepository.findByUser_IdIn(hodUserIds)) {
+                if (hod.getUser() != null) {
+                    employeeByUser.put(hod.getUser().getId(), hod.getEmployeeId());
+                }
+            }
+        }
+
+        Map<Long, List<Long>> children = new HashMap<>();
+        Set<Long> assigned = new HashSet<>();
+        for (EmployeeHierarchyRepository.ReportingRow row : rows) {
+            // Rows are newest first; never fall back to an older mapping of the same employee.
+            if (row.getEmployeeId() == null || !assigned.add(row.getEmployeeId())) {
+                continue;
+            }
+            Long parentId = row.getManagerEmployeeId() != null
+                    ? row.getManagerEmployeeId()
+                    : employeeByUser.get(row.getHodUserId());
+            if (parentId != null && !parentId.equals(row.getEmployeeId())) {
+                children.computeIfAbsent(parentId, ignored -> new ArrayList<>()).add(row.getEmployeeId());
+            }
+        }
+        return children;
     }
 
     @Override

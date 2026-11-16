@@ -38,5 +38,11 @@ public interface ReportingManagerService {
 
     List<Long> getEffectiveEmployeeIdsForAuthority(Long authorityUserId);
 
+    /**
+     * Employees under the authority at any level: the direct authority employees plus every descendant
+     * through stored PRIMARY reporting. The authority's own employee record is never included.
+     */
+    List<Long> getTeamEmployeeIdsForAuthority(Long authorityUserId);
+
     Long resolveDirectReportingUserId(EmployeeReportingMappingEntity mapping);
 }

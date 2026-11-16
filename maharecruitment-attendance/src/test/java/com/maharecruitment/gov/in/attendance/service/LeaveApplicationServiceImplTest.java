@@ -120,8 +120,8 @@ class LeaveApplicationServiceImplTest {
         when(scope.canAct(11L, 101L, "MANAGER", 7L, 9L)).thenReturn(true);
         when(scope.canAct(7L, 101L, "MANAGER", 7L, 9L)).thenReturn(false);
         when(approvalRoutingService.isTwoLevelStage("MANAGER")).thenReturn(true);
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(11L)).thenReturn(List.of());
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(11L)).thenReturn(List.of());
         when(leaveApplicationRepository.findPendingForApprover(7L, List.of(101L), "PENDING")).thenReturn(List.of(leave));
         when(leaveApplicationRepository.findPendingForApprover(11L, List.of(-1L), "PENDING")).thenReturn(List.of());
         when(leaveApplicationRepository.findPendingAdditionalChargeCandidates(List.of(101L), null, null)).thenReturn(List.of(leave));
@@ -143,8 +143,8 @@ class LeaveApplicationServiceImplTest {
         when(additionalChargeApprovals.snapshot()).thenReturn(scope);
         when(scope.canActLegacy(11L, 101L, List.of())).thenReturn(true);
         when(scope.canActLegacy(7L, 101L, List.of(101L))).thenReturn(false);
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(11L)).thenReturn(List.of());
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(11L)).thenReturn(List.of());
         when(leaveApplicationRepository.findByLeaveIdForUpdate(1L)).thenReturn(java.util.Optional.of(leave));
         org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
                 () -> service.updateLeaveStatus(1L, "APPROVED", "Not current authority", 7L));
@@ -170,7 +170,7 @@ class LeaveApplicationServiceImplTest {
         leave.setApplicationDate(LocalDateTime.of(2026, 8, 5, 9, 30));
         leave.setStatus("PENDING");
 
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L))
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L))
                 .thenReturn(List.of(101L));
         when(leaveApplicationRepository.findPendingForApprover(
                 7L, List.of(101L), "PENDING"))
@@ -241,7 +241,7 @@ class LeaveApplicationServiceImplTest {
         employee.setEmployeeId(101L);
         employee.setFullName("Asha Patil");
 
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
         when(leaveApplicationRepository.findProcessedForApproverPage(
                 7L, List.of(101L), "%ASHA%", searchDate, pageable))
                 .thenReturn(new PageImpl<>(List.of(leave), pageable, 21));
@@ -384,6 +384,78 @@ class LeaveApplicationServiceImplTest {
         LeaveApplicationEntity result = service.getLeaveApplicationsByEmployee(101L).getFirst();
 
         assertEquals(null, result.getDecidedByName());
+    }
+
+    @Test
+    void indirectReportsLegacyLeaveIsVisibleAndDecidableByTheirSeniorManager() {
+        // 101 reports to 55, who reports to user 7: the team lookup covers every level below user 7.
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setLeaveId(5L);
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+        EmployeeEntity employee = new EmployeeEntity();
+        employee.setEmployeeId(101L);
+        employee.setFullName("Indirect Report");
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(55L, 101L));
+        when(leaveApplicationRepository.findPendingForApprover(7L, List.of(55L, 101L), "PENDING"))
+                .thenReturn(List.of(leave));
+        when(employeeRepository.findAllById(List.of(101L))).thenReturn(List.of(employee));
+        when(internalApprovalPolicy.hasInternalApproverRole(7L)).thenReturn(true);
+        when(leaveApplicationRepository.findByLeaveIdForUpdate(5L)).thenReturn(java.util.Optional.of(leave));
+
+        LeaveApplicationHODDTO dto = service.getPendingLeavesForHOD(7L, null).getFirst();
+        service.updateLeaveStatus(5L, "APPROVED", "ok", 7L);
+
+        assertEquals(true, dto.isDecisionAllowed());
+        assertEquals(null, dto.getDecisionNote());
+        assertEquals("APPROVED", leave.getStatus());
+        assertEquals(7L, leave.getHodDecisionByUserId());
+    }
+
+    @Test
+    void internalLeaveIsViewOnlyWithReasonForTeamManagerWithoutApproverRole() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setLeaveId(6L);
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+        EmployeeEntity employee = new EmployeeEntity();
+        employee.setEmployeeId(101L);
+        employee.setRecruitmentType("INTERNAL");
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(leaveApplicationRepository.findPendingForApprover(7L, List.of(101L), "PENDING"))
+                .thenReturn(List.of(leave));
+        when(employeeRepository.findAllById(List.of(101L))).thenReturn(List.of(employee));
+        when(internalApprovalPolicy.isInternal(employee)).thenReturn(true);
+        when(internalApprovalPolicy.viewOnlyReason()).thenReturn("Only HOD or PM can approve internal employee requests.");
+
+        LeaveApplicationHODDTO dto = service.getPendingLeavesForHOD(7L, null).getFirst();
+
+        assertEquals(false, dto.isDecisionAllowed());
+        assertEquals("Only HOD or PM can approve internal employee requests.", dto.getDecisionNote());
+    }
+
+    @Test
+    void stagedLeaveOfATeamMemberIsVisibleButStaysWithTheStoredApprover() {
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setLeaveId(7L);
+        leave.setEmployeeId(101L);
+        leave.setStatus("PENDING");
+        leave.setApprovalStage("HOD");
+        leave.setManagerApproverUserId(8L);
+        leave.setHodApproverUserId(9L);
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(leaveApplicationRepository.findPendingForApprover(7L, List.of(101L), "PENDING"))
+                .thenReturn(List.of(leave));
+        EmployeeEntity employee = new EmployeeEntity();
+        employee.setEmployeeId(101L);
+        when(employeeRepository.findAllById(List.of(101L))).thenReturn(List.of(employee));
+        when(approvalRoutingService.isTwoLevelStage("HOD")).thenReturn(true);
+        when(approvalRoutingService.canAct(7L, "HOD", 8L, 9L)).thenReturn(false);
+
+        LeaveApplicationHODDTO dto = service.getPendingLeavesForHOD(7L, null).getFirst();
+
+        assertEquals(false, dto.isDecisionAllowed());
+        org.junit.jupiter.api.Assertions.assertTrue(dto.getDecisionNote().contains("reporting HOD"));
     }
 
     @Test
