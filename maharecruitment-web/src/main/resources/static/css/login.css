@@ -430,6 +430,27 @@
     font-size: .78rem;
 }
 
+/* Privacy Policy link sits in the trust strip and reads as a link on the dark hero. */
+.trust-link {
+    color: rgba(255,255,255,.9);
+    text-decoration: underline;
+    text-decoration-color: rgba(255,255,255,.35);
+    text-underline-offset: 3px;
+    transition: color .15s ease, text-decoration-color .15s ease;
+}
+
+.trust-link:hover,
+.trust-link:focus-visible {
+    color: #fff;
+    text-decoration-color: currentColor;
+}
+
+.trust-link:focus-visible {
+    outline: 2px solid rgba(14,165,233,.9);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
 /* ════════════════════════════════════════════════════════════
    AUTH CARD — RIGHT COLUMN
 ════════════════════════════════════════════════════════════ */

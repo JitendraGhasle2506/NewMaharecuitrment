@@ -235,7 +235,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/verifications/otp/**").permitAll()
 
                 .requestMatchers(
-                        "/", "/index", "/register/**",
+                        "/", "/index", "/privacy-policy", "/register/**",
                         "/registration**", "/js/**", "/css/**", "/assets/**",
                         "/img/**", "/images/**", "/icons/**", "/webjars/**",
                         "/test/**", "/otp/**",

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - MahaIT Face Attendance Application</title>
+    <link rel="icon" type="image/png" th:href="@{/img/mahait_logo.png}">
+    <style>
+        :root {
+            --primary: #283593;
+            --primary-dark: #1a237e;
+            --accent: #ff9800;
+            --text: #2c3e50;
+            --muted: #4a5568;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+            --soft: #e8eaf6;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--text);
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Long tokens (iOS permission keys, emails, URLs) must wrap instead of widening the page on phones. */
+        p, li, td, th, .contact-box {
+            overflow-wrap: anywhere;
+        }
+
+        a {
+            color: var(--primary);
+        }
+
+        a:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 3px;
+        }
+
+        code {
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: .85em;
+            background: #f1f3f9;
+            color: var(--primary-dark);
+            padding: 1px 6px;
+            border-radius: 4px;
+            overflow-wrap: anywhere;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: #ffffff;
+            padding: clamp(28px, 6vw, 40px) 20px clamp(36px, 7vw, 48px);
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: clamp(22px, 4.6vw, 28px);
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: 0.5px;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: clamp(13px, 3.4vw, 15px);
+            opacity: 0.9;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: -20px auto 40px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: clamp(18px, 4.5vw, 32px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .last-updated {
+            display: inline-block;
+            max-width: 100%;
+            background: var(--soft);
+            color: var(--primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            color: var(--primary);
+            font-size: clamp(18px, 4vw, 20px);
+            line-height: 1.35;
+            border-bottom: 2px solid var(--soft);
+            padding-bottom: 8px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+
+        h3 {
+            color: #333333;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p, li {
+            font-size: 15px;
+            color: var(--muted);
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f1f3f9;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        td {
+            color: var(--muted);
+        }
+
+        .highlight-box {
+            background-color: #fff3e0;
+            border-left: 4px solid var(--accent);
+            padding: 16px 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .contact-box {
+            background-color: var(--soft);
+            border-radius: 12px;
+            padding: clamp(16px, 4vw, 20px);
+            margin-top: 30px;
+        }
+
+        .contact-box h2 {
+            margin-top: 0;
+            border-bottom-color: #d4d8f0;
+        }
+
+        .portal-link {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: #718096;
+            border-top: 1px solid var(--border);
+            background: #ffffff;
+            margin-top: 40px;
+        }
+
+        .footer p {
+            margin: 0;
+            font-size: 13px;
+            color: inherit;
+        }
+
+        /* Phones: each table row becomes a card so nothing has to scroll sideways. */
+        @media (max-width: 640px) {
+            .container {
+                padding: 0 12px;
+                margin-bottom: 24px;
+            }
+
+            .card {
+                border-radius: 12px;
+            }
+
+            p, li {
+                font-size: 14.5px;
+            }
+
+            .data-table thead {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                overflow: hidden;
+                clip: rect(0 0 0 0);
+                white-space: nowrap;
+            }
+
+            .data-table,
+            .data-table tbody,
+            .data-table tr,
+            .data-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .data-table tr {
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                overflow: hidden;
+                margin-bottom: 14px;
+                background: #ffffff;
+            }
+
+            .data-table td {
+                padding: 10px 14px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .data-table td:last-child {
+                border-bottom: 0;
+            }
+
+            .data-table td::before {
+                content: attr(data-label);
+                display: block;
+                margin-bottom: 2px;
+                font-size: 11.5px;
+                font-weight: 700;
+                letter-spacing: .04em;
+                text-transform: uppercase;
+                color: var(--primary);
+            }
+
+            .data-table td:first-child {
+                background: #f1f3f9;
+                color: var(--primary-dark);
+            }
+
+            .data-table td:first-child::before {
+                display: none;
+            }
+
+            .highlight-box {
+                padding: 14px 16px;
+            }
+
+            .footer {
+                padding: 16px 12px;
+                margin-top: 24px;
+            }
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+            }
+
+            .header {
+                box-shadow: none;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>MahaIT Face Attendance Application</h1>
+        <p>Maharashtra Information Technology Corporation Limited (MahaIT)</p>
+    </header>
+
+    <main class="container">
+        <article class="card">
+            <span class="last-updated">Effective Date: June 1, 2025 | Version 1.0.0</span>
+
+            <p>Welcome to the <strong>MahaIT Face Attendance Application</strong> ("Application"), developed and operated by Maharashtra Information Technology Corporation Limited ("MahaIT", "We", "Us", or "Our"), a Government of Maharashtra Undertaking. We are committed to protecting the privacy and security of the personal and biometric data of all employees, contractual staff, and authorized personnel using this Application.</p>
+
+            <p>This Privacy Policy outlines how we collect, use, process, store, and protect your information when you use our mobile application for attendance tracking, leave management, and organizational verification.</p>
+
+            <h2>1. Information We Collect</h2>
+            <p>To provide secure, AI-powered attendance tracking and office geofence validation, the Application collects the following categories of information:</p>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Data Category</th>
+                            <th scope="col">Data Elements Collected</th>
+                            <th scope="col">Purpose &amp; Utility</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-label="Data Category"><strong>Biometric Data</strong></td>
+                            <td data-label="Data Elements Collected">Facial landmarks, live blink detection status, and 512-dimensional vector embeddings generated via MobileFaceNet (ArcFace).</td>
+                            <td data-label="Purpose &amp; Utility">Identity verification during Check-In and Check-Out to prevent proxy attendance or photo-spoofing.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Data Category"><strong>Location Data</strong></td>
+                            <td data-label="Data Elements Collected">Real-time GPS coordinates (Latitude &amp; Longitude) captured strictly at the moment of punch submission.</td>
+                            <td data-label="Purpose &amp; Utility">Validating that the employee is within an authorized office geofence boundary.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Data Category"><strong>Profile Information</strong></td>
+                            <td data-label="Data Elements Collected">Employee Name, Employee Code, Email Address, Mobile Number, Designation, Department, Reporting Manager details, and Profile Photo.</td>
+                            <td data-label="Purpose &amp; Utility">User authentication, account management, attendance history mapping, and Leave Management.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Data Category"><strong>Device &amp; Session Data</strong></td>
+                            <td data-label="Data Elements Collected">Device Biometric Token (Fingerprint/Face ID unlock token), JWT Access Tokens, Device Model, and Operating System version.</td>
+                            <td data-label="Purpose &amp; Utility">Secure session management, token refresh rotation, and local biometric app unlock.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>2. Device Permissions Required</h2>
+            <p>The Application requires explicit access to specific hardware features on your mobile device:</p>
+            <ul>
+                <li><strong>Camera Access (<code>NSCameraUsageDescription</code>):</strong> Used exclusively to capture a selfie image during Check-In/Check-Out and profile photo enrollment. No continuous background video recording occurs.</li>
+                <li><strong>Location Services (<code>NSLocationWhenInUseUsageDescription</code>):</strong> Accessed only when you trigger a Check-In or Check-Out request to confirm proximity to an assigned office geofence.</li>
+                <li><strong>Device Biometrics (<code>NSFaceIDUsageDescription</code> / Fingerprint):</strong> Used optionally for local quick application unlock without re-entering your password.</li>
+            </ul>
+
+            <div class="highlight-box">
+                <strong>Privacy Assurance:</strong> Raw facial video streams and continuous GPS location tracking are <strong>NEVER</strong> recorded in the background. Location is captured exclusively during the exact moment you perform a punch.
+            </div>
+
+            <h2>3. How We Process and Use Your Information</h2>
+            <p>MahaIT processes collected data strictly for official, government-authorized human resource and workforce management functions:</p>
+            <ul>
+                <li>Verifying identity during Check-In and Check-Out via on-device AI face recognition.</li>
+                <li>Ensuring anti-spoofing via real-time passive blink detection.</li>
+                <li>Verifying that punches are recorded within authorized office boundaries.</li>
+                <li>Processing leave requests, comp-off validations, and monthly regularization reports.</li>
+                <li>Generating digitally signed PDF regularization summaries for reporting authorities.</li>
+            </ul>
+
+            <h2>4. Data Storage and Security Measures</h2>
+            <p>MahaIT employs robust, enterprise-grade security standards to safeguard your data:</p>
+            <ul>
+                <li><strong>Encryption in Transit:</strong> All communication between the Application and the backend server (<code>https://mahahrseva.mahait.org</code>) is encrypted using Secure Sockets Layer (SSL) / Transport Layer Security (TLS) HTTPS protocols.</li>
+                <li><strong>On-Device Vector Computation:</strong> Face detection and 512-dimensional vector embedding generation occur locally on your mobile device via TensorFlow Lite, ensuring unverified images are not transmitted across the network.</li>
+                <li><strong>Encrypted Token Storage:</strong> Session tokens and credentials are saved in protected, encrypted device storage.</li>
+            </ul>
+
+            <h2>5. Data Sharing and Disclosure</h2>
+            <p>MahaIT does <strong>NOT</strong> sell, trade, rent, or commercialize your personal or biometric data to any third parties. Your data is accessible solely to:</p>
+            <ul>
+                <li>Authorized HR personnel and Reporting Managers within your respective Government Department or Organization.</li>
+                <li>MahaIT Technical Infrastructure Administrators for maintaining system integrity and service delivery.</li>
+                <li>Law enforcement or regulatory authorities only when mandated by law or court order under Indian Information Technology Acts.</li>
+            </ul>
+
+            <h2>6. Data Retention Policy</h2>
+            <p>Personal and attendance data are retained in official government servers for as long as the employee remains active with the deployed department or as required under Government of Maharashtra record retention rules. Upon employee resignation or termination, mobile session tokens and device biometrics are revoked.</p>
+
+            <h2>7. Rights of Employees</h2>
+            <p>Employees have the right to:</p>
+            <ul>
+                <li>View their complete attendance history, working hours, and leave application records in the Application.</li>
+                <li>Update their profile photo and re-enroll facial data with manager authorization.</li>
+                <li>Enable or disable optional device fingerprint/Face ID sign-in at any time via Profile Settings.</li>
+            </ul>
+
+            <h2>8. Changes to This Privacy Policy</h2>
+            <p>MahaIT reserves the right to update or modify this Privacy Policy as needed to reflect technical enhancements, security updates, or policy changes. Any revisions will be communicated through the Application or posted on official MahaIT portals.</p>
+
+            <section class="contact-box" aria-labelledby="contact-heading">
+                <h2 id="contact-heading">9. Contact Us</h2>
+                <p>If you have any questions, concerns, or queries regarding this Privacy Policy or data processing practices, please reach out to us:</p>
+
+                <p><strong>Nodal Officer - Face Attendance System</strong><br>
+                Maharashtra Information Technology Corporation Limited (MahaIT)<br>
+                8th Floor, World Trade Centre 2, Cuffe Parade, Mumbai, Maharashtra - 400005<br>
+                <strong>Email:</strong> <a href="mailto:support@mahait.org.in">support@mahait.org.in</a> | <a href="mailto:support@mahaitgov.in">support@mahaitgov.in</a><br>
+                <strong>Official Portal:</strong> <a class="portal-link" href="https://mahahrseva.mahait.org" target="_blank" rel="noopener noreferrer">https://mahahrseva.mahait.org</a></p>
+            </section>
+        </article>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 - 2026 Maharashtra Information Technology Corporation Limited (MahaIT). All Rights Reserved.</p>
+    </footer>
+
+</body>
+</html>
