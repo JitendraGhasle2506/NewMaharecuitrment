@@ -213,7 +213,8 @@
                         </span>
                         <i class="fa-solid fa-arrow-right quick-action-arrow"></i>
                     </a>
-                    <a class="quick-action" th:href="@{/reporting-manager/resources}">
+                    <a class="quick-action" th:href="@{/reporting-manager/resources}"
+                        th:if="${session.menus != null and !session.menus.?[url == '/reporting-manager/resources'].isEmpty()}">
                         <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
                         <span class="quick-action-copy">
                             <strong>Manage Resources</strong>

@@ -41,6 +41,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeHierarchyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingHodProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -72,6 +73,9 @@ class ReportingManagerServiceImplTest {
 
     @Mock
     private CellReportingAuthorityMappingRepository cellAuthorityMappingRepository;
+
+    @Mock
+    private EmployeeHierarchyRepository hierarchyRepository;
 
     @InjectMocks
     private ReportingManagerServiceImpl service;
@@ -878,6 +882,40 @@ class ReportingManagerServiceImplTest {
         List<Long> employeeIds = service.getEffectiveEmployeeIdsForAuthority(7L);
 
         assertEquals(List.of(101L), employeeIds);
+    }
+
+    @Test
+    void teamEmployeesCoverEveryLevelBelowTheAuthorityUsingNewestPrimaryMappings() {
+        // PM (user 7, employee 50) -> 101 -> 201 -> 301 (via HOD user 77 = employee 201).
+        EmployeeEntity manager = employee(50L, "Project Manager", "EMP050", "INTERNAL", "ACTIVE");
+        when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(manager));
+        when(mappingRepository.findEmployeeIdsByAuthorityIdentity(7L, 50L)).thenReturn(List.of(101L));
+        when(cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(7L)).thenReturn(List.of());
+        when(hierarchyRepository.findReportingRelationships("PRIMARY")).thenReturn(List.of(
+                reportingRow(30L, 201L, 101L, null),
+                reportingRow(29L, 301L, null, 77L),
+                reportingRow(28L, 101L, 50L, null),
+                reportingRow(27L, 201L, 999L, null), // older mapping of 201 is ignored
+                reportingRow(26L, 50L, 201L, null))); // reporting cycle back to the PM
+        User hodUser = new User();
+        hodUser.setId(77L);
+        EmployeeEntity hodEmployee = employee(201L, "Team Lead", "EMP201", "INTERNAL", "ACTIVE");
+        hodEmployee.setUser(hodUser);
+        when(employeeRepository.findByUser_IdIn(Set.of(77L))).thenReturn(List.of(hodEmployee));
+
+        List<Long> team = service.getTeamEmployeeIdsForAuthority(7L);
+
+        assertEquals(List.of(101L, 201L, 301L), team);
+    }
+
+    private static EmployeeHierarchyRepository.ReportingRow reportingRow(
+            Long mappingId, Long employeeId, Long managerEmployeeId, Long hodUserId) {
+        return new EmployeeHierarchyRepository.ReportingRow() {
+            @Override public Long getMappingId() { return mappingId; }
+            @Override public Long getEmployeeId() { return employeeId; }
+            @Override public Long getManagerEmployeeId() { return managerEmployeeId; }
+            @Override public Long getHodUserId() { return hodUserId; }
+        };
     }
 
     @Test

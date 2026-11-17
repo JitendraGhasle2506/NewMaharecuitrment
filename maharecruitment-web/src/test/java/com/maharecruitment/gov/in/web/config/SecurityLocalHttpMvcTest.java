@@ -27,6 +27,7 @@ import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.common.security.CookieSecurityProperties;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
@@ -153,6 +154,12 @@ class SecurityLocalHttpMvcTest {
         @Bean
         AgencyAccessService agencyAccessService() {
             return mock(AgencyAccessService.class);
+        }
+
+        /** Needed by SecurityConfig's ActiveAccountStatusFilter; these requests are anonymous so it is never consulted. */
+        @Bean
+        UserRepository userRepository() {
+            return mock(UserRepository.class);
         }
 
         @Bean

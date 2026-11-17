@@ -27,12 +27,14 @@ public class V151__employee_additional_charge extends BaseJavaMigration {
                         created_date_time timestamp not null default current_timestamp,
                         updated_date_time timestamp not null default current_timestamp,
                         constraint chk_additional_charge_assignee check ((employee_id is null) <> (user_id is null)),
-                        constraint chk_additional_charge_scope check ((department_id is null) <> (cell_id is null)),
+                        constraint chk_additional_charge_scope check (department_id is null or cell_id is null),
                         constraint chk_additional_charge_dates check (end_date is null or end_date >= start_date),
                         constraint chk_additional_charge_position check (length(trim(position)) > 0)
                     )
                     """);
             // Hibernate's schema update may create the table before post-schema migrations run.
+            // The scope check uses V154's final "at most one" rule: rows saved before this migration
+            // can already hold All-cells charges (department_id and cell_id both null).
             statement.execute("""
                     alter table employee_additional_charge
                         drop constraint if exists chk_additional_charge_assignee,
@@ -40,7 +42,7 @@ public class V151__employee_additional_charge extends BaseJavaMigration {
                         drop constraint if exists chk_additional_charge_dates,
                         drop constraint if exists chk_additional_charge_position,
                         add constraint chk_additional_charge_assignee check ((employee_id is null) <> (user_id is null)),
-                        add constraint chk_additional_charge_scope check ((department_id is null) <> (cell_id is null)),
+                        add constraint chk_additional_charge_scope check (department_id is null or cell_id is null),
                         add constraint chk_additional_charge_dates check (end_date is null or end_date >= start_date),
                         add constraint chk_additional_charge_position check (length(trim(position)) > 0)
                     """);

@@ -50,18 +50,23 @@ class TourApplicationServiceImplTest {
 
     @Mock private LeaveTourAuditService leaveTourAudit;
 
+    @Mock private com.maharecruitment.gov.in.attendance.repository.InternalApproverRoleRepository approverRoleRepository;
+
     private TourApplicationServiceImpl service;
 
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.lenient().when(additionalChargeApprovals.snapshot()).thenReturn(AdditionalChargeApprovalService.Snapshot.empty());
+        // The roles seeded by V160, as maintained on Admin > Internal Approver Roles.
+        org.mockito.Mockito.lenient().when(approverRoleRepository.findApproverRoleNames()).thenReturn(List.of(
+                "ROLE_CFO", "ROLE_COO", "ROLE_CTO", "ROLE_HOD", "ROLE_MD", "ROLE_PM", "ROLE_STM"));
         service = new TourApplicationServiceImpl(
                 tourApplicationRepository,
                 reportingManagerService,
                 employeeRepository,
                 approvalRoutingService,
                 userRepository, additionalChargeApprovals,
-                new InternalEmployeeApprovalPolicy(employeeRepository, userRepository),
+                new InternalEmployeeApprovalPolicy(employeeRepository, userRepository, approverRoleRepository),
                 leaveTourAudit);
     }
 
@@ -75,7 +80,8 @@ class TourApplicationServiceImplTest {
         var error = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
                 () -> service.updateTourStatus(601L, "APPROVED", "ok", 7L));
 
-        assertThat(error.getMessage()).contains("internal employees");
+        assertThat(error.getMessage()).contains("cannot approve or reject",
+                "Only CFO, COO, CTO, HOD, MD, PM or STM can approve internal employee requests.");
         assertThat(tour.getStatus()).isEqualTo("PENDING");
         org.mockito.Mockito.verify(tourApplicationRepository, org.mockito.Mockito.never()).save(any());
         org.mockito.Mockito.verifyNoInteractions(leaveTourAudit);
@@ -87,7 +93,7 @@ class TourApplicationServiceImplTest {
         when(tourApplicationRepository.findByTourIdForUpdate(602L)).thenReturn(java.util.Optional.of(tour));
         when(employeeRepository.findById(101L)).thenReturn(java.util.Optional.of(internalEmployee(101L)));
         when(userRepository.findById(7L)).thenReturn(java.util.Optional.of(userWithRole(7L, "ROLE_HOD")));
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
 
         service.updateTourStatus(602L, "APPROVED", "ok", 7L);
 
@@ -101,15 +107,66 @@ class TourApplicationServiceImplTest {
         List<Long> employeeIds = List.of(101L);
         EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
         employee.setRecruitmentType("INTERNAL");
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
         when(tourApplicationRepository.findPendingForApprover(7L, employeeIds, "PENDING"))
                 .thenReturn(List.of(tour(603L, 101L, "PENDING")));
         when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds))
                 .thenReturn(List.of(employee));
-        when(userRepository.findById(7L)).thenReturn(java.util.Optional.of(userWithRole(7L, "ROLE_PM")));
+        when(userRepository.findById(7L)).thenReturn(java.util.Optional.of(userWithRole(7L, "ROLE_EMPLOYEE")));
 
-        assertThat(service.getPendingToursForHOD(7L, null)).singleElement()
-                .satisfies(dto -> assertThat(dto.isDecisionAllowed()).isFalse());
+        assertThat(service.getPendingToursForHOD(7L, null)).singleElement().satisfies(dto -> {
+            assertThat(dto.isDecisionAllowed()).isFalse();
+            assertThat(dto.getDecisionNote())
+                    .isEqualTo("Only CFO, COO, CTO, HOD, MD, PM or STM can approve internal employee requests.");
+        });
+    }
+
+    @Test
+    void projectManagerCanDecideInternalTourOfAnIndirectReport() {
+        // 101 reports to 55, who reports to the PM (user 7): the team lookup covers every level.
+        var tour = tour(604L, 101L, "PENDING");
+        EmployeeEntity employee = internalEmployee(101L);
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(55L, 101L));
+        when(tourApplicationRepository.findPendingForApprover(7L, List.of(55L, 101L), "PENDING"))
+                .thenReturn(List.of(tour));
+        when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(List.of(101L)))
+                .thenReturn(List.of(employee));
+        when(userRepository.findById(7L)).thenReturn(java.util.Optional.of(userWithRole(7L, "ROLE_PM")));
+        when(tourApplicationRepository.findByTourIdForUpdate(604L)).thenReturn(java.util.Optional.of(tour));
+        when(employeeRepository.findById(101L)).thenReturn(java.util.Optional.of(employee));
+
+        assertThat(service.getPendingToursForHOD(7L, null)).singleElement().satisfies(dto -> {
+            assertThat(dto.isDecisionAllowed()).isTrue();
+            assertThat(dto.getDecisionNote()).isNull();
+        });
+        service.updateTourStatus(604L, "APPROVED", "ok", 7L);
+
+        assertThat(tour.getStatus()).isEqualTo("APPROVED");
+        assertThat(tour.getHodDecisionByUserId()).isEqualTo(7L);
+    }
+
+    @Test
+    void stagedTourOfATeamMemberIsVisibleButStaysWithTheStoredApprover() {
+        var tour = tour(605L, 101L, "PENDING");
+        tour.setApprovalStage("MANAGER");
+        tour.setManagerApproverUserId(8L);
+        tour.setHodApproverUserId(9L);
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
+        when(tourApplicationRepository.findPendingForApprover(7L, List.of(101L), "PENDING"))
+                .thenReturn(List.of(tour));
+        when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(List.of(101L)))
+                .thenReturn(List.of(employee(101L, "EMP101", "Asha Patil", "Developer")));
+        when(approvalRoutingService.isTwoLevelStage("MANAGER")).thenReturn(true);
+        when(approvalRoutingService.canAct(7L, "MANAGER", 8L, 9L)).thenReturn(false);
+        when(tourApplicationRepository.findByTourIdForUpdate(605L)).thenReturn(java.util.Optional.of(tour));
+
+        assertThat(service.getPendingToursForHOD(7L, null)).singleElement().satisfies(dto -> {
+            assertThat(dto.isDecisionAllowed()).isFalse();
+            assertThat(dto.getDecisionNote()).contains("reporting manager");
+        });
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.updateTourStatus(605L, "APPROVED", "not my stage", 7L));
+        assertThat(tour.getStatus()).isEqualTo("PENDING");
     }
 
     @Test
@@ -175,7 +232,7 @@ class TourApplicationServiceImplTest {
         TourApplicationEntity tour = tour(501L, 101L, "PENDING");
         EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
 
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
         when(tourApplicationRepository.findPendingForApprover(
                 7L,
                 employeeIds,
@@ -191,7 +248,7 @@ class TourApplicationServiceImplTest {
             assertThat(dto.getEmployeeName()).isEqualTo("Asha Patil");
             assertThat(dto.getDesignation()).isEqualTo("Developer");
         });
-        verify(reportingManagerService).getEffectiveEmployeeIdsForAuthority(7L);
+        verify(reportingManagerService).getTeamEmployeeIdsForAuthority(7L);
     }
 
     @Test
@@ -201,7 +258,7 @@ class TourApplicationServiceImplTest {
         TourApplicationEntity tour = tour(502L, 101L, "APPROVED");
         EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
 
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
         when(tourApplicationRepository.findProcessedForApprover(
                 7L,
                 employeeIds,
@@ -215,7 +272,7 @@ class TourApplicationServiceImplTest {
             assertThat(dto.getTourId()).isEqualTo(502L);
             assertThat(dto.getStatus()).isEqualTo("APPROVED");
         });
-        verify(reportingManagerService).getEffectiveEmployeeIdsForAuthority(7L);
+        verify(reportingManagerService).getTeamEmployeeIdsForAuthority(7L);
     }
 
     @Test
@@ -226,7 +283,7 @@ class TourApplicationServiceImplTest {
         TourApplicationEntity tour = tour(504L, 101L, "APPROVED");
         EmployeeEntity employee = employee(101L, "EMP101", "Asha Patil", "Developer");
 
-        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
+        when(reportingManagerService.getTeamEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
         when(tourApplicationRepository.findProcessedForApproverPage(
                 7L, employeeIds, "%EMP101%", searchDate, pageable))
                 .thenReturn(new PageImpl<>(List.of(tour), pageable, 12));

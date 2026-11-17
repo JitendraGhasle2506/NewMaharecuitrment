@@ -21,4 +21,6 @@ public class LeaveApplicationHODDTO {
     private LocalDateTime applicationDate;
     private String status;
     private boolean decisionAllowed = true;
+    /** Why a visible request is view-only for the signed-in approver; null when a decision is allowed. */
+    private String decisionNote;
 }

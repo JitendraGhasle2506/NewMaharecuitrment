@@ -347,7 +347,7 @@
                                             </td>
                                             <td class="actions-column text-center" data-label="Actions">
                                                 <span th:unless="${leave.decisionAllowed}" class="badge bg-secondary"
-                                                      title="Only HOD, STM, COO, CTO, CFO or MD can approve internal employee requests.">View only</span>
+                                                      th:title="${leave.decisionNote}">View only</span>
                                                 <div class="btn-group" th:if="${leave.decisionAllowed}">
                                                     <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
                                                             th:data-request-id="${leave.leaveId}" data-action="approve" data-type="Leave">
@@ -426,7 +426,7 @@
                                             </td>
                                             <td class="actions-column text-center" data-label="Actions">
                                                 <span th:unless="${tour.decisionAllowed}" class="badge bg-secondary"
-                                                      title="Only HOD, STM, COO, CTO, CFO or MD can approve internal employee requests.">View only</span>
+                                                      th:title="${tour.decisionNote}">View only</span>
                                                 <div class="btn-group" th:if="${tour.decisionAllowed}">
                                                     <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
                                                             th:data-request-id="${tour.tourId}" data-action="approve" data-type="Tour">

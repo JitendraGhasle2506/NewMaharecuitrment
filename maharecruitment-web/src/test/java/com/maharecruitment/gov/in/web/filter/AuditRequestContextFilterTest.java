@@ -5,9 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import com.maharecruitment.gov.in.common.audit.AuditIpEntityListener;
 import com.maharecruitment.gov.in.common.audit.AuditRequestContext;
@@ -15,6 +18,15 @@ import com.maharecruitment.gov.in.common.audit.IpAudited;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 
 class AuditRequestContextFilterTest {
+    /*
+     * Outside a request AuditRequestContext falls back to the thread's bound request before "SYSTEM".
+     * MockMvc tests that expect perform(...) to throw leave their mock request (127.0.0.1) bound to the
+     * shared surefire thread, so start and finish every test without one.
+     */
+    @BeforeEach @AfterEach void unbindLeftoverRequest() {
+        RequestContextHolder.resetRequestAttributes();
+    }
+
     @Test void everyAuditEntityCapturesTheSameRequestIpAndContextIsClearedOnFailure() {
         var properties = new TransportSecurityProperties();
         properties.setTrustForwardedHeaders(true);

@@ -6,7 +6,7 @@
     <title>MahaIT Recruitment Login</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/captcha.css(v='20261012-1')}" />
-    <link rel="stylesheet" th:href="@{/css/login.css(v='20261005-layout')}" />
+    <link rel="stylesheet" th:href="@{/css/login.css(v='20261116-privacy')}" />
 </head>
 
 <body class="portal-shell">
@@ -64,6 +64,10 @@
                             <span class="trust-item"><i class="fa-solid fa-building-user"></i> Department Mapping</span>
                             <span class="trust-item"><i class="fa-solid fa-file-shield"></i> Compliance Ready</span>
                             <span class="trust-item"><i class="fa-solid fa-user-shield"></i> Secure Verification</span>
+                            <a class="trust-item trust-link" th:href="@{/privacy-policy}" target="_blank" rel="noopener">
+                                <i class="fa-solid fa-user-lock" aria-hidden="true"></i> Privacy Policy
+                                <span class="visually-hidden">(opens in a new tab)</span>
+                            </a>
                         </div>
                     </section>
                 </div>

@@ -51,14 +51,7 @@
                         </a>
                     </li>
 
-                    <li sec:authorize="hasAnyAuthority('ROLE_EMPLOYEE', 'ROLE_HOD', 'ROLE_STM', 'ROLE_PM', 'ROLE_COO', 'ROLE_CTO', 'ROLE_CFO', 'ROLE_MD')">
-                        <a th:href="@{/reporting-manager/resources}">
-                            <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
-                            <span>Manage Resources</span>
-                        </a>
-                    </li>
-
-                    <li sec:authorize="hasAnyAuthority('ROLE_COO', 'ROLE_HOD', 'ROLE_MD', 'ROLE_CTO', 'ROLE_CFO')">
+                    <!-- <li sec:authorize="hasAnyAuthority('ROLE_COO', 'ROLE_HOD', 'ROLE_MD', 'ROLE_CTO', 'ROLE_CFO')">
                         <a th:href="@{/reporting-manager/pip}">
                             <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
                             <span>Performance Reviews / PIP</span>
@@ -70,7 +63,7 @@
                             <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
                             <span>Employee PIP Overview</span>
                         </a>
-                    </li>
+                    </li> -->
 
                     <li th:each="menuItem : ${session.menus}" class="menu-item">
                         <a th:href="${menuItem.isSubMenu == 0 ? '#' : @contextPathUrl.resolve(contextPath, menuItem.url)}"

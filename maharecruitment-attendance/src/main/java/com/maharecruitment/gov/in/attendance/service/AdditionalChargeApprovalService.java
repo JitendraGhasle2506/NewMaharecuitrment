@@ -69,7 +69,8 @@ public class AdditionalChargeApprovalService {
                 queue.addAll(children.getOrDefault(employeeId, List.of()));
             }
         }
-        return new Snapshot(transfers, reporting::getEffectiveEmployeeIdsForAuthority);
+        // A charge holder's legacy authority never exceeds the incumbent's own team (all levels below them).
+        return new Snapshot(transfers, reporting::getTeamEmployeeIdsForAuthority);
     }
 
     private record Authority(Long employeeId, Long sourceUserId) { }

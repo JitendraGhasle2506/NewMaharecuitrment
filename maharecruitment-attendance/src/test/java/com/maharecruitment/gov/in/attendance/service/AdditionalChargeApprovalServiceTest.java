@@ -67,13 +67,13 @@ class AdditionalChargeApprovalServiceTest {
     }
 
     @Test void legacyDelegationCannotExceedIncumbentsActualAuthorityAndCachesSourceLookup() {
-        when(reporting.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(2L));
+        when(reporting.getTeamEmployeeIdsForAuthority(7L)).thenReturn(List.of(2L));
         var scope = service.snapshot();
         assertThat(scope.canActLegacy(11L, 2L, List.of())).isTrue();
         assertThat(scope.canActLegacy(11L, 3L, List.of())).isFalse();
         assertThat(scope.canActLegacy(7L, 2L, List.of(2L))).isFalse();
         assertThat(scope.canActLegacy(11L, 5L, List.of(5L))).isTrue();
-        verify(reporting, times(1)).getEffectiveEmployeeIdsForAuthority(7L);
+        verify(reporting, times(1)).getTeamEmployeeIdsForAuthority(7L);
     }
 
     @Test void movedRootAndInactiveChargeHolderDoNotGrantAuthority() {

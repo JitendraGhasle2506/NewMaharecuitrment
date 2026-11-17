@@ -26,20 +26,23 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     
     List<LeaveApplicationEntity> findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(List<Long> employeeIds, List<String> statuses);
 
+    /**
+     * Pending requests the approver acts on at their stored stage, plus every request of their team
+     * (all levels below them). Whether a visible request is actionable is decided in the service.
+     */
     @Query("""
             select leave from LeaveApplicationEntity leave
             where leave.status = :status
               and (
                     (leave.approvalStage = 'MANAGER' and leave.managerApproverUserId = :actorUserId)
                  or (leave.approvalStage = 'HOD' and leave.hodApproverUserId = :actorUserId)
-                 or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
-                     and leave.employeeId in :legacyEmployeeIds)
+                 or leave.employeeId in :teamEmployeeIds
               )
             order by leave.applicationDate desc
             """)
     List<LeaveApplicationEntity> findPendingForApprover(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("status") String status);
 
     @Query("""
@@ -50,8 +53,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
               and (
                     (leave.approvalStage = 'MANAGER' and leave.managerApproverUserId = :actorUserId)
                  or (leave.approvalStage = 'HOD' and leave.hodApproverUserId = :actorUserId)
-                 or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
-                     and leave.employeeId in :legacyEmployeeIds)
+                 or leave.employeeId in :teamEmployeeIds
               )
               and (:searchPattern is null
                    or upper(employee.fullName) like :searchPattern
@@ -64,7 +66,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             """)
     List<LeaveApplicationEntity> findPendingForApproverFiltered(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("searchPattern") String searchPattern,
             @Param("searchDate") LocalDate searchDate);
 
@@ -90,14 +92,13 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
                  or leave.hodDecisionByUserId = :actorUserId
                  or leave.managerApproverUserId = :actorUserId
                  or leave.hodApproverUserId = :actorUserId
-                 or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
-                     and leave.employeeId in :legacyEmployeeIds)
+                 or leave.employeeId in :teamEmployeeIds
               )
             order by leave.applicationDate desc
             """)
     List<LeaveApplicationEntity> findProcessedForApprover(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("statuses") Collection<String> statuses);
 
     @Query(value = """
@@ -110,8 +111,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
                  or leave.hodDecisionByUserId = :actorUserId
                  or leave.managerApproverUserId = :actorUserId
                  or leave.hodApproverUserId = :actorUserId
-                 or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
-                     and leave.employeeId in :legacyEmployeeIds)
+                 or leave.employeeId in :teamEmployeeIds
               )
               and (:searchPattern is null
                    or upper(employee.fullName) like :searchPattern
@@ -132,8 +132,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
                  or leave.hodDecisionByUserId = :actorUserId
                  or leave.managerApproverUserId = :actorUserId
                  or leave.hodApproverUserId = :actorUserId
-                 or ((leave.approvalStage is null or leave.approvalStage not in ('MANAGER', 'HOD'))
-                     and leave.employeeId in :legacyEmployeeIds)
+                 or leave.employeeId in :teamEmployeeIds
               )
               and (:searchPattern is null
                    or upper(employee.fullName) like :searchPattern
@@ -145,7 +144,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             """)
     Page<LeaveApplicationEntity> findProcessedForApproverPage(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("searchPattern") String searchPattern,
             @Param("searchDate") LocalDate searchDate,
             Pageable pageable);

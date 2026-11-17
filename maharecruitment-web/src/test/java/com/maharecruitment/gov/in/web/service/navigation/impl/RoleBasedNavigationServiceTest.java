@@ -24,6 +24,16 @@ class RoleBasedNavigationServiceTest {
     }
 
     @Test
+    void internalApproverRolesScreenIsSharedByAdminAndHrOnly() {
+        assertTrue(service.canAccessUrl("/admin/internal-approver-roles", List.of("ROLE_ADMIN")));
+        assertTrue(service.canAccessUrl("/admin/internal-approver-roles", List.of("ROLE_HR")));
+        assertTrue(service.canAccessUrl("/admin/internal-approver-roles?changePage=1", List.of("ROLE_HR")));
+        assertFalse(service.canAccessUrl("/admin/internal-approver-roles", List.of("ROLE_EMPLOYEE")));
+        assertFalse(service.canAccessUrl("/admin/users", List.of("ROLE_HR")));
+        assertFalse(service.canAccessUrl("/admin/roles", List.of("ROLE_HR")));
+    }
+
+    @Test
     void canAccessUrlAllowsSharedHrAuditorSubmenuForAuditor() {
         assertTrue(service.canAccessUrl("/hr/department/payment/list", List.of("ROLE_AUDITOR")));
     }

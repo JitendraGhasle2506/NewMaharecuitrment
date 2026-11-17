@@ -21,20 +21,23 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
     
     List<TourApplicationEntity> findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(List<Long> employeeIds, List<String> statuses);
 
+    /**
+     * Pending requests the approver acts on at their stored stage, plus every request of their team
+     * (all levels below them). Whether a visible request is actionable is decided in the service.
+     */
     @Query("""
             select tour from TourApplicationEntity tour
             where tour.status = :status
               and (
                     (tour.approvalStage = 'MANAGER' and tour.managerApproverUserId = :actorUserId)
                  or (tour.approvalStage = 'HOD' and tour.hodApproverUserId = :actorUserId)
-                 or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
-                     and tour.employeeId in :legacyEmployeeIds)
+                 or tour.employeeId in :teamEmployeeIds
               )
             order by tour.applicationDate desc
             """)
     List<TourApplicationEntity> findPendingForApprover(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("status") String status);
 
     @Query("""
@@ -45,8 +48,7 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
               and (
                     (tour.approvalStage = 'MANAGER' and tour.managerApproverUserId = :actorUserId)
                  or (tour.approvalStage = 'HOD' and tour.hodApproverUserId = :actorUserId)
-                 or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
-                     and tour.employeeId in :legacyEmployeeIds)
+                 or tour.employeeId in :teamEmployeeIds
               )
               and (:searchPattern is null
                    or upper(employee.fullName) like :searchPattern
@@ -58,7 +60,7 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
             """)
     List<TourApplicationEntity> findPendingForApproverFiltered(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("searchPattern") String searchPattern,
             @Param("searchDate") LocalDate searchDate);
 
@@ -83,14 +85,13 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
                  or tour.hodDecisionByUserId = :actorUserId
                  or tour.managerApproverUserId = :actorUserId
                  or tour.hodApproverUserId = :actorUserId
-                 or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
-                     and tour.employeeId in :legacyEmployeeIds)
+                 or tour.employeeId in :teamEmployeeIds
               )
             order by tour.applicationDate desc
             """)
     List<TourApplicationEntity> findProcessedForApprover(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("statuses") Collection<String> statuses);
 
     @Query(value = """
@@ -103,8 +104,7 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
                  or tour.hodDecisionByUserId = :actorUserId
                  or tour.managerApproverUserId = :actorUserId
                  or tour.hodApproverUserId = :actorUserId
-                 or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
-                     and tour.employeeId in :legacyEmployeeIds)
+                 or tour.employeeId in :teamEmployeeIds
               )
               and (:searchPattern is null
                    or upper(employee.fullName) like :searchPattern
@@ -124,8 +124,7 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
                  or tour.hodDecisionByUserId = :actorUserId
                  or tour.managerApproverUserId = :actorUserId
                  or tour.hodApproverUserId = :actorUserId
-                 or ((tour.approvalStage is null or tour.approvalStage not in ('MANAGER', 'HOD'))
-                     and tour.employeeId in :legacyEmployeeIds)
+                 or tour.employeeId in :teamEmployeeIds
               )
               and (:searchPattern is null
                    or upper(employee.fullName) like :searchPattern
@@ -136,7 +135,7 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
             """)
     Page<TourApplicationEntity> findProcessedForApproverPage(
             @Param("actorUserId") Long actorUserId,
-            @Param("legacyEmployeeIds") Collection<Long> legacyEmployeeIds,
+            @Param("teamEmployeeIds") Collection<Long> teamEmployeeIds,
             @Param("searchPattern") String searchPattern,
             @Param("searchDate") LocalDate searchDate,
             Pageable pageable);

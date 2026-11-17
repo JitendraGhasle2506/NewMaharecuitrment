@@ -31,6 +31,10 @@ class EmployeeAdditionalChargeDashboardTest {
                         + "<link rel=\"stylesheet\" href=\"/assets/vendor/bootstrap/bootstrap.min.css\">"
                         + "<link rel=\"stylesheet\" href=\"/assets/vendor/fontawesome/6.5.2/css/all.min.css\"></head>");
         var request = new MockHttpServletRequest("GET", "/employee/dashboard");
+        var manageResourcesMenu = new com.maharecruitment.gov.in.auth.entity.MstMenu();
+        manageResourcesMenu.setUrl("/reporting-manager/resources");
+        var session = new MockHttpSession();
+        request.setSession(session);
         var application = org.thymeleaf.web.servlet.JakartaServletWebApplication.buildApplication(new MockServletContext());
         var context = new org.thymeleaf.context.WebContext(application.buildExchange(request, new MockHttpServletResponse()));
         var profile = new EmployeeProfileDTO();
@@ -59,7 +63,12 @@ class EmployeeAdditionalChargeDashboardTest {
         engine.addTemplateResolver(fragments);
         Files.createDirectories(Path.of("target/test-classes/templates"));
         Files.writeString(Path.of("target/test-classes/templates/dashboard-hierarchy-preview.html"), page);
+        // Manage Resources follows the DB menu mapping loaded into the session by MenuInterceptor.
+        assertThat(engine.process("dashboard-hierarchy-preview", context))
+                .doesNotContain("href=\"/reporting-manager/resources\"");
+        session.setAttribute("menus", List.of(manageResourcesMenu));
         String html = engine.process("dashboard-hierarchy-preview", context);
+        assertThat(html).contains("href=\"/reporting-manager/resources\"");
         assertThat(html).contains("class=\"dashboard-team-hierarchy\"", "id=\"employeeHierarchy\"",
                 "data-api=\"/employee/api/employee-hierarchy\"", "data-self-mode=\"true\"", "My team hierarchy",
                 "/css/employee-hierarchy.css?v=20261016", "/js/employee-hierarchy.js?v=20261017")
