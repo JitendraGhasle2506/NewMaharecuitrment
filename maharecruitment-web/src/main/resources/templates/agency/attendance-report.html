@@ -33,21 +33,6 @@
                         <span>External</span>
                         <strong th:text="${summary.externalEmployeeCount()}">0</strong>
                     </article>
-                    <article>
-                        <i class="fa-solid fa-calendar-check"></i>
-                        <span>Present</span>
-                        <strong th:text="${summary.presentDays()}">0</strong>
-                    </article>
-                    <article>
-                        <i class="fa-solid fa-wallet"></i>
-                        <span>Payable</span>
-                        <strong th:text="${summary.payableDays()}">0</strong>
-                    </article>
-                    <article>
-                        <i class="fa-solid fa-calendar-xmark"></i>
-                        <span>Absent + Leave</span>
-                        <strong th:text="${summary.absentDays() + summary.leaveDays()}">0</strong>
-                    </article>
                 </div>
             </div>
 
@@ -87,7 +72,7 @@
                             <span class="agency-attendance-searchbox">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                                 <input autocomplete="off" type="search" name="search" id="agencyAttendanceSearch" class="form-control"
-                                    placeholder="Employee, request, project" th:value="${filter.searchText()}">
+                                    placeholder="Employee, code, designation" th:value="${filter.searchText()}">
                                 <button type="button" class="agency-attendance-search-clear"
                                     id="agencyAttendanceSearchClear" aria-label="Clear search" title="Clear search">
                                     <i class="fa-solid fa-xmark"></i>
@@ -154,13 +139,9 @@
                     <table class="agency-attendance-table" id="agencyAttendanceTable">
                         <thead>
                             <tr>
-                                <th class="sticky-col sticky-col-first">Request ID</th>
-                                <th class="sticky-col sticky-col-second">Employee</th>
+                                <th class="sticky-col sticky-col-first">Employee</th>
                                 <th>Designation</th>
                                 <th>Type</th>
-                                <th>Department</th>
-                                <th>Project</th>
-                                <th>Level</th>
                                 <th th:each="day : ${#numbers.sequence(1, daysInMonth)}"
                                     th:text="${day < 10 ? '0' + day : day}">01</th>
                                 <th>Present</th>
@@ -175,9 +156,7 @@
                         </thead>
                         <tbody>
                             <tr th:each="row : ${reportRows}" tabindex="0">
-                                <td class="sticky-col sticky-col-first"
-                                    th:text="${row.requestId() != null and row.requestId() != '' ? row.requestId() : '-'}">REQ-0001</td>
-                                <td class="sticky-col sticky-col-second">
+                                <td class="sticky-col sticky-col-first">
                                     <strong th:text="${row.employeeName() != null and row.employeeName() != '' ? row.employeeName() : '-'}">Employee</strong>
                                     <span th:text="${row.employeeCode() != null and row.employeeCode() != '' ? row.employeeCode() : (row.employeeId() != null ? 'ID: ' + row.employeeId() : '')}">ID</span>
                                 </td>
@@ -187,9 +166,6 @@
                                         th:classappend="${row.employeeType() == 'INTERNAL'} ? ' type-internal' : ' type-external'"
                                         th:text="${#strings.capitalize(#strings.toLowerCase(row.employeeType()))}">External</span>
                                 </td>
-                                <td th:text="${row.department() != null and row.department() != '' ? row.department() : '-'}">Department</td>
-                                <td th:text="${row.projectName() != null and row.projectName() != '' ? row.projectName() : '-'}">Project</td>
-                                <td th:text="${row.level() != null and row.level() != '' ? row.level() : '-'}">L1</td>
                                 <td th:each="day : ${#numbers.sequence(1, daysInMonth)}"
                                     th:with="status=${row.dailyStatus() != null ? row.dailyStatus().get(day) : ''}"
                                     class="agency-attendance-day"

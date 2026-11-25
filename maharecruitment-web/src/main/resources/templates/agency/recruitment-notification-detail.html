@@ -8,18 +8,328 @@
     <link rel="stylesheet" th:href="@{/assets/vendor/sweetalert2/sweetalert2.min.css}">
     <script th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
     <style>
+        .an-detail {
+            --an-border: #d8e4f5;
+            --an-ink: #1f3554;
+            --an-muted: #607391;
+            font-size: 14px;
+        }
+
+        .an-detail .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 12px 0 0;
+        }
+
+        .an-detail-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px 16px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #163868 0%, #2c5f9f 100%);
+            color: #fff;
+        }
+
+        .an-detail-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .an-detail-header small {
+            color: rgba(255, 255, 255, .85) !important;
+            font-size: 12.5px;
+        }
+
+        .an-section-title {
+            margin: 0 0 8px;
+            color: #163868;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .an-section {
+            padding: 12px;
+            border: 1px solid var(--an-border);
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        /* summary grid */
+        .an-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin: 0;
+        }
+
+        .an-summary-item {
+            padding: 8px 12px;
+            border: 1px solid var(--an-border);
+            border-radius: 8px;
+            background: #f8fbff;
+            min-width: 0;
+        }
+
+        .an-summary-item dt {
+            margin: 0 0 2px;
+            color: var(--an-muted);
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .an-summary-item dd {
+            margin: 0;
+            color: var(--an-ink);
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        /* tables */
+        .an-detail .table {
+            margin-bottom: 0;
+            font-size: 13px;
+        }
+
+        .an-detail .table > :not(caption) > * > * {
+            padding: 6px 10px;
+        }
+
+        .an-detail .table thead th {
+            font-size: 11.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .an-detail .form-control,
+        .an-detail .form-select {
+            min-height: 34px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .an-select-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 560px;
+            margin-bottom: 10px;
+        }
+
+        .an-select-row label {
+            margin: 0;
+            color: #35547b;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .an-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
         #candidateInputTable {
-            min-width: 1900px;
+            min-width: 1500px;
         }
 
         #candidateInputTable .form-control,
         #candidateInputTable .form-select {
-            min-width: 125px;
+            min-width: 115px;
         }
 
         #candidateInputTable .candidate-name-input,
         #candidateInputTable .email-input {
-            min-width: 190px;
+            min-width: 170px;
+        }
+
+        .an-submit-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .an-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .an-submitted-actions form + form,
+        .an-submitted-actions form + span {
+            margin-top: 4px;
+        }
+
+        /* ---------- Tablet / mobile: stacked cards ---------- */
+        @media (max-width: 991.98px) {
+            .an-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .an-stack,
+            .an-stack tbody,
+            .an-stack tr,
+            .an-stack td {
+                display: block;
+                width: 100%;
+            }
+
+            #candidateInputTable {
+                min-width: 0;
+            }
+
+            .an-stack thead {
+                display: none;
+            }
+
+            .an-stack tbody tr {
+                margin-bottom: 10px;
+                padding: 8px 12px;
+                border: 1px solid var(--an-border);
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            .an-stack tbody td {
+                padding: 5px 0 !important;
+                border: 0 !important;
+                text-align: left !important;
+            }
+
+            .an-stack tbody td::before {
+                content: attr(data-label);
+                display: block;
+                margin-bottom: 2px;
+                color: var(--an-muted);
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+
+            .an-stack tbody td[colspan] {
+                text-align: center !important;
+            }
+
+            .an-stack tbody td[colspan]::before {
+                display: none !important;
+            }
+
+            /* candidate input rows: 2-column grid */
+            #candidateInputTable tbody tr {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 2px 12px;
+            }
+
+            #candidateInputTable tbody td {
+                min-width: 0;
+            }
+
+            #candidateInputTable tbody td:nth-child(1),
+            #candidateInputTable tbody td:nth-child(2),
+            #candidateInputTable tbody td:nth-child(3),
+            #candidateInputTable tbody td:nth-child(13),
+            #candidateInputTable tbody td:nth-child(14) {
+                grid-column: 1 / -1;
+            }
+
+            #candidateInputTable .form-control,
+            #candidateInputTable .form-select {
+                min-width: 0;
+                width: 100%;
+            }
+
+            #candidateInputTable tbody td:nth-child(14) .btn {
+                width: 100%;
+            }
+
+            /* labels by column position: also applies to rows added by JS */
+            #candidateInputTable td:nth-child(1)::before { content: "Candidate #"; }
+            #candidateInputTable td:nth-child(2)::before { content: "Candidate Name"; }
+            #candidateInputTable td:nth-child(3)::before { content: "Email"; }
+            #candidateInputTable td:nth-child(4)::before { content: "Mobile"; }
+            #candidateInputTable td:nth-child(5)::before { content: "Qualification"; }
+            #candidateInputTable td:nth-child(6)::before { content: "Total Exp"; }
+            #candidateInputTable td:nth-child(7)::before { content: "Relevant Exp"; }
+            #candidateInputTable td:nth-child(8)::before { content: "Current CTC (₹)"; }
+            #candidateInputTable td:nth-child(9)::before { content: "Resigned?"; }
+            #candidateInputTable td:nth-child(10)::before { content: "Last Working Day"; }
+            #candidateInputTable td:nth-child(11)::before { content: "Joining Time"; }
+            #candidateInputTable td:nth-child(12)::before { content: "Tentative Joining Date"; }
+            #candidateInputTable td:nth-child(13)::before { content: "Resume (PDF)"; }
+            #candidateInputTable td:nth-child(14)::before { display: none; }
+
+            #candidateInputTable td:nth-child(1) {
+                color: #163868;
+                font-weight: 700;
+            }
+
+            #vacancyTable td:nth-child(1)::before { content: "#"; }
+            #vacancyTable td:nth-child(2)::before { content: "Designation"; }
+            #vacancyTable td:nth-child(3)::before { content: "Level"; }
+            #vacancyTable td:nth-child(4)::before { content: "Vacancies"; }
+            #vacancyTable td:nth-child(5)::before { content: "Filled"; }
+            #vacancyTable td:nth-child(6)::before { content: "To be filled"; }
+            #vacancyTable td:nth-child(7)::before { content: "Job Description"; }
+            #vacancyTable td.text-end { text-align: left !important; }
+
+            #submittedTable td:nth-child(1)::before { content: "#"; }
+            #submittedTable td:nth-child(2)::before { content: "Candidate"; }
+            #submittedTable td:nth-child(3)::before { content: "Designation"; }
+            #submittedTable td:nth-child(4)::before { content: "Experience (Total / Relevant)"; }
+            #submittedTable td:nth-child(5)::before { content: "Current CTC (₹)"; }
+            #submittedTable td:nth-child(6)::before { content: "Resignation"; }
+            #submittedTable td:nth-child(7)::before { content: "Joining Time"; }
+            #submittedTable td:nth-child(8)::before { content: "Tentative Joining Date"; }
+            #submittedTable td:nth-child(9)::before { content: "Status"; }
+            #submittedTable td:nth-child(10)::before { content: "Resume"; }
+            #submittedTable td:nth-child(11)::before { content: "Interview Details"; }
+            #submittedTable td:nth-child(12)::before { content: "Action"; }
+        }
+
+        @media (max-width: 575.98px) {
+            .an-detail-header {
+                padding: 10px 12px;
+            }
+
+            .an-detail-header h2 {
+                font-size: 16px;
+            }
+
+            .an-summary {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .an-section {
+                padding: 10px;
+            }
+
+            #candidateInputTable tbody tr {
+                grid-template-columns: 1fr;
+            }
+
+            .an-toolbar .btn,
+            .an-submit-row .btn,
+            .an-actions .btn,
+            .an-actions form {
+                width: 100%;
+            }
+
+            .an-submit-row {
+                justify-content: stretch;
+            }
         }
     </style>
 </head>
@@ -27,61 +337,56 @@
 <body class="agency-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Recruitment Notifications', ~{::section})}">
         <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
+            <div class="card add-emp-card an-detail">
+                <div class="an-detail-header">
                     <div>
-                        <h2 class="mb-0" th:text="${detail.requestId}">REQ-0000</h2>
-                        <small class="text-muted" th:text="${detail.projectName != null ? detail.projectName : '-'}">
+                        <h2 th:text="${detail.requestId}">REQ-0000</h2>
+                        <small th:text="${detail.projectName != null ? detail.projectName : '-'}">
                             Project Name
                         </small>
                     </div>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/recruitment-notifications}">
-                        Back to List
+                    <a class="btn btn-outline-light btn-sm" th:href="@{/agency/recruitment-notifications}">
+                        <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to List
                     </a>
                 </div>
 
                 <div class="card-body">
                     <!-- Summary -->
-                    <table class="table table-bordered table-sm">
-                        <tr>
-                            <th width="22%">Request ID</th>
-                            <td th:text="${detail.requestId}">REQ-0000</td>
-                            <th width="20%">Notification Status</th>
-                            <td>
+                    <dl class="an-summary">
+                        <div class="an-summary-item">
+                            <dt>Request ID</dt>
+                            <dd th:text="${detail.requestId}">REQ-0000</dd>
+                        </div>
+                        <div class="an-summary-item">
+                            <dt>Project Name</dt>
+                            <dd th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</dd>
+                        </div>
+                        <div class="an-summary-item">
+                            <dt>Notified At</dt>
+                            <dd th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MM-yyyy HH:mm') : '-'}">-</dd>
+                        </div>
+                        <div class="an-summary-item">
+                            <dt>Status</dt>
+                            <dd>
                                 <span class="badge text-bg-secondary"
                                     th:text="${#strings.replace(detail.notificationStatus.name(), '_', ' ')}">
                                     PENDING ALLOCATION
                                 </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Project Name</th>
-                            <td th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</td>
-                            <th>Notified At</th>
-                            <td
-                                th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MM-yyyy HH:mm') : '-'}">
-                                -
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Application Status</th>
-                            <td>
                                 <span class="badge"
                                     th:classappend="${detail.trackingStatus.name() == 'RESPONDED' ? ' text-bg-success' :
                                                    (detail.trackingStatus.name() == 'READ' ? ' text-bg-info' : ' text-bg-primary')}"
                                     th:text="${#strings.replace(detail.trackingStatus.name(), '_', ' ')}">
                                     RELEASED
                                 </span>
-                            </td>
-                            <!-- <th>Notified At</th>
-                            <td th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MM-yyyy HH:mm') : '-'}">-</td> -->
-                        </tr>
-                    </table>
+                            </dd>
+                        </div>
+                    </dl>
 
                     <!-- Designation Vacancies -->
-                    <h5 class="mt-4">Designation Vacancies</h5>
+                    <div class="an-section">
+                    <h5 class="an-section-title">Designation Vacancies</h5>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle">
+                        <table class="table table-bordered table-sm align-middle an-stack" id="vacancyTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
@@ -113,18 +418,18 @@
                             </tbody>
                         </table>
                     </div>
+                    </div>
 
                     <!-- Candidate Submission -->
-                    <h5 class="mt-4">Submit Candidate Details</h5>
+                    <div class="an-section">
+                    <h5 class="an-section-title">Submit Candidate Details</h5>
                     <form autocomplete="off" method="post"
                         th:action="@{/agency/recruitment-notifications/{id}/candidates(id=${detail.recruitmentNotificationId})}"
                         enctype="multipart/form-data" id="candidateBatchForm" th:object="${candidateForm}" novalidate>
                         <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-                        <table class="table table-bordered table-sm">
-                            <tr>
-                                <th width="22%">Select Designation</th>
-                                <td>
+                        <div class="an-select-row">
+                                    <label for="designationVacancySelect">Select Designation</label>
                                     <select autocomplete="off" class="form-select" id="designationVacancySelect"
                                         th:field="*{designationVacancyId}"
                                         th:classappend="${#fields.hasErrors('designationVacancyId')} ? ' is-invalid'"
@@ -144,11 +449,9 @@
                                         Please select designation.
                                     </div>
                                     <small id="designationVacancyHelpText" class="text-muted d-block mt-1"></small>
-                                </td>
-                            </tr>
-                        </table>
+                        </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="an-toolbar">
                             <small class="text-muted">Add candidate rows and submit in one request.</small>
                             <button type="button" class="btn btn-outline-primary btn-sm" id="addCandidateRowButton">
                                 Add Candidate
@@ -156,7 +459,7 @@
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm align-middle" id="candidateInputTable">
+                            <table class="table table-bordered table-sm align-middle an-stack" id="candidateInputTable">
                                 <thead class="table-light">
                                     <tr>
                                         <th>#</th>
@@ -286,15 +589,17 @@
                             </table>
                         </div>
 
-                        <div class="text-end">
+                        <div class="an-submit-row">
                             <button type="submit" class="btn btn-success" id="submitCandidatesButton">Submit Candidates</button>
                         </div>
                     </form>
+                    </div>
 
                     <!-- Submitted Candidate List -->
-                    <h5 class="mt-4">Submitted Candidates</h5>
+                    <div class="an-section">
+                    <h5 class="an-section-title">Submitted Candidates</h5>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle">
+                        <table class="table table-bordered table-sm align-middle an-stack" id="submittedTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
@@ -475,8 +780,10 @@
                         </table>
                     </div>
 
+                    </div>
+
                     <!-- Existing Action Buttons -->
-                    <div class="d-flex gap-2 mt-3" th:if="${detail.trackingStatus.name() != 'RESPONDED'}">
+                    <div class="an-actions" th:if="${detail.trackingStatus.name() != 'RESPONDED'}">
                         <form autocomplete="off" method="post" th:if="${detail.trackingStatus.name() == 'RELEASED'}"
                             th:action="@{/agency/recruitment-notifications/{id}/read(id=${detail.recruitmentNotificationId})}">
                             <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -490,7 +797,7 @@
                         </form>
                     </div>
 
-                    <div class="alert alert-success mt-3 mb-0" th:if="${detail.trackingStatus.name() == 'RESPONDED'}">
+                    <div class="alert alert-success mb-0" th:if="${detail.trackingStatus.name() == 'RESPONDED'}">
                         You have already submitted a response for this notification.
                     </div>
                 </div>
