@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HOD Approvals | Attendance System</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/assets/vendor/sweetalert2/sweetalert2.min.css}">
@@ -10,62 +11,106 @@
         :root {
             --primary-navy: #1f4f78;
             --primary-accent: #163a59;
+            --surface-muted: #f6f8fb;
+            --line: #e6ebf1;
+            --text-muted: #667085;
+            --radius-card: 14px;
         }
+
+        /* ---------- Page shell ---------- */
+        .approvals-page { max-width: 1400px; margin: 0 auto; }
         .approval-card {
-            margin: 20px auto;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            border: none;
+            margin: 16px auto 20px;
+            border-radius: var(--radius-card);
+            box-shadow: 0 8px 28px rgba(16, 24, 40, 0.08);
+            border: 1px solid var(--line);
             overflow: hidden;
+            background: #fff;
         }
         .card-header-navy {
-            background: linear-gradient(180deg, #1f4f78, #163a59);
+            background: linear-gradient(135deg, #1f4f78, #163a59);
             color: #fff;
-            padding: 20px 25px;
+            padding: 20px 26px;
         }
+        .card-header-navy h4 { font-size: 1.25rem; font-weight: 700; }
+        .header-subtitle { margin: 4px 0 0; font-size: 0.85rem; color: rgba(255, 255, 255, 0.78); }
+        .summary-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        .summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #fff;
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .summary-chip strong { font-size: 1.05rem; line-height: 1; }
+
+        /* ---------- Filters ---------- */
+        .filter-section {
+            background: var(--surface-muted);
+            padding: 16px 26px;
+            border-bottom: 1px solid var(--line);
+        }
+        .filter-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .search-btn {
+            border-radius: 20px !important;
+            background: var(--primary-navy);
+            color: #fff;
+        }
+        .search-btn:hover, .search-btn:focus { background: var(--primary-accent); color: #fff; }
+
+        /* ---------- Tabs ---------- */
         .nav-tabs {
-            border-bottom: 2px solid #eee;
+            border-bottom: 1px solid var(--line);
             margin-bottom: 0;
             padding: 0 20px;
-            background: #f8f9fa;
+            background: #fff;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
         }
         .nav-tabs .nav-link {
             border: none;
-            color: #636e72;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted);
             font-weight: 600;
-            padding: 15px 25px;
-            transition: all 0.3s;
+            padding: 14px 22px;
+            white-space: nowrap;
+            transition: color 0.2s, border-color 0.2s;
         }
+        .nav-tabs .nav-link:hover { color: var(--primary-navy); }
         .nav-tabs .nav-link.active {
             color: var(--primary-navy);
             background: transparent;
-            border-bottom: 3px solid var(--primary-navy);
+            border-bottom-color: var(--primary-navy);
         }
+
+        /* ---------- Tables ---------- */
         .table thead th {
-            background-color: #f1f3f5;
+            background-color: #f1f4f8;
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-            color: #495057;
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+            color: #475467;
             border-top: none;
-            padding: 15px;
+            padding: 14px 12px;
         }
-        .table tbody td {
-            padding: 15px;
-            vertical-align: top;
-        }
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .remarks-input {
-            width: 100%;
-            min-width: 150px;
-            border-radius: 8px;
-        }
+        .table tbody td { padding: 14px 12px; vertical-align: top; }
         .pending-approval-table {
             width: 100%;
             margin-bottom: 0;
@@ -73,142 +118,128 @@
         }
         .pending-approval-table .employee-column { width: 16%; }
         .leave-approval-table .details-column { width: 9%; }
-        .pending-approval-table .dates-column { width: 10%; }
-        .leave-approval-table .comp-off-column { width: 11%; }
-        .pending-approval-table .reason-column { width: 23%; }
+        .pending-approval-table .dates-column { width: 11%; }
+        .leave-approval-table .comp-off-column { width: 10%; }
+        .pending-approval-table .reason-column { width: 20%; }
         .pending-approval-table .applied-column { width: 9%; }
         .pending-approval-table .remarks-column { width: 15%; }
-        .pending-approval-table .actions-column { width: 7%; }
-        .tour-approval-table .details-column { width: 13%; }
-        .tour-approval-table .reason-column { width: 28%; }
+        .pending-approval-table .actions-column { width: 10%; }
+        .tour-approval-table .details-column { width: 12%; }
+        .tour-approval-table .reason-column { width: 25%; }
         .tour-approval-table .remarks-column { width: 17%; }
-        .tour-approval-table .actions-column { width: 7%; }
+        .tour-approval-table .actions-column { width: 10%; }
+
+        .employee-cell { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+        .avatar {
+            flex: 0 0 auto;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e4edf6;
+            color: var(--primary-navy);
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .employee-meta { min-width: 0; overflow-wrap: anywhere; }
+        .date-range { display: inline-flex; flex-direction: column; gap: 2px; font-size: 0.82rem; }
+        .date-range .date-sep { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; }
         .request-reason {
             margin: 0;
-            color: #495057;
+            color: #475467;
             line-height: 1.45;
             white-space: normal;
             overflow-wrap: anywhere;
             word-break: break-word;
         }
-        .filter-section {
-            background: #fff;
-            padding: 15px 25px;
-            border-bottom: 1px solid #edf2f7;
+        .remarks-input { width: 100%; min-width: 150px; border-radius: 8px; }
+        .action-group { display: inline-flex; gap: 8px; justify-content: center; }
+        .action-group .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-label { display: none; }
+        .view-only-note { display: block; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .history-remarks { max-width: 260px; overflow-wrap: anywhere; }
+        .history-card { border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: none; overflow: hidden; }
+        .history-card .card-header { background: #fff; border-bottom: 1px solid var(--line); }
+        .empty-state-cell { color: var(--text-muted); }
+
+        .btn:focus-visible, .nav-link:focus-visible, .form-control:focus-visible, .page-link:focus-visible {
+            outline: 3px solid rgba(31, 79, 120, 0.35);
+            outline-offset: 2px;
         }
-        .search-btn {
-            border-radius: 20px !important;
-            background: var(--primary-navy);
-            color: #fff;
+        @media (prefers-reduced-motion: reduce) {
+            .nav-tabs .nav-link, .fade { transition: none !important; }
         }
-        .filter-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #718096;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-            display: block;
-        }
+
+        /* ---------- Tablet and below: tables turn into cards ---------- */
         @media (max-width: 991.98px) {
-            .approval-card {
-                margin: 12px auto;
-            }
-            .card-header-navy {
-                align-items: flex-start !important;
-                gap: 12px;
-                padding: 16px;
-            }
-            .nav-tabs {
-                padding: 0 8px;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-            }
-            .nav-tabs .nav-link {
-                padding: 12px 14px;
-                white-space: nowrap;
-            }
-            .tab-pane {
-                padding: 12px !important;
-            }
-            .responsive-approval-list {
-                overflow: visible;
-            }
-            .pending-approval-table,
-            .pending-approval-table tbody {
-                display: block;
-                width: 100%;
-            }
-            .pending-approval-table thead {
-                display: none;
-            }
-            .pending-approval-table tbody tr {
+            .approval-card { margin: 12px auto; border-radius: 12px; }
+            .card-header-navy { align-items: flex-start !important; gap: 12px; padding: 16px; }
+            .filter-section { padding: 14px 16px; }
+            .nav-tabs { padding: 0 8px; }
+            .nav-tabs .nav-link { padding: 12px 14px; }
+            .tab-pane { padding: 12px !important; }
+            .responsive-approval-list { overflow: visible; }
+            .table-responsive.stack-wrap { overflow: visible; }
+
+            .stack-table,
+            .stack-table tbody { display: block; width: 100%; }
+            .stack-table thead { display: none; }
+            .stack-table tbody tr {
                 display: grid;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 0;
                 margin-bottom: 14px;
                 overflow: hidden;
-                border: 1px solid #dee2e6;
-                border-radius: 10px;
+                border: 1px solid var(--line);
+                border-radius: 12px;
                 background: #fff;
                 box-shadow: 0 3px 12px rgba(31, 79, 120, 0.08);
             }
-            .pending-approval-table tbody td {
+            .stack-table tbody td {
                 display: block;
                 width: auto !important;
                 min-width: 0;
-                padding: 11px 13px;
+                padding: 11px 14px;
                 border: 0;
                 border-bottom: 1px solid #eef1f4;
             }
-            .pending-approval-table tbody td::before {
+            .stack-table tbody td::before {
                 content: attr(data-label);
                 display: block;
                 margin-bottom: 5px;
-                color: #6c757d;
+                color: var(--text-muted);
                 font-size: 0.68rem;
                 font-weight: 700;
                 letter-spacing: 0.04em;
                 text-transform: uppercase;
             }
-            .pending-approval-table .employee-column,
-            .pending-approval-table .reason-column,
-            .pending-approval-table .remarks-column,
-            .pending-approval-table .actions-column,
-            .pending-approval-table .empty-state-cell {
-                grid-column: 1 / -1;
+            .stack-table .employee-column,
+            .stack-table .reason-column,
+            .stack-table .remarks-column,
+            .stack-table .actions-column,
+            .stack-table .span-full,
+            .stack-table .empty-state-cell { grid-column: 1 / -1; }
+            .stack-table .employee-column {
+                background: var(--surface-muted);
             }
-            .pending-approval-table .remarks-input {
-                min-width: 0;
-            }
-            .pending-approval-table .actions-column {
-                text-align: left !important;
-                border-bottom: 0;
-            }
-            .pending-approval-table .empty-state-row {
-                display: block;
-            }
-            .pending-approval-table .empty-state-cell::before {
-                display: none;
-            }
+            .stack-table .remarks-input { min-width: 0; }
+            .stack-table .actions-column { text-align: left !important; border-bottom: 0; }
+            .stack-table .actions-column .action-group { display: flex; }
+            .stack-table .actions-column .action-group .btn { flex: 1 1 0; padding: 9px 12px; }
+            .btn-label { display: inline; }
+            .stack-table .empty-state-row { display: block; }
+            .stack-table .empty-state-cell::before { display: none; }
+            .history-remarks { max-width: none; }
         }
+
         @media (max-width: 575.98px) {
-            .pending-approval-table tbody tr {
-                grid-template-columns: 1fr;
-            }
-            .pending-approval-table tbody td,
-            .pending-approval-table .employee-column,
-            .pending-approval-table .reason-column,
-            .pending-approval-table .remarks-column,
-            .pending-approval-table .actions-column {
-                grid-column: 1;
-            }
-            .filter-section {
-                padding: 14px;
-            }
-            .search-btn {
-                padding-left: 12px !important;
-                padding-right: 12px !important;
-            }
+            .card-header-navy h4 { font-size: 1.1rem; }
+            .summary-chip { padding: 6px 12px; font-size: 0.78rem; }
+            .stack-table tbody tr { grid-template-columns: 1fr; }
+            .stack-table tbody td { grid-column: 1; }
+            .search-btn { padding-left: 12px !important; padding-right: 12px !important; }
         }
     </style>
 </head>
@@ -216,7 +247,7 @@
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Approvals', 'HOD Dashboard', ~{::section})}">
         <section>
-            <div class="container-fluid pb-5">
+            <div class="container-fluid pb-5 approvals-page">
                 <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-4 mt-3" role="alert">
                     <i class="fa fa-check-circle me-2"></i><span th:text="${success}"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -227,28 +258,34 @@
                 </div>
 
                 <div class="card approval-card">
-                    <div class="card-header-navy d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0"><i class="fa fa-check-double me-3"></i>Pending Approvals</h4>
-                        <!-- <a th:href="@{/employee/attendance-module}" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                            <i class="fa fa-arrow-left me-2"></i>Back
-                        </a> -->
+                    <div class="card-header-navy d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <h4 class="mb-0"><i class="fa fa-check-double me-3"></i>Pending Approvals</h4>
+                            <p class="header-subtitle">Review and decide your team's leave and tour requests.</p>
+                        </div>
+                        <div class="summary-chips" aria-label="Pending request summary">
+                            <span class="summary-chip"><i class="fa fa-calendar-minus"></i>Leave
+                                <strong th:text="${#lists.size(pendingLeaves)}">0</strong></span>
+                            <span class="summary-chip"><i class="fa fa-briefcase"></i>Tour
+                                <strong th:text="${#lists.size(pendingTours)}">0</strong></span>
+                        </div>
                     </div>
-                    
+
                     <!-- Filter Section -->
                     <div class="filter-section">
-                        <form autocomplete="off" th:action="@{/hod1/leaveApprovals}" method="get" id="filterForm" class="row g-3 align-items-end justify-content-center">
-                            <div class="col-12 col-md-5">
+                        <form autocomplete="off" th:action="@{/hod1/leaveApprovals}" method="get" id="filterForm" class="row g-3 align-items-end">
+                            <div class="col-12 col-md-5 col-lg-4">
                                 <label class="filter-label" for="approvalSearch">Employee Name, Code or Designation</label>
                                 <input autocomplete="off" id="approvalSearch" type="search" name="query"
                                        class="form-control form-control-sm rounded-pill" th:value="${searchQuery}"
                                        placeholder="Search employee...">
                             </div>
-                            <div class="col-12 col-md-3">
+                            <div class="col-12 col-sm-6 col-md-3 col-lg-3">
                                 <label class="filter-label" for="approvalDate">Leave / Tour Date</label>
                                 <input autocomplete="off" id="approvalDate" type="date" name="searchDate"
                                        class="form-control form-control-sm rounded-pill" th:value="${searchDate}">
                             </div>
-                            <div class="col-12 col-md-auto d-flex gap-2">
+                            <div class="col-12 col-sm-6 col-md-auto d-flex gap-2">
                                 <button class="btn search-btn btn-sm rounded-pill px-4" type="submit">
                                     <i class="fa fa-search me-2"></i>Search
                                 </button>
@@ -288,8 +325,8 @@
                     <div class="tab-content">
                         <!-- Leave Pane -->
                         <div class="tab-pane fade p-4" th:classappend="${activeTab == 'leave' ? 'show active' : ''}" id="leave-pane" role="tabpanel">
-                            <div class="table-responsive responsive-approval-list">
-                                <table class="table table-hover align-middle pending-approval-table leave-approval-table">
+                            <div class="table-responsive responsive-approval-list stack-wrap">
+                                <table class="table table-hover align-middle pending-approval-table leave-approval-table stack-table">
                                     <colgroup>
                                         <col class="employee-column"><col class="details-column"><col class="dates-column">
                                         <col class="comp-off-column"><col class="reason-column"><col class="applied-column">
@@ -310,18 +347,24 @@
                                     <tbody>
                                         <tr th:each="leave : ${pendingLeaves}">
                                             <td class="employee-column" data-label="Employee">
-                                                <div class="fw-bold" th:text="${leave.employeeName}"></div>
-                                                <div class="small text-primary" th:text="${leave.designation}"></div>
-                                                <small class="text-muted" th:text="${leave.employeeCode}"></small>
+                                                <div class="employee-cell">
+                                                    <span class="avatar" aria-hidden="true"
+                                                          th:text="${#strings.isEmpty(leave.employeeName) ? '?' : #strings.toUpperCase(#strings.substring(leave.employeeName, 0, 1))}">A</span>
+                                                    <div class="employee-meta">
+                                                        <div class="fw-bold" th:text="${leave.employeeName}"></div>
+                                                        <div class="small text-primary" th:text="${leave.designation}"></div>
+                                                        <small class="text-muted" th:text="${leave.employeeCode}"></small>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td class="details-column" data-label="Leave Details">
                                                 <span class="badge bg-light text-dark fw-bold" th:text="${leave.leaveType}"></span>
                                                 <br><small class="text-muted" th:text="${leave.leaveCategory}"></small>
                                             </td>
                                             <td class="dates-column" data-label="Dates">
-                                                <div class="small">
-                                                    <span th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></span><br>
-                                                    <span class="text-muted">to</span><br>
+                                                <div class="date-range">
+                                                    <span th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></span>
+                                                    <span class="date-sep">to</span>
                                                     <span th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
                                             </td>
@@ -342,20 +385,26 @@
                                                 <small class="text-muted d-block" th:text="${#temporals.format(leave.applicationDate, 'HH:mm')}"></small>
                                             </td>
                                             <td class="remarks-column" data-label="Remarks">
-                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'leave-remarks-' + ${leave.leaveId}" placeholder="Enter remarks..."
+                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input"
+                                                       th:id="'leave-remarks-' + ${leave.leaveId}" placeholder="Enter remarks..."
+                                                       aria-label="Remarks for this leave request"
                                                        th:disabled="${!leave.decisionAllowed}">
                                             </td>
                                             <td class="actions-column text-center" data-label="Actions">
                                                 <span th:unless="${leave.decisionAllowed}" class="badge bg-secondary"
                                                       th:title="${leave.decisionNote}">View only</span>
-                                                <div class="btn-group" th:if="${leave.decisionAllowed}">
-                                                    <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
-                                                            th:data-request-id="${leave.leaveId}" data-action="approve" data-type="Leave">
-                                                        <i class="fa fa-check"></i>
+                                                <small th:unless="${leave.decisionAllowed}" class="view-only-note"
+                                                       th:text="${leave.decisionNote}"></small>
+                                                <div class="action-group" th:if="${leave.decisionAllowed}">
+                                                    <button type="button" class="btn btn-success btn-sm px-3 js-approval-action"
+                                                            th:data-request-id="${leave.leaveId}" data-action="approve" data-type="Leave"
+                                                            title="Approve" aria-label="Approve leave request">
+                                                        <i class="fa fa-check"></i><span class="btn-label">Approve</span>
                                                     </button>
                                                     <button type="button" class="btn btn-danger btn-sm px-3 js-approval-action"
-                                                            th:data-request-id="${leave.leaveId}" data-action="reject" data-type="Leave">
-                                                        <i class="fa fa-times"></i>
+                                                            th:data-request-id="${leave.leaveId}" data-action="reject" data-type="Leave"
+                                                            title="Reject" aria-label="Reject leave request">
+                                                        <i class="fa fa-times"></i><span class="btn-label">Reject</span>
                                                     </button>
                                                 </div>
                                             </td>
@@ -373,8 +422,8 @@
 
                         <!-- Tour Pane -->
                         <div class="tab-pane fade p-4" th:classappend="${activeTab == 'tour' ? 'show active' : ''}" id="tour-pane" role="tabpanel">
-                            <div class="table-responsive responsive-approval-list">
-                                <table class="table table-hover align-middle pending-approval-table tour-approval-table">
+                            <div class="table-responsive responsive-approval-list stack-wrap">
+                                <table class="table table-hover align-middle pending-approval-table tour-approval-table stack-table">
                                     <colgroup>
                                         <col class="employee-column"><col class="details-column"><col class="dates-column">
                                         <col class="reason-column"><col class="applied-column"><col class="remarks-column">
@@ -394,21 +443,27 @@
                                     <tbody>
                                         <tr th:each="tour : ${pendingTours}">
                                             <td class="employee-column" data-label="Employee">
-                                                <div class="fw-bold" th:text="${tour.employeeName}"></div>
-                                                <div class="small text-primary" th:text="${tour.designation}"></div>
-                                                <small class="text-muted" th:text="${tour.employeeCode}"></small>
+                                                <div class="employee-cell">
+                                                    <span class="avatar" aria-hidden="true"
+                                                          th:text="${#strings.isEmpty(tour.employeeName) ? '?' : #strings.toUpperCase(#strings.substring(tour.employeeName, 0, 1))}">A</span>
+                                                    <div class="employee-meta">
+                                                        <div class="fw-bold" th:text="${tour.employeeName}"></div>
+                                                        <div class="small text-primary" th:text="${tour.designation}"></div>
+                                                        <small class="text-muted" th:text="${tour.employeeCode}"></small>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td class="details-column" data-label="Tour Category">
                                                 <span class="badge bg-light text-dark fw-bold" th:text="${tour.tourCategory}"></span>
                                                 <small class="text-muted d-block" th:if="${tour.tourCategory == 'Half Day'}" th:text="'(' + ${tour.timePeriod} + ')'"></small>
                                             </td>
                                             <td class="dates-column" data-label="Dates">
-                                                <div class="small" th:if="${tour.tourCategory == 'Full Day'}">
-                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span><br>
-                                                    <span class="text-muted">to</span><br>
+                                                <div class="date-range" th:if="${tour.tourCategory == 'Full Day'}">
+                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span>
+                                                    <span class="date-sep">to</span>
                                                     <span th:text="${#temporals.format(tour.endDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
-                                                <div class="small" th:if="${tour.tourCategory == 'Half Day'}">
+                                                <div class="date-range" th:if="${tour.tourCategory == 'Half Day'}">
                                                     <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
                                             </td>
@@ -421,20 +476,26 @@
                                                 <small class="text-muted d-block" th:text="${#temporals.format(tour.applicationDate, 'HH:mm')}"></small>
                                             </td>
                                             <td class="remarks-column" data-label="Remarks">
-                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'tour-remarks-' + ${tour.tourId}" placeholder="Enter remarks..."
+                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input"
+                                                       th:id="'tour-remarks-' + ${tour.tourId}" placeholder="Enter remarks..."
+                                                       aria-label="Remarks for this tour request"
                                                        th:disabled="${!tour.decisionAllowed}">
                                             </td>
                                             <td class="actions-column text-center" data-label="Actions">
                                                 <span th:unless="${tour.decisionAllowed}" class="badge bg-secondary"
                                                       th:title="${tour.decisionNote}">View only</span>
-                                                <div class="btn-group" th:if="${tour.decisionAllowed}">
-                                                    <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
-                                                            th:data-request-id="${tour.tourId}" data-action="approve" data-type="Tour">
-                                                        <i class="fa fa-check"></i>
+                                                <small th:unless="${tour.decisionAllowed}" class="view-only-note"
+                                                       th:text="${tour.decisionNote}"></small>
+                                                <div class="action-group" th:if="${tour.decisionAllowed}">
+                                                    <button type="button" class="btn btn-success btn-sm px-3 js-approval-action"
+                                                            th:data-request-id="${tour.tourId}" data-action="approve" data-type="Tour"
+                                                            title="Approve" aria-label="Approve tour request">
+                                                        <i class="fa fa-check"></i><span class="btn-label">Approve</span>
                                                     </button>
                                                     <button type="button" class="btn btn-danger btn-sm px-3 js-approval-action"
-                                                            th:data-request-id="${tour.tourId}" data-action="reject" data-type="Tour">
-                                                        <i class="fa fa-times"></i>
+                                                            th:data-request-id="${tour.tourId}" data-action="reject" data-type="Tour"
+                                                            title="Reject" aria-label="Reject tour request">
+                                                        <i class="fa fa-times"></i><span class="btn-label">Reject</span>
                                                     </button>
                                                 </div>
                                             </td>
@@ -455,13 +516,13 @@
                             <div class="row g-4">
                                 <!-- Leave History -->
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header bg-white py-3">
+                                    <div class="card history-card">
+                                        <div class="card-header py-3">
                                             <h6 class="mb-0 fw-bold text-primary"><i class="fa fa-calendar-check me-2"></i>Leave History</h6>
                                         </div>
                                         <div class="card-body p-0">
-                                            <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0">
+                                            <div class="table-responsive stack-wrap">
+                                                <table class="table table-hover align-middle mb-0 stack-table history-table">
                                                     <thead class="bg-light">
                                                         <tr>
                                                             <th>Employee</th>
@@ -470,27 +531,27 @@
                                                             <th>Comp-Off Against</th>
                                                             <th>Applied On</th>
                                                             <th>Status</th>
-                                                            <th>HOD Remarks</th>
+                                                            <th>Remarks</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr th:each="leave : ${processedLeaves}">
-                                                            <td>
+                                                            <td class="employee-column" data-label="Employee">
                                                                 <div class="fw-bold" th:text="${leave.employeeName}"></div>
                                                                 <div class="small text-muted" th:text="${leave.designation}"></div>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Leave Details">
                                                                 <span class="badge bg-light text-dark fw-bold" th:text="${leave.leaveType}"></span>
                                                                 <small class="text-muted d-block" th:text="${leave.leaveCategory}"></small>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Period">
                                                                 <div class="small">
                                                                     <span th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></span>
                                                                     <span class="text-muted mx-1">-</span>
                                                                     <span th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></span>
                                                                 </div>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Comp-Off Against">
                                                                 <div th:if="${leave.compOffWorkDate != null}">
                                                                     <span class="badge bg-info text-dark">Worked Date</span>
                                                                     <small class="text-primary fw-semibold d-block mt-1"
@@ -498,18 +559,18 @@
                                                                 </div>
                                                                 <span th:if="${leave.compOffWorkDate == null}" class="text-muted">-</span>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Applied On">
                                                                 <small class="text-muted d-block" th:text="${#temporals.format(leave.applicationDate, 'dd-MM-yyyy HH:mm')}"></small>
                                                             </td>
-                                                            <td>
-                                                                <span class="badge" th:classappend="${leave.status == 'APPROVED' ? 'bg-success' : 'bg-danger'}" th:text="${leave.status}"></span>
+                                                            <td data-label="Status">
+                                                                <span class="badge status-badge" th:classappend="${leave.status == 'APPROVED' ? 'bg-success' : 'bg-danger'}" th:text="${leave.status}"></span>
                                                             </td>
-                                                            <td>
-                                                                <p class="mb-0 small text-muted" style="max-width: 250px;" th:text="${leave.hodRemarks}"></p>
+                                                            <td class="span-full" data-label="Remarks">
+                                                                <p class="mb-0 small text-muted history-remarks" th:text="${#strings.isEmpty(leave.hodRemarks) ? '-' : leave.hodRemarks}"></p>
                                                             </td>
                                                         </tr>
-                                                        <tr th:if="${#lists.isEmpty(processedLeaves)}">
-                                                            <td colspan="7" class="text-center py-4 text-muted small">No processed leave requests found.</td>
+                                                        <tr class="empty-state-row" th:if="${#lists.isEmpty(processedLeaves)}">
+                                                            <td colspan="7" class="empty-state-cell text-center py-4 text-muted small">No processed leave requests found.</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -536,13 +597,13 @@
 
                                 <!-- Tour History -->
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header bg-white py-3">
+                                    <div class="card history-card">
+                                        <div class="card-header py-3">
                                             <h6 class="mb-0 fw-bold text-primary"><i class="fa fa-briefcase me-2"></i>Tour History</h6>
                                         </div>
                                         <div class="card-body p-0">
-                                            <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0">
+                                            <div class="table-responsive stack-wrap">
+                                                <table class="table table-hover align-middle mb-0 stack-table history-table">
                                                     <thead class="bg-light">
                                                         <tr>
                                                             <th>Employee</th>
@@ -550,38 +611,38 @@
                                                             <th>Period</th>
                                                             <th>Applied On</th>
                                                             <th>Status</th>
-                                                            <th>HOD Remarks</th>
+                                                            <th>Remarks</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr th:each="tour : ${processedTours}">
-                                                            <td>
+                                                            <td class="employee-column" data-label="Employee">
                                                                 <div class="fw-bold" th:text="${tour.employeeName}"></div>
                                                                 <div class="small text-muted" th:text="${tour.designation}"></div>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Tour Details">
                                                                 <span class="badge bg-light text-dark fw-bold" th:text="${tour.tourCategory}"></span>
                                                                 <small class="text-muted d-block" th:if="${tour.tourCategory == 'Half Day'}" th:text="'(' + ${tour.timePeriod} + ')'"></small>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Period">
                                                                 <div class="small">
                                                                     <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span>
                                                                     <span th:if="${tour.tourCategory == 'Full Day'}" class="text-muted mx-1">-</span>
                                                                     <span th:if="${tour.tourCategory == 'Full Day'}" th:text="${#temporals.format(tour.endDate, 'dd-MM-yyyy')}"></span>
                                                                 </div>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Applied On">
                                                                 <small class="text-muted d-block" th:text="${#temporals.format(tour.applicationDate, 'dd-MM-yyyy HH:mm')}"></small>
                                                             </td>
-                                                            <td>
-                                                                <span class="badge" th:classappend="${tour.status == 'APPROVED' ? 'bg-success' : 'bg-danger'}" th:text="${tour.status}"></span>
+                                                            <td data-label="Status">
+                                                                <span class="badge status-badge" th:classappend="${tour.status == 'APPROVED' ? 'bg-success' : 'bg-danger'}" th:text="${tour.status}"></span>
                                                             </td>
-                                                            <td>
-                                                                <p class="mb-0 small text-muted" style="max-width: 250px;" th:text="${tour.hodRemarks}"></p>
+                                                            <td class="span-full" data-label="Remarks">
+                                                                <p class="mb-0 small text-muted history-remarks" th:text="${#strings.isEmpty(tour.hodRemarks) ? '-' : tour.hodRemarks}"></p>
                                                             </td>
                                                         </tr>
-                                                        <tr th:if="${#lists.isEmpty(processedTours)}">
-                                                            <td colspan="6" class="text-center py-4 text-muted small">No processed tour requests found.</td>
+                                                        <tr class="empty-state-row" th:if="${#lists.isEmpty(processedTours)}">
+                                                            <td colspan="6" class="empty-state-cell text-center py-4 text-muted small">No processed tour requests found.</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -610,7 +671,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Action Forms -->
             <form autocomplete="off" id="leaveApproveForm" th:action="@{/hod1/approveLeave}" method="post" style="display:none;">
                 <input autocomplete="off" type="hidden" name="leaveId" id="leaveApproveId">
@@ -624,7 +685,7 @@
                 <input autocomplete="off" type="hidden" name="query" th:value="${searchQuery}">
                 <input autocomplete="off" type="hidden" name="searchDate" th:value="${searchDate}">
             </form>
- 
+
             <form autocomplete="off" id="tourApproveForm" th:action="@{/hod1/approveTour}" method="post" style="display:none;">
                 <input autocomplete="off" type="hidden" name="tourId" id="tourApproveId">
                 <input autocomplete="off" type="hidden" name="remarks" id="tourApproveRemarks">
@@ -651,20 +712,25 @@
             });
         });
 
+        var approvalSubmitted = false;
+
         function submitAction(id, action, type) {
+            if (approvalSubmitted) {
+                return;
+            }
             var remarksId = (type === 'Leave' ? '#leave-remarks-' : '#tour-remarks-') + id;
             var remarks = $(remarksId).val();
-            
+
             if (action === 'reject' && (!remarks || remarks.trim() === '')) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Remarks Required',
                     text: 'Please provide remarks for rejection.',
                     confirmButtonColor: '#1f4f78'
-                });
+                }).then(() => $(remarksId).trigger('focus'));
                 return;
             }
-            
+
             Swal.fire({
                 title: 'Are you sure?',
                 text: "You want to " + action + " this " + type + " request?",
@@ -675,10 +741,12 @@
                 confirmButtonText: 'Yes, ' + action + ' it!'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    approvalSubmitted = true;
+                    $('.js-approval-action').prop('disabled', true);
                     var formId = type.toLowerCase() + (action === 'approve' ? 'ApproveForm' : 'RejectForm');
                     var idField = type.toLowerCase() + (action === 'approve' ? 'ApproveId' : 'RejectId');
                     var remarksField = type.toLowerCase() + (action === 'approve' ? 'ApproveRemarks' : 'RejectRemarks');
-                    
+
                     $('#' + idField).val(id);
                     $('#' + remarksField).val(remarks);
                     $('#' + formId).submit();
@@ -688,4 +756,3 @@
     </script>
 </body>
 </html>
-
