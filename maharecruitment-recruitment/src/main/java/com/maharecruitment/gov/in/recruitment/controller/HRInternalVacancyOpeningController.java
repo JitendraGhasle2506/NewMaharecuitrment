@@ -63,6 +63,7 @@ public class HRInternalVacancyOpeningController {
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 50;
     private static final long MAX_APPROVAL_DOCUMENT_SIZE_BYTES = 2L * 1024 * 1024;
+    private static final long MAX_WORD_DOCUMENT_SIZE_BYTES = 5L * 1024 * 1024;
 
     private final InternalVacancyOpeningService internalVacancyOpeningService;
     private final InternalVacancyCandidateReviewService internalVacancyCandidateReviewService;
@@ -289,6 +290,20 @@ public class HRInternalVacancyOpeningController {
         return internalVacancyOpeningService.getLevelsByDesignation(designationId);
     }
 
+    @GetMapping("/{internalVacancyOpeningId}/job-description")
+    public ResponseEntity<Resource> viewJobDescription(@PathVariable Long internalVacancyOpeningId) {
+        try {
+            return JobDescriptionResponseFactory.build(
+                    internalVacancyOpeningService.getJobDescriptionDocument(internalVacancyOpeningId));
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to access HR job description. openingId={}, reason={}",
+                    internalVacancyOpeningId,
+                    ex.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/{internalVacancyOpeningId}/e-office-approval")
     public ResponseEntity<Resource> viewEOfficeApproval(@PathVariable Long internalVacancyOpeningId) {
         try {
@@ -361,6 +376,7 @@ public class HRInternalVacancyOpeningController {
                         ? List.of()
                         : new ArrayList<>(openingForm.getReplacementEmployeeIds()))
                 .eOfficeApprovalDocument(openingForm.getEOfficeApprovalDocument())
+                .jobDescriptionDocument(openingForm.getJobDescriptionDocument())
                 .remarks(openingForm.getRemarks())
                 .actorEmail(actorEmail)
                 .targetStatus(targetStatus)
@@ -411,6 +427,28 @@ public class HRInternalVacancyOpeningController {
                         "eOfficeApprovalDocument",
                         "approval.tooLarge",
                         "E-office approval document must not exceed 2 MB.");
+            }
+        }
+
+        if (openingForm.getJobDescriptionDocument() != null
+                && !openingForm.getJobDescriptionDocument().isEmpty()) {
+            String jdFileName = openingForm.getJobDescriptionDocument().getOriginalFilename();
+            String jdLower = jdFileName == null ? "" : jdFileName.toLowerCase(Locale.ROOT);
+            boolean isPdf = jdLower.endsWith(".pdf");
+            boolean isWord = jdLower.endsWith(".doc") || jdLower.endsWith(".docx");
+            if (!isPdf && !isWord) {
+                bindingResult.rejectValue(
+                        "jobDescriptionDocument",
+                        "jobDescription.invalidType",
+                        "Upload the job description as a PDF or Word (.doc, .docx) file.");
+            } else if (openingForm.getJobDescriptionDocument().getSize() > (isPdf
+                    ? MAX_APPROVAL_DOCUMENT_SIZE_BYTES
+                    : MAX_WORD_DOCUMENT_SIZE_BYTES)) {
+                bindingResult.rejectValue(
+                        "jobDescriptionDocument",
+                        "jobDescription.tooLarge",
+                        isPdf ? "Job description PDF must not exceed 2 MB."
+                                : "Job description Word file must not exceed 5 MB.");
             }
         }
 

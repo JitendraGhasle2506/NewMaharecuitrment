@@ -4,6 +4,8 @@ import java.security.Principal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.maharecruitment.gov.in.recruitment.controller.JobDescriptionResponseFactory;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
@@ -98,6 +101,20 @@ public class AgencyRecruitmentNotificationPageController {
                     recruitmentNotificationId, actorEmail, ex.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/agency/recruitment-notifications";
+        }
+    }
+
+    @GetMapping("/{recruitmentNotificationId}/job-description")
+    public ResponseEntity<Resource> viewJobDescription(
+            @PathVariable Long recruitmentNotificationId,
+            Principal principal) {
+        try {
+            return JobDescriptionResponseFactory.build(
+                    pageService.getJobDescriptionDocument(resolveActorEmail(principal), recruitmentNotificationId));
+        } catch (RecruitmentNotificationException ex) {
+            log.warn("Unable to access job description. notificationId={}, reason={}",
+                    recruitmentNotificationId, ex.getMessage());
+            return ResponseEntity.notFound().build();
         }
     }
 

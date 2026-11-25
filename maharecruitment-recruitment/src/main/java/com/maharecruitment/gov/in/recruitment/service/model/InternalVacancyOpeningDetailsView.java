@@ -20,6 +20,7 @@ public class InternalVacancyOpeningDetailsView {
     private InternalVacancyHiringRequestType hiringRequestType;
     private List<String> replacementEmployeeLabels;
     private String eOfficeApprovalFileName;
+    private String jobDescriptionFileName;
     private String remarks;
     private List<InternalVacancyRequirementForm> requirements;
     private long totalVacancies;

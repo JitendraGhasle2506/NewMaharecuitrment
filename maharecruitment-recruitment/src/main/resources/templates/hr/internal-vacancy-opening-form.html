@@ -38,6 +38,7 @@
                         <input type="hidden" th:field="*{internalVacancyOpeningId}">
                         <input type="hidden" th:field="*{currentStatus}">
                         <input type="hidden" th:field="*{existingEOfficeApprovalFileName}">
+                        <input type="hidden" th:field="*{existingJobDescriptionFileName}">
                         <input type="hidden" th:field="*{levelOneInterviewAuthorityLocked}">
                         <input type="hidden" th:field="*{levelTwoInterviewAuthorityLocked}">
 
@@ -155,6 +156,24 @@
                                 </div>
                                 <div id="eOfficeApprovalError" class="invalid-feedback d-block" th:errors="*{eOfficeApprovalDocument}"></div>
                                 <div id="eOfficeApprovalClientError" class="invalid-feedback d-none"></div>
+                            </div>
+
+                            <div class="col-md-12" id="jobDescriptionContainer">
+                                <label class="form-label" for="jobDescriptionDocument">
+                                    Job Description Document <span class="text-muted small">(optional)</span>
+                                </label>
+                                <input type="file" class="form-control" th:field="*{jobDescriptionDocument}"
+                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" th:classappend="${#fields.hasErrors('jobDescriptionDocument') ? ' is-invalid' : ''}">
+                                <div class="form-text">PDF (maximum 2 MB) or Word .doc / .docx (maximum 5 MB). Visible to HR and agencies.</div>
+                                <div class="mt-2"
+                                    th:if="${openingForm.internalVacancyOpeningId != null and !#strings.isEmpty(openingForm.existingJobDescriptionFileName)}">
+                                    <span class="text-muted small">Current document:</span>
+                                    <a class="btn btn-outline-secondary btn-sm ms-1" target="_blank" rel="noopener"
+                                        th:href="@{/hr/internal-vacancies/{id}/job-description(id=${openingForm.internalVacancyOpeningId})}"
+                                        th:text="${openingForm.existingJobDescriptionFileName}">View job description</a>
+                                    <span class="text-muted small ms-1">Uploading a new file replaces it.</span>
+                                </div>
+                                <div class="text-danger small" th:errors="*{jobDescriptionDocument}"></div>
                             </div>
                         </div>
 

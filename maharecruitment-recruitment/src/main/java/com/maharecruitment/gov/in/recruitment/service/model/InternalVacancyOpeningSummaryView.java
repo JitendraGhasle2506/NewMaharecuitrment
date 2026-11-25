@@ -21,4 +21,5 @@ public class InternalVacancyOpeningSummaryView {
     private LocalDateTime createdDateTime;
     private String createdByEmail;
     private String createdByName;
+    private boolean jobDescriptionAvailable;
 }

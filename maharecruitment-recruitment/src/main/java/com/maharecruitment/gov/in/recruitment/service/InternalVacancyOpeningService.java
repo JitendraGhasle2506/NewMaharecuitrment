@@ -52,6 +52,13 @@ public interface InternalVacancyOpeningService {
             Long internalVacancyOpeningId,
             String actorEmail);
 
+    /** Job description document of an opening; throws when none is attached. */
+    InternalVacancyApprovalDocumentView getJobDescriptionDocument(Long internalVacancyOpeningId);
+
+    InternalVacancyApprovalDocumentView getJobDescriptionDocumentForOwner(
+            Long internalVacancyOpeningId,
+            String actorEmail);
+
     List<InternalProjectOptionView> getAvailableInternalProjects();
 
     List<ManpowerDesignationMasterResponse> getAvailableDesignations();

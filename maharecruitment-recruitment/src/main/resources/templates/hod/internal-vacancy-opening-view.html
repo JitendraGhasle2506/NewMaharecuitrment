@@ -127,6 +127,17 @@
                     </div>
 
                     <div class="mb-4">
+                        <h5>Job Description Document</h5>
+                        <a th:if="${!#strings.isEmpty(application.jobDescriptionFileName)}"
+                            class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"
+                            th:href="@{/hod1/internal-vacancies/{id}/job-description(id=${application.internalVacancyOpeningId})}"
+                            th:text="${application.jobDescriptionFileName}">View job description</a>
+                        <span class="text-muted" th:if="${#strings.isEmpty(application.jobDescriptionFileName)}">
+                            No job description uploaded.
+                        </span>
+                    </div>
+
+                    <div class="mb-4">
                         <h5>Remarks / Justification</h5>
                         <p class="mb-0 text-break"
                             th:text="${#strings.isEmpty(application.remarks) ? 'No remarks provided.' : application.remarks}">

@@ -34,6 +34,11 @@ public class InternalVacancyOpeningForm {
 
     private String existingEOfficeApprovalFileName;
 
+    /** Optional job description (PDF, DOC or DOCX) visible to HR and agencies. */
+    private MultipartFile jobDescriptionDocument;
+
+    private String existingJobDescriptionFileName;
+
     @Size(max = 1000, message = "Remarks must not exceed 1000 characters.")
     private String remarks;
 

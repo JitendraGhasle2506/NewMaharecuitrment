@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
@@ -23,6 +24,8 @@ public interface AgencyRecruitmentNotificationPageService {
     AgencyVisibleNotificationListMetricsView getVisibleNotificationMetrics(String actorEmail, String searchText);
 
     AgencyNotificationDetailView getNotificationDetail(String actorEmail, Long recruitmentNotificationId);
+
+    InternalVacancyApprovalDocumentView getJobDescriptionDocument(String actorEmail, Long recruitmentNotificationId);
 
     void markAsRead(String actorEmail, Long recruitmentNotificationId);
 

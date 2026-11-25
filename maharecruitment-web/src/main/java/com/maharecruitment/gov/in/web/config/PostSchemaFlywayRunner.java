@@ -305,6 +305,7 @@ public class PostSchemaFlywayRunner {
                 new db.postmigration.V159__manage_resources_menu(),
                 new db.postmigration.V160__internal_approver_roles(),
                 new db.postmigration.V161__hr_internal_approver_roles_menu(),
+                new db.postmigration.V162__internal_vacancy_job_description_document(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

@@ -18,6 +18,7 @@ import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificat
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
@@ -80,6 +81,14 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     public AgencyNotificationDetailView getNotificationDetail(String actorEmail, Long recruitmentNotificationId) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         return queryService.getNotificationDetail(recruitmentNotificationId, context.agencyId());
+    }
+
+    @Override
+    public InternalVacancyApprovalDocumentView getJobDescriptionDocument(
+            String actorEmail,
+            Long recruitmentNotificationId) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return queryService.getJobDescriptionDocument(recruitmentNotificationId, context.agencyId());
     }
 
     @Override

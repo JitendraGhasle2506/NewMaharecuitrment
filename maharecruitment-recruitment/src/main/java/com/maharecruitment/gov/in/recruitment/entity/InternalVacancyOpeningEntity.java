@@ -86,6 +86,18 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
     @Column(name = "e_office_approval_file_size")
     private Long eOfficeApprovalFileSize;
 
+    @Column(name = "job_description_file_name", length = 255)
+    private String jobDescriptionFileName;
+
+    @Column(name = "job_description_file_path", length = 1000)
+    private String jobDescriptionFilePath;
+
+    @Column(name = "job_description_content_type", length = 150)
+    private String jobDescriptionContentType;
+
+    @Column(name = "job_description_file_size")
+    private Long jobDescriptionFileSize;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private InternalVacancyOpeningStatus status = InternalVacancyOpeningStatus.DRAFT;

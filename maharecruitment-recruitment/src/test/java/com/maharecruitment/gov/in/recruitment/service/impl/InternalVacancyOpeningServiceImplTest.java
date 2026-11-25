@@ -40,6 +40,7 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFe
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoFeedbackRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoScheduleRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyApprovalDocumentStorageService;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyJobDescriptionStorageService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentRequestIdGenerator;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
@@ -81,6 +82,7 @@ class InternalVacancyOpeningServiceImplTest {
                 mock(RecruitmentRequestIdGenerator.class),
                 mock(RecruitmentNotificationService.class),
                 mock(InternalVacancyApprovalDocumentStorageService.class),
+                mock(InternalVacancyJobDescriptionStorageService.class),
                 panelAssessmentRepository,
                 assessmentFeedbackRepository,
                 levelTwoFeedbackRepository,

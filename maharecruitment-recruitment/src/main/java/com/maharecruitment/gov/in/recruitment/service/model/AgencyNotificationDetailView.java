@@ -28,6 +28,9 @@ public class AgencyNotificationDetailView {
 
     private boolean internalNotification;
 
+    // Name of the job description document attached to the internal opening (null when none)
+    private String jobDescriptionFileName;
+
     private RecruitmentNotificationStatus notificationStatus;
 
     // Tracking info for the current agency

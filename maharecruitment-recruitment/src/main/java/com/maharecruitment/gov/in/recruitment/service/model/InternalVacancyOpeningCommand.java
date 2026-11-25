@@ -19,6 +19,7 @@ public class InternalVacancyOpeningCommand {
     private InternalVacancyHiringRequestType hiringRequestType;
     private List<Long> replacementEmployeeIds;
     private MultipartFile eOfficeApprovalDocument;
+    private MultipartFile jobDescriptionDocument;
     private String remarks;
     private String actorEmail;
     private InternalVacancyOpeningStatus targetStatus;

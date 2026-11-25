@@ -283,6 +283,22 @@ public class HODInternalVacancyOpeningController {
         }
     }
 
+    @GetMapping("/{internalVacancyOpeningId}/job-description")
+    public ResponseEntity<Resource> viewJobDescription(
+            @PathVariable Long internalVacancyOpeningId,
+            Principal principal) {
+        try {
+            return JobDescriptionResponseFactory.build(internalVacancyOpeningService
+                    .getJobDescriptionDocumentForOwner(internalVacancyOpeningId, resolveActorEmail(principal)));
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to access HOD job description. openingId={}, reason={}",
+                    internalVacancyOpeningId,
+                    ex.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     private void populateFormModel(Model model, InternalVacancyOpeningForm openingForm, boolean isEdit) {
         model.addAttribute("openingForm", openingForm);
         model.addAttribute("isEdit", isEdit);
@@ -303,6 +319,7 @@ public class HODInternalVacancyOpeningController {
                         ? List.of()
                         : new ArrayList<>(openingForm.getReplacementEmployeeIds()))
                 .eOfficeApprovalDocument(openingForm.getEOfficeApprovalDocument())
+                .jobDescriptionDocument(openingForm.getJobDescriptionDocument())
                 .remarks(openingForm.getRemarks())
                 .actorEmail(actorEmail)
                 .targetStatus(targetStatus)

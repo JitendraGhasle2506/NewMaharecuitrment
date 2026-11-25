@@ -380,6 +380,14 @@
                                 </span>
                             </dd>
                         </div>
+                        <div class="an-summary-item" th:if="${!#strings.isEmpty(detail.jobDescriptionFileName)}">
+                            <dt>Job Description</dt>
+                            <dd>
+                                <a class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener"
+                                    th:href="@{/agency/recruitment-notifications/{id}/job-description(id=${detail.recruitmentNotificationId})}"
+                                    th:text="${detail.jobDescriptionFileName}">View job description</a>
+                            </dd>
+                        </div>
                     </dl>
 
                     <!-- Designation Vacancies -->

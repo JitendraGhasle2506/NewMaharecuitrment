@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 
 public interface RecruitmentAgencyNotificationQueryService {
@@ -14,4 +15,10 @@ public interface RecruitmentAgencyNotificationQueryService {
     AgencyVisibleNotificationListMetricsView getVisibleNotificationMetrics(Long agencyId, String searchText);
 
     AgencyNotificationDetailView getNotificationDetail(Long recruitmentNotificationId, Long agencyId);
+
+    /**
+     * Job description document attached to the internal opening behind a
+     * notification released to the agency.
+     */
+    InternalVacancyApprovalDocumentView getJobDescriptionDocument(Long recruitmentNotificationId, Long agencyId);
 }

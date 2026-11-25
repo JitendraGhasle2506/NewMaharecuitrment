@@ -59,6 +59,7 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLeve
 import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyOpeningStatusCountProjection;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyApprovalDocumentStorageService;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyJobDescriptionStorageService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentRequestIdGenerator;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityRoleOptionView;
@@ -101,6 +102,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
     private final RecruitmentRequestIdGenerator recruitmentRequestIdGenerator;
     private final RecruitmentNotificationService recruitmentNotificationService;
     private final InternalVacancyApprovalDocumentStorageService approvalDocumentStorageService;
+    private final InternalVacancyJobDescriptionStorageService jobDescriptionStorageService;
     private final InternalVacancyPanelAssessmentRepository panelAssessmentRepository;
     private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
     private final RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository;
@@ -118,6 +120,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             RecruitmentRequestIdGenerator recruitmentRequestIdGenerator,
             RecruitmentNotificationService recruitmentNotificationService,
             InternalVacancyApprovalDocumentStorageService approvalDocumentStorageService,
+            InternalVacancyJobDescriptionStorageService jobDescriptionStorageService,
             InternalVacancyPanelAssessmentRepository panelAssessmentRepository,
             RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
             RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository,
@@ -133,6 +136,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         this.recruitmentRequestIdGenerator = recruitmentRequestIdGenerator;
         this.recruitmentNotificationService = recruitmentNotificationService;
         this.approvalDocumentStorageService = approvalDocumentStorageService;
+        this.jobDescriptionStorageService = jobDescriptionStorageService;
         this.panelAssessmentRepository = panelAssessmentRepository;
         this.assessmentFeedbackRepository = assessmentFeedbackRepository;
         this.levelTwoFeedbackRepository = levelTwoFeedbackRepository;
@@ -210,6 +214,19 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             uploadedApproval = approvalDocumentStorageService.store(command.getEOfficeApprovalDocument());
         }
 
+        String previousJobDescriptionFilePath = entity.getJobDescriptionFilePath();
+        StoredInternalVacancyApprovalDocument uploadedJobDescription = null;
+        if (hasUploadedFile(command.getJobDescriptionDocument())) {
+            try {
+                uploadedJobDescription = jobDescriptionStorageService.store(command.getJobDescriptionDocument());
+            } catch (RuntimeException ex) {
+                if (uploadedApproval != null) {
+                    approvalDocumentStorageService.removeManagedFileQuietly(uploadedApproval.getFullPath());
+                }
+                throw ex;
+            }
+        }
+
         if (!isEdit) {
             entity.setRequestId(recruitmentRequestIdGenerator.generate(INTERNAL_REQUEST_TYPE));
             entity.setCreatedByEmail(actorEmail);
@@ -218,6 +235,12 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         entity.setProjectMst(project);
         entity.setHiringRequestType(hiringRequestType);
         applyHiringRequestDetails(entity, hiringRequestType, uploadedApproval);
+        if (uploadedJobDescription != null) {
+            entity.setJobDescriptionFileName(uploadedJobDescription.getOriginalFileName());
+            entity.setJobDescriptionFilePath(uploadedJobDescription.getFullPath());
+            entity.setJobDescriptionContentType(uploadedJobDescription.getContentType());
+            entity.setJobDescriptionFileSize(uploadedJobDescription.getFileSize());
+        }
         entity.setStatus(targetStatus);
         entity.setRemarks(normalizeOptionalText(command.getRemarks()));
         entity.setUpdatedByEmail(actorEmail);
@@ -246,7 +269,14 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             if (uploadedApproval != null) {
                 approvalDocumentStorageService.removeManagedFileQuietly(uploadedApproval.getFullPath());
             }
+            if (uploadedJobDescription != null) {
+                jobDescriptionStorageService.removeManagedFileQuietly(uploadedJobDescription.getFullPath());
+            }
             throw ex;
+        }
+        if (StringUtils.hasText(previousJobDescriptionFilePath)
+                && !previousJobDescriptionFilePath.equals(saved.getJobDescriptionFilePath())) {
+            jobDescriptionStorageService.removeManagedFileQuietly(previousJobDescriptionFilePath);
         }
         if (StringUtils.hasText(previousApprovalFilePath)
                 && !previousApprovalFilePath.equals(saved.getEOfficeApprovalFilePath())) {
@@ -372,6 +402,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .filter(java.util.Objects::nonNull)
                 .toList());
         form.setExistingEOfficeApprovalFileName(entity.getEOfficeApprovalFileName());
+        form.setExistingJobDescriptionFileName(entity.getJobDescriptionFileName());
         form.setRemarks(entity.getRemarks());
         form.setRequirements(entity.getRequirements().stream()
                 .map(this::toRequirementForm)
@@ -432,6 +463,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                         .map(this::buildReplacementEmployeeLabel)
                         .toList())
                 .eOfficeApprovalFileName(entity.getEOfficeApprovalFileName())
+                .jobDescriptionFileName(entity.getJobDescriptionFileName())
                 .remarks(entity.getRemarks())
                 .requirements(requirements)
                 .totalVacancies(totalVacancies)
@@ -456,6 +488,23 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             throw new RecruitmentNotificationException("E-office approval document is unavailable.");
         }
         return toApprovalDocumentView(entity);
+    }
+
+    @Override
+    public InternalVacancyApprovalDocumentView getJobDescriptionDocument(Long internalVacancyOpeningId) {
+        return toJobDescriptionView(findOpeningById(internalVacancyOpeningId));
+    }
+
+    @Override
+    public InternalVacancyApprovalDocumentView getJobDescriptionDocumentForOwner(
+            Long internalVacancyOpeningId,
+            String actorEmail) {
+        String normalizedActorEmail = normalizeActorEmail(actorEmail);
+        InternalVacancyOpeningEntity entity = findOpeningById(internalVacancyOpeningId);
+        if (!normalizedActorEmail.equalsIgnoreCase(entity.getCreatedByEmail())) {
+            throw new RecruitmentNotificationException("Job description document is unavailable.");
+        }
+        return toJobDescriptionView(entity);
     }
 
     @Override
@@ -875,6 +924,20 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .contentType(entity.getEOfficeApprovalContentType())
                 .fileSize(entity.getEOfficeApprovalFileSize())
                 .resource(approvalDocumentStorageService.loadAsResource(entity.getEOfficeApprovalFilePath()))
+                .build();
+    }
+
+    private InternalVacancyApprovalDocumentView toJobDescriptionView(InternalVacancyOpeningEntity entity) {
+        if (!StringUtils.hasText(entity.getJobDescriptionFilePath())
+                || !StringUtils.hasText(entity.getJobDescriptionFileName())) {
+            throw new RecruitmentNotificationException("Job description document is unavailable.");
+        }
+
+        return InternalVacancyApprovalDocumentView.builder()
+                .originalFileName(entity.getJobDescriptionFileName())
+                .contentType(entity.getJobDescriptionContentType())
+                .fileSize(entity.getJobDescriptionFileSize())
+                .resource(jobDescriptionStorageService.loadAsResource(entity.getJobDescriptionFilePath()))
                 .build();
     }
 
@@ -1430,6 +1493,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .createdDateTime(entity.getCreatedDateTime())
                 .createdByEmail(entity.getCreatedByEmail())
                 .createdByName(createdByName)
+                .jobDescriptionAvailable(StringUtils.hasText(entity.getJobDescriptionFilePath()))
                 .build();
     }
 

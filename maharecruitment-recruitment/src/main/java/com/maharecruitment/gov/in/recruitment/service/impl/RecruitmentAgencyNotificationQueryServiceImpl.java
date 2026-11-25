@@ -26,7 +26,9 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationV
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyVisibleNotificationMetricsProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyVisibleNotificationProjection;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyJobDescriptionStorageService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationQueryService;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView.DesignationVacancyView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
@@ -52,6 +54,7 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
         private final EmployeeRepository employeeRepository;
         private final AgencyGlobalRankRepository agencyGlobalRankRepository;
         private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
+        private final InternalVacancyJobDescriptionStorageService jobDescriptionStorageService;
 
         public RecruitmentAgencyNotificationQueryServiceImpl(
                         AgencyNotificationTrackingRepository trackingRepository,
@@ -60,7 +63,9 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                         ResourceLevelExperienceRepository resourceLevelExperienceRepository,
                         EmployeeRepository employeeRepository,
                         AgencyGlobalRankRepository agencyGlobalRankRepository,
-                        RecruitmentDesignationVacancyRepository designationVacancyRepository) {
+                        RecruitmentDesignationVacancyRepository designationVacancyRepository,
+                        InternalVacancyJobDescriptionStorageService jobDescriptionStorageService) {
+                this.jobDescriptionStorageService = jobDescriptionStorageService;
                 this.trackingRepository = trackingRepository;
                 this.agencyRepository = agencyRepository;
                 this.notificationRepository = notificationRepository;
@@ -191,11 +196,53 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 .projectId(projectId)
                                 .projectName(projectName)
                                 .internalNotification(notification.getInternalVacancyOpening() != null)
+                                .jobDescriptionFileName(notification.getInternalVacancyOpening() != null
+                                                && StringUtils.hasText(notification.getInternalVacancyOpening()
+                                                                .getJobDescriptionFilePath())
+                                                                                ? notification.getInternalVacancyOpening()
+                                                                                                .getJobDescriptionFileName()
+                                                                                : null)
                                 .notificationStatus(notification.getStatus())
                                 .releasedRank(tracking.getReleasedRank())
                                 .notifiedAt(tracking.getNotifiedAt())
                                 .trackingStatus(tracking.getStatus())
                                 .designationVacancies(vacancies)
+                                .build();
+        }
+
+        @Override
+        public InternalVacancyApprovalDocumentView getJobDescriptionDocument(
+                        Long recruitmentNotificationId,
+                        Long agencyId) {
+                if (recruitmentNotificationId == null || agencyId == null) {
+                        throw new RecruitmentNotificationException("Job description document is unavailable.");
+                }
+
+                // The agency must have been released this notification
+                trackingRepository
+                                .findByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
+                                                recruitmentNotificationId,
+                                                agencyId)
+                                .orElseThrow(() -> new RecruitmentNotificationException(
+                                                "Notification not released to this agency or not found."));
+
+                RecruitmentNotificationEntity notification = notificationRepository
+                                .findById(recruitmentNotificationId)
+                                .orElseThrow(() -> new RecruitmentNotificationException(
+                                                "Recruitment notification not found for id: "
+                                                                + recruitmentNotificationId));
+                var opening = notification.getInternalVacancyOpening();
+                if (opening == null
+                                || !StringUtils.hasText(opening.getJobDescriptionFilePath())
+                                || !StringUtils.hasText(opening.getJobDescriptionFileName())) {
+                        throw new RecruitmentNotificationException("Job description document is unavailable.");
+                }
+
+                return InternalVacancyApprovalDocumentView.builder()
+                                .originalFileName(opening.getJobDescriptionFileName())
+                                .contentType(opening.getJobDescriptionContentType())
+                                .fileSize(opening.getJobDescriptionFileSize())
+                                .resource(jobDescriptionStorageService.loadAsResource(opening.getJobDescriptionFilePath()))
                                 .build();
         }
 
