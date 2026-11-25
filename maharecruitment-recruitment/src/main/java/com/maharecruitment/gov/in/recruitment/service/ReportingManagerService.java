@@ -41,6 +41,7 @@ public interface ReportingManagerService {
     /**
      * Employees under the authority at any level: the direct authority employees plus every descendant
      * through stored PRIMARY reporting. The authority's own employee record is never included.
+     * Users holding ROLE_CFO, ROLE_COO, ROLE_CTO, ROLE_HOD or ROLE_MD get only their direct reports.
      */
     List<Long> getTeamEmployeeIdsForAuthority(Long authorityUserId);
 

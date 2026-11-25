@@ -908,6 +908,50 @@ class ReportingManagerServiceImplTest {
         assertEquals(List.of(101L, 201L, 301L), team);
     }
 
+    @Test
+    void hodTeamIsLimitedToDirectReportsWithoutWalkingTheHierarchy() {
+        EmployeeEntity hodEmployee = employee(50L, "HOD Anita", "EMP050", "INTERNAL", "ACTIVE");
+        when(userRepository.findById(7L)).thenReturn(Optional.of(userWithRole(7L, "HOD Anita", "ROLE_HOD")));
+        when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(hodEmployee));
+        when(mappingRepository.findDirectEmployeeIdsByAuthorityIdentity(7L, 50L))
+                .thenReturn(List.of(50L, 101L));
+        when(cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(7L)).thenReturn(List.of(11L));
+        when(employeeCellMappingRepository.findEmployeeIdsWithoutExplicitReportingMapping(List.of(11L), 7L))
+                .thenReturn(List.of(103L));
+
+        List<Long> team = service.getTeamEmployeeIdsForAuthority(7L);
+
+        assertEquals(List.of(101L, 103L), team);
+        org.mockito.Mockito.verifyNoInteractions(hierarchyRepository);
+        org.mockito.Mockito.verify(mappingRepository, org.mockito.Mockito.never())
+                .findEmployeeIdsByAuthorityIdentity(7L, 50L);
+    }
+
+    @Test
+    void everyDirectReportApproverRoleIsLimitedToDirectReports() {
+        for (String role : List.of("ROLE_CFO", "ROLE_COO", "ROLE_CTO", "ROLE_HOD", "ROLE_MD")) {
+            when(userRepository.findById(9L)).thenReturn(Optional.of(userWithRole(9L, "Senior", role)));
+            when(employeeRepository.findByUser_Id(9L)).thenReturn(Optional.empty());
+            when(mappingRepository.findDirectEmployeeIdsByAuthorityIdentity(9L, null)).thenReturn(List.of(201L));
+            when(cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(9L)).thenReturn(List.of());
+
+            assertEquals(List.of(201L), service.getTeamEmployeeIdsForAuthority(9L), role);
+        }
+    }
+
+    @Test
+    void teamOfUserWithoutADirectReportApproverRoleStillCoversEveryLevel() {
+        when(userRepository.findById(7L)).thenReturn(Optional.of(userWithRole(7L, "PM", "ROLE_PM")));
+        EmployeeEntity manager = employee(50L, "Project Manager", "EMP050", "INTERNAL", "ACTIVE");
+        when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(manager));
+        when(mappingRepository.findEmployeeIdsByAuthorityIdentity(7L, 50L)).thenReturn(List.of(101L));
+        when(cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(7L)).thenReturn(List.of());
+        when(hierarchyRepository.findReportingRelationships("PRIMARY")).thenReturn(List.of(
+                reportingRow(28L, 201L, 101L, null)));
+
+        assertEquals(List.of(101L, 201L), service.getTeamEmployeeIdsForAuthority(7L));
+    }
+
     private static EmployeeHierarchyRepository.ReportingRow reportingRow(
             Long mappingId, Long employeeId, Long managerEmployeeId, Long hodUserId) {
         return new EmployeeHierarchyRepository.ReportingRow() {

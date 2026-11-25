@@ -60,6 +60,13 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private static final String INTERNAL = "INTERNAL";
     private static final String MAHAIT = "MAHAIT";
     private static final Set<String> REPORTING_EMPLOYEE_RECRUITMENT_TYPES = Set.of(INTERNAL, MAHAIT);
+    /** Holders of any of these roles approve leave and tour only for their direct reports. */
+    private static final Set<String> DIRECT_REPORT_APPROVER_ROLES = Set.of(
+            "ROLE_CFO",
+            "ROLE_COO",
+            "ROLE_CTO",
+            "ROLE_HOD",
+            "ROLE_MD");
     private static final Set<String> CELL_AUTHORITY_ROLES = Set.of(
             "ROLE_EMPLOYEE",
             "ROLE_AUDITOR",
@@ -1129,6 +1136,13 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         Long ownEmployeeId = employeeRepository.findByUser_Id(authorityUserId)
                 .map(EmployeeEntity::getEmployeeId)
                 .orElse(null);
+        if (isDirectReportApprover(authorityUserId)) {
+            LinkedHashSet<Long> directReports = directEmployeeIds(authorityUserId, ownEmployeeId);
+            if (ownEmployeeId != null) {
+                directReports.remove(ownEmployeeId);
+            }
+            return List.copyOf(directReports);
+        }
         LinkedHashSet<Long> team = effectiveEmployeeIds(authorityUserId, ownEmployeeId);
         Map<Long, List<Long>> children = primaryReportingChildren();
         ArrayDeque<Long> pending = new ArrayDeque<>(team);
@@ -1147,6 +1161,25 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             team.remove(ownEmployeeId);
         }
         return List.copyOf(team);
+    }
+
+    /** CFO, COO, CTO, HOD and MD act only for the employees who report straight to them. */
+    private boolean isDirectReportApprover(Long authorityUserId) {
+        return userRepository.findById(authorityUserId)
+                .map(user -> hasAnyRole(user, DIRECT_REPORT_APPROVER_ROLES))
+                .orElse(false);
+    }
+
+    /** Employees reporting straight to the user, including cell-authority employees with no explicit mapping. */
+    private LinkedHashSet<Long> directEmployeeIds(Long authorityUserId, Long managerEmployeeId) {
+        LinkedHashSet<Long> employeeIds = new LinkedHashSet<>(
+                mappingRepository.findDirectEmployeeIdsByAuthorityIdentity(authorityUserId, managerEmployeeId));
+        List<Long> cellIds = cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(authorityUserId);
+        if (!cellIds.isEmpty()) {
+            employeeIds.addAll(employeeCellMappingRepository.findEmployeeIdsWithoutExplicitReportingMapping(
+                    cellIds, authorityUserId));
+        }
+        return employeeIds;
     }
 
     private LinkedHashSet<Long> effectiveEmployeeIds(Long authorityUserId, Long managerEmployeeId) {

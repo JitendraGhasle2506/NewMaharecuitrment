@@ -47,6 +47,22 @@ public interface EmployeeReportingMappingRepository extends JpaRepository<Employ
             @Param("authorityUserId") Long authorityUserId,
             @Param("managerEmployeeId") Long managerEmployeeId);
 
+    /**
+     * Only employees who report straight to the user: mapped to the user as reporting authority with no
+     * intermediate manager, or mapped to the user's own employee record as their manager. Employees the
+     * user covers only through a manager are not included.
+     */
+    @Query("""
+            select distinct mapping.employeeId
+            from EmployeeReportingMappingEntity mapping
+            where (mapping.hodUserId = :authorityUserId and mapping.managerEmployeeId is null)
+               or (:managerEmployeeId is not null and mapping.managerEmployeeId = :managerEmployeeId)
+            order by mapping.employeeId
+            """)
+    List<Long> findDirectEmployeeIdsByAuthorityIdentity(
+            @Param("authorityUserId") Long authorityUserId,
+            @Param("managerEmployeeId") Long managerEmployeeId);
+
     @Query("""
             select mapping.employeeId as employeeId,
                    mapping.hodUserId as hodUserId,
