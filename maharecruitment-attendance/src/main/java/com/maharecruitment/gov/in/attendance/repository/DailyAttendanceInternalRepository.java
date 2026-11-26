@@ -239,7 +239,7 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
                        employee.designation_id,
                        employee.department_id,
                        case
-                           when upper(trim(coalesce(employee.recruitment_type, ''))) = 'INTERNAL'
+                           when upper(trim(coalesce(employee.recruitment_type, ''))) in ('INTERNAL', 'MAHAIT')
                                 and (
                                     coalesce(internal_attendance.marked_present, false)
                                     or internal_attendance.effective_check_in_time is not null
@@ -284,6 +284,7 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
                         and recruitment_type = 'EXTERNAL'
                     )
                   )
+              and (cast(:recruitmentType as text) is null or recruitment_type = cast(:recruitmentType as text))
               and (
                     :category = 'TOTAL'
                     or (:category = 'PRESENT' and present)
@@ -311,6 +312,7 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
             @Param("year") Integer year,
             @Param("day") Integer day,
             @Param("category") String category,
+            @Param("recruitmentType") String recruitmentType,
             @Param("cellId") Long cellId,
             @Param("designationId") Long designationId,
             @Param("departmentId") Long departmentId,

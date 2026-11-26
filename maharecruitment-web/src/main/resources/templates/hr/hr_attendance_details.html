@@ -6,7 +6,7 @@
     <title>Attendance Details</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
-    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20260807-4')}">
+    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20261126-2')}">
 </head>
 
 <body class="hr-shell">
@@ -54,6 +54,34 @@
                         </div>
                     </section>
 
+                    <nav class="attendance-detail-filters" aria-label="Attendance filters"
+                        th:with="typeParam=${attendanceDetail.recruitmentType != null ? attendanceDetail.recruitmentType.name() : null},
+                                 isStatusView=${attendanceDetail.category.name() == 'PRESENT' or attendanceDetail.category.name() == 'ABSENT'}">
+                        <div class="attendance-filter-group" th:if="${isStatusView}" role="group" aria-label="Attendance status">
+                            <a class="attendance-filter-pill is-present"
+                                th:classappend="${attendanceDetail.category.name() == 'PRESENT'} ? ' is-active'"
+                                th:attr="aria-current=${attendanceDetail.category.name() == 'PRESENT'} ? 'page'"
+                                th:href="@{/hr/attendance-today/details(category='PRESENT',recruitmentType=${typeParam},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId})}">
+                                <i class="fa-solid fa-user-check" aria-hidden="true"></i> Present
+                            </a>
+                            <a class="attendance-filter-pill is-absent"
+                                th:classappend="${attendanceDetail.category.name() == 'ABSENT'} ? ' is-active'"
+                                th:attr="aria-current=${attendanceDetail.category.name() == 'ABSENT'} ? 'page'"
+                                th:href="@{/hr/attendance-today/details(category='ABSENT',recruitmentType=${typeParam},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId})}">
+                                <i class="fa-solid fa-user-xmark" aria-hidden="true"></i> Absent
+                            </a>
+                        </div>
+                        <div class="attendance-filter-group" role="group" aria-label="Employee type">
+                            <a class="attendance-filter-pill"
+                                th:classappend="${typeParam == null} ? ' is-active'"
+                                th:href="@{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId})}">All types</a>
+                            <a class="attendance-filter-pill" th:each="type : ${T(com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceEmployeeType).values()}"
+                                th:classappend="${typeParam == type.name()} ? ' is-active'"
+                                th:text="${type.label()}"
+                                th:href="@{/hr/attendance-today/details(category=${attendanceDetail.category.name()},recruitmentType=${type.name()},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId})}">Internal</a>
+                        </div>
+                    </nav>
+
                     <section class="attendance-detail-table-card" aria-labelledby="attendanceEmployeeListTitle">
                         <div class="attendance-detail-table-header">
                             <div>
@@ -68,11 +96,11 @@
                                 <caption class="visually-hidden">Employee names and check-in times for the selected attendance category</caption>
                                 <thead>
                                     <tr>
-                                        <th scope="col">Employee Information</th>
-                                        <th scope="col">Employee Code</th>
+                                        <th scope="col">Employee Name</th>
+                                        <th scope="col" th:unless="${attendanceDetail.category.name() == 'PRESENT' or attendanceDetail.category.name() == 'ABSENT'}">Employee Code</th>
                                         <th scope="col">Type</th>
                                         <th scope="col">Attendance</th>
-                                        <th scope="col">First Check-in</th>
+                                        <th scope="col" th:unless="${attendanceDetail.category.name() == 'PRESENT' or attendanceDetail.category.name() == 'ABSENT'}">First Check-in</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -84,10 +112,10 @@
                                                 <strong th:text="${employee.fullName}">Employee Name</strong>
                                             </div>
                                         </td>
-                                        <td><span class="attendance-employee-code" th:text="${employee.employeeCode}">EMP001</span></td>
+                                        <td th:unless="${attendanceDetail.category.name() == 'PRESENT' or attendanceDetail.category.name() == 'ABSENT'}"><span class="attendance-employee-code" th:text="${employee.employeeCode}">EMP001</span></td>
                                         <td>
                                             <span class="attendance-employee-type"
-                                                th:classappend="${employee.recruitmentType == 'INTERNAL'} ? ' is-internal' : ' is-external'"
+                                                th:classappend="${employee.recruitmentType == 'INTERNAL'} ? ' is-internal' : (${employee.recruitmentType == 'MAHAIT'} ? ' is-mahait' : ' is-external')"
                                                 th:text="${employee.recruitmentType}">INTERNAL</span>
                                         </td>
                                         <td>
@@ -95,7 +123,7 @@
                                                 th:classappend="${employee.attendanceStatus == 'PRESENT'} ? ' is-present' : ' is-absent'"
                                                 th:text="${employee.attendanceStatus}">PRESENT</span>
                                         </td>
-                                        <td>
+                                        <td th:unless="${attendanceDetail.category.name() == 'PRESENT' or attendanceDetail.category.name() == 'ABSENT'}">
                                             <time class="attendance-check-in-time" th:if="${employee.checkInTime != null}"
                                                 th:attr="datetime=${employee.checkInTime}"
                                                 th:text="${#temporals.format(employee.checkInTime, 'hh:mm a')}">09:30 AM</time>
@@ -117,11 +145,11 @@
                             aria-label="Attendance employee pagination">
                             <a class="attendance-page-link"
                                 th:classappend="${!attendanceDetail.hasPrevious} ? ' is-disabled'"
-                                th:href="${attendanceDetail.hasPrevious} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId},page=${attendanceDetail.pageNumber - 1},size=${attendanceDetail.pageSize})} : '#'"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
+                                th:href="${attendanceDetail.hasPrevious} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},recruitmentType=${attendanceDetail.recruitmentType},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId},page=${attendanceDetail.pageNumber - 1},size=${attendanceDetail.pageSize})} : '#'"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
                             <span>Page <strong th:text="${attendanceDetail.pageNumber + 1}">1</strong></span>
                             <a class="attendance-page-link"
                                 th:classappend="${!attendanceDetail.hasNext} ? ' is-disabled'"
-                                th:href="${attendanceDetail.hasNext} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId},page=${attendanceDetail.pageNumber + 1},size=${attendanceDetail.pageSize})} : '#'">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+                                th:href="${attendanceDetail.hasNext} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},recruitmentType=${attendanceDetail.recruitmentType},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId},page=${attendanceDetail.pageNumber + 1},size=${attendanceDetail.pageSize})} : '#'">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
                         </nav>
                     </section>
                 </div>

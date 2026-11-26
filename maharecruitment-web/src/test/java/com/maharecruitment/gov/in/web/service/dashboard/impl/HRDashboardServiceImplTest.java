@@ -277,6 +277,7 @@ class HRDashboardServiceImplTest {
                 anyInt(),
                 anyInt(),
                 eq("LATE"),
+                eq(null),
                 eq(27L),
                 eq(null),
                 eq(null),
@@ -352,6 +353,7 @@ class HRDashboardServiceImplTest {
                 anyInt(),
                 eq("PRESENT"),
                 eq(null),
+                eq(null),
                 eq(9L),
                 eq(null),
                 eq(LocalTime.of(9, 45)),
@@ -365,6 +367,36 @@ class HRDashboardServiceImplTest {
         assertThat(result.designationId()).isEqualTo(9L);
         assertThat(result.designationName()).isEqualTo("Software Developer");
         assertThat(result.cellId()).isNull();
+    }
+
+    @Test
+    void getTodayAttendanceDetailsPassesRecruitmentTypeFilterToRepository() {
+        when(dailyAttendanceInternalRepository.findAttendanceEmployeeDetails(
+                any(LocalDate.class),
+                anyInt(),
+                anyInt(),
+                anyInt(),
+                eq("PRESENT"),
+                eq("MAHAIT"),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0)),
+                any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of(), PageRequest.of(0, 25), false));
+
+        var result = service().getTodayAttendanceDetails("PRESENT", "mahait", null, null, null, 0, 25);
+
+        assertThat(result.recruitmentType().name()).isEqualTo("MAHAIT");
+    }
+
+    @Test
+    void getTodayAttendanceDetailsRejectsUnknownRecruitmentType() {
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> service().getTodayAttendanceDetails("PRESENT", "CONTRACT", null, null, null, 0, 25));
     }
 
     @Test
@@ -413,6 +445,7 @@ class HRDashboardServiceImplTest {
                 anyInt(),
                 anyInt(),
                 eq("ABSENT"),
+                eq(null),
                 eq(null),
                 eq(null),
                 eq(4L),

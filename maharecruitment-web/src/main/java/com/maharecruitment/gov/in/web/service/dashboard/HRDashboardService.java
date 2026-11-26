@@ -13,8 +13,22 @@ public interface HRDashboardService {
 
     HRTodayAttendanceView getTodayAttendance(String grouping);
 
+    default HRAttendanceDetailView getTodayAttendanceDetails(
+            String category,
+            Long cellId,
+            Long designationId,
+            Long departmentId,
+            int page,
+            int size) {
+        return getTodayAttendanceDetails(category, null, cellId, designationId, departmentId, page, size);
+    }
+
+    /**
+     * @param recruitmentType optional INTERNAL / EXTERNAL / MAHAIT filter; blank means all types
+     */
     HRAttendanceDetailView getTodayAttendanceDetails(
             String category,
+            String recruitmentType,
             Long cellId,
             Long designationId,
             Long departmentId,

@@ -62,6 +62,7 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappin
 import com.maharecruitment.gov.in.web.service.dashboard.HRDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.DepartmentOnboardingView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceDetailCategory;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceEmployeeType;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceDetailView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceEmployeeView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceGrouping;
@@ -285,6 +286,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     @Transactional(readOnly = true)
     public HRAttendanceDetailView getTodayAttendanceDetails(
             String category,
+            String recruitmentType,
             Long cellId,
             Long designationId,
             Long departmentId,
@@ -292,6 +294,12 @@ public class HRDashboardServiceImpl implements HRDashboardService {
             int size) {
         HRAttendanceDetailCategory resolvedCategory = HRAttendanceDetailCategory.from(category)
                 .orElseThrow(() -> new IllegalArgumentException("Valid attendance category is required."));
+        HRAttendanceEmployeeType resolvedType = null;
+        if (recruitmentType != null && !recruitmentType.isBlank()) {
+            resolvedType = HRAttendanceEmployeeType.from(recruitmentType)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Employee type must be INTERNAL, EXTERNAL or MAHAIT."));
+        }
         Long resolvedCellId = cellId != null && cellId > 0 ? cellId : null;
         Long resolvedDesignationId = designationId != null && designationId > 0 ? designationId : null;
         Long resolvedDepartmentId = departmentId != null && departmentId > 0 ? departmentId : null;
@@ -334,6 +342,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                         attendanceDate.getYear(),
                         attendanceDate.getDayOfMonth(),
                         resolvedCategory.name(),
+                        resolvedType == null ? null : resolvedType.name(),
                         resolvedCellId,
                         resolvedDesignationId,
                         resolvedDepartmentId,
@@ -355,7 +364,8 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 employeeSlice.getNumber(),
                 employeeSlice.getSize(),
                 employeeSlice.hasPrevious(),
-                employeeSlice.hasNext());
+                employeeSlice.hasNext(),
+                resolvedType);
     }
 
     @Override

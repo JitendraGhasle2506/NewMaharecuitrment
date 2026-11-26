@@ -1182,3 +1182,79 @@
         transform: none;
     }
 }
+
+/* ---- Attendance details: status tabs and employee-type filter pills ---- */
+.attendance-employee-type.is-mahait {
+    border-color: #d9d3ee;
+    color: #5b3f9a;
+    background: #f3f0fb;
+}
+
+.attendance-detail-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    margin-bottom: 0.9rem;
+}
+
+.attendance-filter-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.attendance-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 32px;
+    padding: 0.25rem 0.85rem;
+    border: 1px solid #d6e0e8;
+    border-radius: 999px;
+    color: #40566b;
+    background: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.attendance-filter-pill:hover {
+    border-color: #9fbbd3;
+    background: #f6f9fc;
+}
+
+.attendance-filter-pill.is-active {
+    border-color: #1f4f78;
+    color: #fff;
+    background: #1f4f78;
+}
+
+.attendance-filter-pill.is-present.is-active {
+    border-color: #2d8a57;
+    background: #2d8a57;
+}
+
+.attendance-filter-pill.is-absent.is-active {
+    border-color: #c0392b;
+    background: #c0392b;
+}
+
+@media (max-width: 575.98px) {
+    .attendance-detail-filters,
+    .attendance-filter-group {
+        width: 100%;
+    }
+
+    .attendance-filter-pill {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}
+
+/* Three summary cards (rate folded into Present): fill the row at every width */
+.attendance-metric-grid {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}

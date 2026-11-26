@@ -6,7 +6,7 @@
     <title>Today's Attendance</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
-    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20260807-4')}">
+    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20261126-2')}">
     <script defer th:src="@{/js/hr-attendance.js(v='20260807-4')}"></script>
 </head>
 
@@ -34,7 +34,6 @@
                             </span>
                             <div>
                                 <span class="hero-eyebrow">Current working day</span>
-                                <h1>Attendance Overview</h1>
                                 <p>Present, absent, and check-in activity across the active workforce.</p>
                             </div>
                         </div>
@@ -65,7 +64,7 @@
                             <div>
                                 <small>Present</small>
                                 <strong th:text="${attendance.presentEmployees}">0</strong>
-                                <span class="attendance-metric-caption">Attendance marked</span>
+                                <span class="attendance-metric-caption" th:text="${attendance.presentPercent} + '% attendance rate'">0% attendance rate</span>
                             </div>
                         </a>
                         <a class="attendance-metric attendance-count-link metric-absent"
@@ -75,17 +74,7 @@
                             <div>
                                 <small>Absent / Not Marked</small>
                                 <strong th:text="${attendance.absentEmployees}">0</strong>
-                                <span class="attendance-metric-caption">Awaiting attendance</span>
-                            </div>
-                        </a>
-                        <a class="attendance-metric attendance-count-link metric-rate"
-                            th:href="@{/hr/attendance-today/details(category='PRESENT')}"
-                            aria-label="View employees included in today's attendance rate">
-                            <span class="attendance-metric-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
-                            <div>
-                                <small>Attendance Rate</small>
-                                <strong th:text="${attendance.presentPercent} + '%'">0%</strong>
-                                <span class="attendance-metric-caption">Overall presence</span>
+                                <span class="attendance-metric-caption" th:text="${100 - attendance.presentPercent} + '% not marked'">0% not marked</span>
                             </div>
                         </a>
                     </section>
@@ -173,7 +162,6 @@
                         <div>
                             <span class="section-eyebrow">Attendance breakdown</span>
                             <h3 id="attendanceGroupingTitle">View attendance by</h3>
-                            <p>Load only the workforce grouping you need.</p>
                         </div>
                         <nav class="attendance-grouping-switch" aria-label="Attendance breakdown view">
                             <a th:href="@{/hr/attendance-today(groupBy='CELL')}"
@@ -254,8 +242,8 @@
                                                 th:text="${cell.totalEmployees}">0</a>
                                         </td>
                                         <td>
-                                            <div class="cell-attendance-progress" role="img"
-                                                th:attr="aria-label=${cell.presentPercent} + '% present'">
+                                            <div class="cell-attendance-progress"
+                                                aria-hidden="true">
                                                 <span th:style="'width:' + ${cell.presentPercent} + '%'"></span>
                                             </div>
                                             <small class="cell-attendance-percent" th:text="${cell.presentPercent} + '% present'">0% present</small>
@@ -331,8 +319,8 @@
                                                 th:text="${designation.totalEmployees}">0</a>
                                         </td>
                                         <td>
-                                            <div class="cell-attendance-progress" role="img"
-                                                th:attr="aria-label=${designation.presentPercent} + '% present'">
+                                            <div class="cell-attendance-progress"
+                                                aria-hidden="true">
                                                 <span th:style="'width:' + ${designation.presentPercent} + '%'"></span>
                                             </div>
                                             <small class="cell-attendance-percent"
@@ -409,8 +397,8 @@
                                                 th:text="${department.totalEmployees}">0</a>
                                         </td>
                                         <td>
-                                            <div class="cell-attendance-progress" role="img"
-                                                th:attr="aria-label=${department.presentPercent} + '% present'">
+                                            <div class="cell-attendance-progress"
+                                                aria-hidden="true">
                                                 <span th:style="'width:' + ${department.presentPercent} + '%'"></span>
                                             </div>
                                             <small class="cell-attendance-percent"

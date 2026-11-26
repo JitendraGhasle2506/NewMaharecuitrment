@@ -41,6 +41,7 @@ public class HRController {
     @GetMapping("/hr/attendance-today/details")
     public String todayAttendanceDetails(
             @RequestParam String category,
+            @RequestParam(required = false) String recruitmentType,
             @RequestParam(required = false) Long cellId,
             @RequestParam(required = false) Long designationId,
             @RequestParam(required = false) Long departmentId,
@@ -52,6 +53,7 @@ public class HRController {
                     "attendanceDetail",
                     hrDashboardService.getTodayAttendanceDetails(
                             category,
+                            recruitmentType,
                             cellId,
                             designationId,
                             departmentId,

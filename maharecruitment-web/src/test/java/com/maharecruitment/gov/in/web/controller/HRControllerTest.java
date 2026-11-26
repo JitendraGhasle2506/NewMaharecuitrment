@@ -57,16 +57,28 @@ class HRControllerTest {
 
     @Test
     void attendanceEmployeeDetailsLoadOnlyAfterCountNavigation() {
-        when(dashboardService.getTodayAttendanceDetails("LATE", 27L, null, null, 0, 25))
+        when(dashboardService.getTodayAttendanceDetails("LATE", null, 27L, null, null, 0, 25))
                 .thenReturn(attendanceDetail);
         ExtendedModelMap model = new ExtendedModelMap();
 
-        String view = controller().todayAttendanceDetails("LATE", 27L, null, null, 0, 25, model);
+        String view = controller().todayAttendanceDetails("LATE", null, 27L, null, null, 0, 25, model);
 
         assertThat(view).isEqualTo("hr/hr_attendance_details");
         assertThat(model)
                 .containsOnlyKeys("attendanceDetail")
                 .containsEntry("attendanceDetail", attendanceDetail);
+    }
+
+    @Test
+    void attendanceEmployeeDetailsForwardRecruitmentTypeFilter() {
+        when(dashboardService.getTodayAttendanceDetails("PRESENT", "MAHAIT", null, null, null, 0, 25))
+                .thenReturn(attendanceDetail);
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        String view = controller().todayAttendanceDetails("PRESENT", "MAHAIT", null, null, null, 0, 25, model);
+
+        assertThat(view).isEqualTo("hr/hr_attendance_details");
+        assertThat(model).containsEntry("attendanceDetail", attendanceDetail);
     }
 
     @Test

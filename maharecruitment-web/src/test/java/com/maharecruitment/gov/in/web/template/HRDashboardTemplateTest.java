@@ -62,11 +62,10 @@ class HRDashboardTemplateTest {
                 .contains("80% attendance")
                 .contains("width:80%")
                 .contains("Team Hierarchy")
-                .contains("Attendance Today")
-                .contains("Internal Present")
-                .contains("MAHAIT Present")
-                .contains("External Present")
-                .contains("Absent")
+                .contains("Today's Attendance")
+                .contains("hrAttendanceBreakdown")
+                .doesNotContain("<h4>Attendance Today</h4>")
+                .doesNotContain("attendance-panel-grid")
                 .contains("Internal Portal")
                 .contains("Calendar Highlights")
                 .contains("Events &amp; Festivals")
@@ -91,8 +90,8 @@ class HRDashboardTemplateTest {
                 List.of(), List.of(), List.of(),
                 new HRCalendarHighlightsView(TODAY, TODAY.plusDays(10), List.of(), List.of())));
 
-        // Internal projects, external projects, and attendance are the active empty-state sections.
-        assertThat(rendered.split("No data available", -1).length - 1).isEqualTo(3);
+        // Internal projects and external projects are the active empty-state sections.
+        assertThat(rendered.split("No data available", -1).length - 1).isEqualTo(2);
         assertThat(rendered)
                 .contains("No event or festival in the next 10 days")
                 .contains("No holiday in the next 10 days");
@@ -109,7 +108,10 @@ class HRDashboardTemplateTest {
                 .contains("id=\"hrEmployeeBreakdown\"")
                 .contains("id=\"hrProjectScopePanel\"")
                 .contains("data-project-scope=\"internal\"")
-                .contains("data-project-scope=\"external\"");
+                .contains("data-project-scope=\"external\"")
+                .contains("id=\"hrAttendanceBreakdown\"")
+                .contains("category='PRESENT',recruitmentType='MAHAIT'")
+                .contains("category='ABSENT',recruitmentType='EXTERNAL'");
     }
 
     private String render(HRDashboardView dashboard) throws Exception {

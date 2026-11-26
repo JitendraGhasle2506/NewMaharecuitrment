@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261126-1')}">
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261126-2')}">
 </head>
 
 <body class="hr-shell">
@@ -65,7 +65,9 @@
                                 <span class="hrd-kpi-note">Across the organization</span>
                             </div>
                         </article>
-                         <article class="hrd-kpi hrd-kpi-success">
+                         <button type="button" id="hrAttendanceToggle"
+                            class="hrd-kpi hrd-kpi-success hrd-kpi-toggle"
+                            aria-controls="hrAttendanceBreakdown" aria-expanded="false">
                             <span class="hrd-kpi-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
                             <div class="hrd-kpi-body">
                                 <p class="hrd-kpi-label">
@@ -78,13 +80,13 @@
                                     <span th:text="${dashboard.presentEmployees}">0</span>
                                     <small th:text="'/ ' + ${dashboard.totalEmployees}">/ 0</small>
                                 </strong>
-                                <span class="hrd-kpi-note" th:text="${dashboard.presentPercent} + '% attendance'">0% attendance</span>
+                                <span class="hrd-kpi-note"><span th:text="${dashboard.presentPercent} + '% attendance'">0% attendance</span> &middot; View present / absent <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
                                 <div class="hrd-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
                                     th:attr="aria-valuenow=${dashboard.presentPercent},aria-label='Present employees out of total employees'">
                                     <span th:style="'width:' + ${dashboard.presentPercent} + '%'"></span>
                                 </div>
                             </div>
-                         </article>
+                         </button>
                         <!-- <a class="hrd-kpi hrd-kpi-success hrd-kpi-link"
                             th:href="@{/hr/attendance-today}"
                             aria-label="Open today's attendance details"> 
@@ -133,6 +135,52 @@
                                 <i class="fa-solid fa-building-user" aria-hidden="true"></i>
                                 <span>MAHAIT Employees</span>
                                 <strong th:text="${dashboard.mahaitEmployees}">0</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="hrAttendanceBreakdown" class="hrd-employee-breakdown hrd-attendance-breakdown" hidden
+                        aria-label="Today's attendance breakdown">
+                        <div class="hrd-breakdown-heading">
+                            <div>
+                                <h4>Today's Attendance</h4>
+                                <span>Select a count to see the employee list</span>
+                            </div>
+                            <a class="hrd-attendance-all" th:href="@{/hr/attendance-today}">Attendance by cell / designation
+                                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                        </div>
+                        <div class="hrd-attendance-groups">
+                            <div class="hrd-attendance-group is-present">
+                                <a class="hrd-attendance-total"
+                                    th:href="@{/hr/attendance-today/details(category='PRESENT')}">
+                                    <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+                                    <span>Present</span>
+                                    <strong th:text="${dashboard.presentEmployees}">0</strong>
+                                </a>
+                                <div class="hrd-attendance-types">
+                                    <a th:href="@{/hr/attendance-today/details(category='PRESENT',recruitmentType='INTERNAL')}">
+                                        <span>Internal</span><strong th:text="${dashboard.internalPresentEmployees}">0</strong></a>
+                                    <a th:href="@{/hr/attendance-today/details(category='PRESENT',recruitmentType='EXTERNAL')}">
+                                        <span>External</span><strong th:text="${dashboard.externalPresentEmployees}">0</strong></a>
+                                    <a th:href="@{/hr/attendance-today/details(category='PRESENT',recruitmentType='MAHAIT')}">
+                                        <span>MAHAIT</span><strong th:text="${dashboard.mahaitPresentEmployees}">0</strong></a>
+                                </div>
+                            </div>
+                            <div class="hrd-attendance-group is-absent">
+                                <a class="hrd-attendance-total"
+                                    th:href="@{/hr/attendance-today/details(category='ABSENT')}">
+                                    <i class="fa-solid fa-user-xmark" aria-hidden="true"></i>
+                                    <span>Absent</span>
+                                    <strong th:text="${dashboard.absentEmployees}">0</strong>
+                                </a>
+                                <div class="hrd-attendance-types">
+                                    <a th:href="@{/hr/attendance-today/details(category='ABSENT',recruitmentType='INTERNAL')}">
+                                        <span>Internal</span><strong th:text="${T(java.lang.Math).max(0, dashboard.internalEmployees - dashboard.internalPresentEmployees)}">0</strong></a>
+                                    <a th:href="@{/hr/attendance-today/details(category='ABSENT',recruitmentType='EXTERNAL')}">
+                                        <span>External</span><strong th:text="${T(java.lang.Math).max(0, dashboard.externalEmployees - dashboard.externalPresentEmployees)}">0</strong></a>
+                                    <a th:href="@{/hr/attendance-today/details(category='ABSENT',recruitmentType='MAHAIT')}">
+                                        <span>MAHAIT</span><strong th:text="${T(java.lang.Math).max(0, dashboard.mahaitEmployees - dashboard.mahaitPresentEmployees)}">0</strong></a>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -386,53 +434,6 @@
                     <!-- Attendance, employee mix and onboarding -->
                     <div class="hrd-main-grid">
                         <div class="hrd-stack">
-                            <section class="panel">
-                                <div class="panel-title">
-                                    <div>
-                                        <h4>Attendance Today</h4>
-                                        <span class="panel-subtitle" th:text="${dashboard.presentPercent} + '% of employees marked present'">
-                                            0% of employees marked present
-                                        </span>
-                                    </div>
-                                    <!-- <a class="attendance-detail-button" th:href="@{/hr/attendance-today}">
-                                        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                                        View details
-                                    </a> -->
-                                </div>
-                                <th:block th:if="${dashboard.totalEmployees > 0}">
-                                    <div class="attendance-panel-grid">
-                                        <div class="hrd-stat-internal">
-                                            <strong th:text="${dashboard.internalPresentEmployees}">0</strong>
-                                            <span>Internal Present</span>
-                                        </div>
-                                        <div class="hrd-stat-mahait">
-                                            <strong th:text="${dashboard.mahaitPresentEmployees}">0</strong>
-                                            <span>MAHAIT Present</span>
-                                        </div>
-                                        <div class="hrd-stat-external">
-                                            <strong th:text="${dashboard.externalPresentEmployees}">0</strong>
-                                            <span>External Present</span>
-                                        </div>
-                                        <div class="hrd-stat-absent">
-                                            <strong th:text="${dashboard.absentEmployees}">0</strong>
-                                            <span>Absent</span>
-                                        </div>
-                                    </div>
-                                    <div class="attendance-track">
-                                        <span th:style="'width:' + ${dashboard.presentPercent} + '%'"></span>
-                                    </div>
-                                    <p class="attendance-note">
-                                        <strong th:text="${dashboard.presentEmployees}">0</strong>
-                                        <span th:text="' out of ' + ${dashboard.totalEmployees} + ' employees are present today.'">
-                                            out of 0 employees are present today.
-                                        </span>
-                                    </p>
-                                </th:block>
-                                <p class="hrd-empty" th:unless="${dashboard.totalEmployees > 0}">
-                                    <i class="fa-regular fa-folder-open" aria-hidden="true"></i>No data available
-                                </p>
-                            </section>
-
                             <!-- <section class="panel">
                                 <div class="panel-title">
                                     <h4>Employee Mix</h4>
@@ -493,6 +494,18 @@
             const lists = Array.from(document.querySelectorAll('[data-project-list]'));
             const employeeBreakdownToggle = document.getElementById('hrEmployeeBreakdownToggle');
             const employeeBreakdown = document.getElementById('hrEmployeeBreakdown');
+
+            const attendanceToggle = document.getElementById('hrAttendanceToggle');
+            const attendanceBreakdown = document.getElementById('hrAttendanceBreakdown');
+
+            if (attendanceToggle && attendanceBreakdown) {
+                attendanceToggle.addEventListener('click', () => {
+                    const expanded = attendanceToggle.getAttribute('aria-expanded') !== 'true';
+                    attendanceToggle.setAttribute('aria-expanded', String(expanded));
+                    attendanceToggle.classList.toggle('is-active', expanded);
+                    attendanceBreakdown.hidden = !expanded;
+                });
+            }
 
             if (employeeBreakdownToggle && employeeBreakdown) {
                 employeeBreakdownToggle.addEventListener('click', () => {

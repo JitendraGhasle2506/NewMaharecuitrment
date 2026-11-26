@@ -2788,3 +2788,36 @@ button.hrd-chip:focus-visible,
 @media (max-width: 479.98px) {
     .hrd-kpi-grid { grid-template-columns: 1fr; }
 }
+
+/* ---- Today's attendance breakdown (Present / Absent by employee type) ---- */
+.hrd-page > .hrd-attendance-breakdown[hidden] { display: none; }
+.hrd-kpi-toggle.is-active .hrd-kpi-note .fa-chevron-down { transform: rotate(180deg); }
+.hrd-attendance-all { color: #1f4f78; font-size: .8rem; font-weight: 600; text-decoration: none; }
+.hrd-attendance-all:hover { text-decoration: underline; }
+
+.hrd-attendance-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.hrd-attendance-group { display: grid; gap: 8px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fbfdff; }
+.hrd-attendance-group.is-present { --att-accent: #2d8a57; --att-soft: #e6f6ec; }
+.hrd-attendance-group.is-absent { --att-accent: #c0392b; --att-soft: #fdecea; }
+
+.hrd-attendance-total {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px;
+    color: var(--att-accent); background: var(--att-soft); font-weight: 700; text-decoration: none;
+}
+.hrd-attendance-total span { flex: 1; font-size: .9rem; }
+.hrd-attendance-total strong { font-size: 1.4rem; line-height: 1; }
+.hrd-attendance-total:hover { filter: brightness(.97); }
+
+.hrd-attendance-types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.hrd-attendance-types a {
+    display: flex; flex-direction: column; gap: 2px; padding: 7px 10px; border: 1px solid #e2e8f0;
+    border-radius: 10px; color: #40566b; background: #fff; text-decoration: none;
+    transition: border-color 140ms ease, transform 140ms ease;
+}
+.hrd-attendance-types a:hover { border-color: var(--att-accent); transform: translateY(-1px); }
+.hrd-attendance-types span { font-size: .72rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.hrd-attendance-types strong { color: var(--att-accent); font-size: 1.1rem; }
+
+@media (max-width: 767.98px) {
+    .hrd-attendance-groups { grid-template-columns: 1fr; }
+}
