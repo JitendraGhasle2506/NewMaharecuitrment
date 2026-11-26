@@ -6,47 +6,59 @@
     <title>Internal Resource Requirements</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <style>
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: .2px;
-            border: 1px solid transparent;
-        }
-
+        .status-badge { display: inline-flex; align-items: center; justify-content: center; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .2px; border: 1px solid transparent; white-space: nowrap; }
         .status-draft { background: #fff5df; border-color: #f0dfab; color: #946200; }
         .status-pending { background: #e0f2ff; border-color: #b3d7ff; color: #0056b3; }
         .status-open { background: #e7f8ee; border-color: #b8e1c7; color: #1f7a3d; }
         .status-rejected { background: #ffebeb; border-color: #f8c2c2; color: #b02a37; }
         .status-closed { background: #f3f5f8; border-color: #d8dde6; color: #55657e; }
 
-        .overview-grid {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
-        }
+        .hv-shell .header { padding: 12px 18px; }
+        .hv-shell .header h2 { font-size: 1.1rem; font-weight: 700; }
+        .hv-shell .header .btn { height: 34px; padding: 0 14px; font-size: .8rem; display: inline-flex; align-items: center; white-space: nowrap; }
+        .hv-shell .card-body { padding: 14px 18px 18px; }
+        .hv-shell .alert { margin-bottom: 12px; padding: 8px 14px; font-size: .85rem; }
 
-        .overview-card {
-            padding: 18px;
-            border: 1px solid #d8e4f5;
-            border-radius: 14px;
-            background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
-        }
+        .overview-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+        .overview-card { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border: 1px solid #d8e4f5; border-radius: 10px; background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%); }
+        .overview-label { color: #607391; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+        .overview-value { color: #163868; font-size: 20px; font-weight: 800; line-height: 1; }
 
-        .overview-label { color: #607391; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .overview-value { margin-top: 6px; color: #163868; font-size: 24px; font-weight: 800; line-height: 1; }
+        .hv-shell .table-responsive { margin-top: 0 !important; }
+        .hv-shell table { margin-bottom: 0; font-size: .82rem; }
+        .hv-shell thead th { padding: 8px 10px; font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+        .hv-shell tbody td { padding: 8px 10px; vertical-align: middle; }
+        .hv-shell th:nth-child(1), .hv-shell td:nth-child(1) { width: 48px; text-align: center; }
+        .hv-shell td:nth-child(2) { white-space: nowrap; font-weight: 600; }
+        .hv-shell th:nth-child(4), .hv-shell td:nth-child(4) { width: 170px; }
+        .hv-shell th:nth-child(5), .hv-shell td:nth-child(5) { width: 150px; white-space: nowrap; }
+        .hv-shell th:nth-child(6), .hv-shell td:nth-child(6) { width: 300px; }
+        .hv-actions { display: flex; flex-wrap: nowrap; justify-content: center; gap: 6px; }
+        .hv-actions .btn { display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 10px; font-size: .75rem; font-weight: 600; line-height: 1; white-space: nowrap; }
+
+        @media (max-width: 1199.98px) { .overview-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media (max-width: 767.98px) {
+            .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .hv-shell .header { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+            .hv-shell .card-body { padding: 10px 12px 14px; }
+            .hv-shell table, .hv-shell tbody, .hv-shell tr, .hv-shell td { display: block; width: 100% !important; }
+            .hv-shell thead { display: none; }
+            .hv-shell tbody tr { margin-bottom: 10px; border: 1px solid #dbe4f0; border-radius: 10px; background: #fff; overflow: hidden; }
+            .hv-shell tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 12px; border: 0; border-bottom: 1px solid #eef2f7; text-align: right !important; white-space: normal !important; }
+            .hv-shell tbody td::before { content: attr(data-label); flex: 0 0 auto; color: #607391; font-size: .7rem; font-weight: 700; text-transform: uppercase; text-align: left; }
+            .hv-shell td:nth-child(1) { display: none; }
+            .hv-shell td[colspan] { display: block; text-align: center !important; }
+            .hv-shell td[colspan]::before { content: none; }
+            .hv-shell td:last-child { border-bottom: 0; }
+            .hv-actions { flex-wrap: wrap; justify-content: flex-end; }
+        }
     </style>
 </head>
 
 <body class="department-shell" th:attr="data-context-path=${contextPath}">
     <th:block th:replace="~{header/header :: var-sidebar-header('HOD', 'Internal Resource Requirements', ~{::section})}">
         <section>
-            <div class="card add-emp-card">
+            <div class="card add-emp-card hv-shell">
                 <div class="header d-flex justify-content-between align-items-center">
                     <h2 class="mb-0">Resource Requirement Requests</h2>
                     <a class="btn btn-primary" th:href="@{/hod1/internal-vacancies/new}">Raise New Requirement</a>
@@ -79,7 +91,7 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive mt-3">
+                    <div class="table-responsive">
                         <table class="table table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>
@@ -97,18 +109,18 @@
                                 </tr>
                                 <tr th:each="opening, stat : ${openings}">
                                     <td th:text="${stat.count}">1</td>
-                                    <td th:text="${opening.requestId}">REQ-0000</td>
-                                    <td th:text="${opening.projectName}">Project Name</td>
-                                    <td>
+                                    <td data-label="Request ID" th:text="${opening.requestId}">REQ-0000</td>
+                                    <td data-label="Project" th:text="${opening.projectName}">Project Name</td>
+                                    <td data-label="Status">
                                         <span class="status-badge"
                                             th:classappend="${' status-' + #strings.toLowerCase(opening.status.name().replace('PENDING_HR_APPROVAL', 'pending').replace('REJECTED_BY_HR', 'rejected'))}"
                                             th:text="${opening.status.name().replace('_', ' ')}">
                                             DRAFT
                                         </span>
                                     </td>
-                                    <td th:text="${#temporals.format(opening.createdDateTime, 'dd-MMM-yyyy HH:mm')}">24-Mar-2026</td>
-                                    <td class="text-center">
-                                        <div class="d-inline-flex flex-wrap justify-content-center gap-2">
+                                    <td data-label="Created At" th:text="${#temporals.format(opening.createdDateTime, 'dd-MMM-yyyy HH:mm')}">24-Mar-2026</td>
+                                    <td class="text-center" data-label="Actions">
+                                        <div class="hv-actions">
                                             <a class="btn btn-outline-secondary btn-sm"
                                                th:href="@{/hod1/internal-vacancies/{id}/view(id=${opening.internalVacancyOpeningId})}">
                                                 View Request

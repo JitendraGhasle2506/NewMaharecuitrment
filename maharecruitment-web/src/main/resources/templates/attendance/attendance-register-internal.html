@@ -2180,6 +2180,56 @@
                 min-height: 52px;
             }
         }
+
+        /* ---- Compact layout and type scale refinements ---- */
+        .page-main-content .breadcrumb { margin-bottom: 8px; font-size: 12px; }
+        .profile-card { margin-bottom: 12px; border-radius: 14px; }
+        .profile-hero { gap: 12px 18px; padding: 14px 18px 12px; }
+        .profile-identity { gap: 12px; }
+        .profile-avatar-shell { padding: 4px; border-radius: 16px; }
+        .profile-avatar { width: 68px; height: 68px; border-radius: 14px; border-width: 3px; }
+        .profile-avatar-fallback { font-size: 26px; }
+        .profile-chip-row { margin-bottom: 6px; }
+        .profile-chip { padding: 3px 9px; font-size: 10.5px; }
+        .profile-name { font-size: 20px; line-height: 1.25; overflow-wrap: anywhere; }
+        .profile-role { margin-top: 4px; font-size: 12.5px; }
+        .profile-fact { padding: 8px 10px; }
+        .profile-fact-label { margin-bottom: 2px; font-size: 10px; }
+        .profile-fact-value { font-size: 12.5px; overflow-wrap: anywhere; }
+        .profile-dashboard-grid { gap: 10px; padding: 12px 18px 16px; }
+        .profile-panel-card { padding: 12px; border-radius: 12px; }
+        .profile-panel-title { margin-bottom: 8px; font-size: 11px; }
+        .profile-detail-list { gap: 6px; }
+        .profile-detail-list.profile-detail-grid { gap: 8px 12px; }
+        .summary-strip { margin-bottom: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+        .summary-card .card-body { min-height: 40px; padding: 6px 10px; }
+        .summary-value { font-size: 17px; }
+        .summary-label { font-size: 10.5px; }
+        .attendance-tabs .nav-link { padding: 8px 12px; }
+        .attendance-tab-label { font-size: 12.5px; }
+        .attendance-tab-meta { font-size: 11px; }
+        .register-panel { margin-top: 10px !important; border-radius: 14px; }
+        .register-panel .body { padding: 14px; }
+        .register-panel-header { gap: 10px; margin-bottom: 10px; }
+        .register-panel-eyebrow { margin-bottom: 2px; font-size: 10px; }
+        .register-panel-title { font-size: 18px; }
+        .register-panel-subtitle { margin-top: 3px; font-size: 12px; line-height: 1.45; }
+        .register-meta-card { min-height: 44px; padding: 7px 10px; }
+        .register-meta-label { font-size: 10.5px; }
+        .register-meta-value { font-size: 17px; }
+        .panel-meta-card { min-height: 38px; padding: 6px 10px; }
+        .panel-meta-label { font-size: 10.5px; }
+        .panel-meta-value { font-size: 16px; }
+        .panel-table-wrap { border-radius: 12px; }
+
+        @media (max-width: 767.98px) {
+            .profile-hero, .profile-dashboard-grid { padding-left: 12px; padding-right: 12px; }
+            .profile-avatar { width: 56px; height: 56px; }
+            .profile-identity { flex-direction: row; align-items: center; }
+            .profile-name { font-size: 18px; }
+            .register-panel .body { padding: 10px; }
+            .register-panel-title { font-size: 16px; }
+        }
     </style>
 </head>
 
