@@ -316,3 +316,89 @@
 @media (prefers-reduced-motion: reduce) {
     .employee-dashboard-home .employee-dashboard .quick-action { transition: none; transform: none; }
 }
+
+/* ---- Compact layout and type scale refinements ---- */
+.employee-dashboard-home .employee-dashboard {
+    --ed-gap: 16px;
+    max-width: 1600px;
+    padding: 16px 20px 24px;
+    font-size: .875rem;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro {
+    min-height: 0;
+    gap: 20px;
+    margin-bottom: var(--ed-gap);
+    padding: 20px 24px;
+    border-radius: 14px;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-kicker { margin-bottom: 6px; font-size: .68rem; }
+.employee-dashboard-home .employee-dashboard .dashboard-intro h1 { font-size: clamp(1.25rem, 1.8vw, 1.6rem); line-height: 1.25; }
+.employee-dashboard-home .employee-dashboard .dashboard-intro-content > p { margin-top: 4px; font-size: .85rem; }
+.employee-dashboard-home .employee-dashboard .dashboard-today-chip { margin-top: 10px; font-size: .78rem; }
+
+.employee-dashboard-home .dashboard-profile-progress { flex: 0 0 300px; gap: 14px; padding: 14px 16px; }
+.employee-dashboard-home .employee-dashboard .completion-meter { width: 72px; min-width: 72px; }
+.employee-dashboard-home .dashboard-progress-copy strong { font-size: .85rem; }
+.employee-dashboard-home .employee-dashboard .dashboard-progress-copy p { margin: 3px 0 8px; font-size: .75rem; line-height: 1.4; }
+
+.employee-dashboard-home .dashboard-overview { gap: var(--ed-gap); margin-bottom: var(--ed-gap); }
+.employee-dashboard-home .dashboard-overview-card { gap: 12px; padding: 14px 16px; border-radius: 12px; }
+.employee-dashboard-home .dashboard-overview-icon { width: 40px; height: 40px; flex-basis: 40px; border-radius: 10px; font-size: 1.05rem; }
+.employee-dashboard-home .dashboard-overview-card > span:nth-child(2) { gap: 1px; }
+.employee-dashboard-home .dashboard-overview-card small { font-size: .75rem; }
+.employee-dashboard-home .dashboard-overview-card strong { font-size: 1.35rem; line-height: 1.15; }
+.employee-dashboard-home .dashboard-overview-card > span > span { font-size: .72rem; }
+
+.employee-dashboard-home .employee-dashboard .profile-grid { gap: var(--ed-gap); margin-bottom: var(--ed-gap); }
+.employee-dashboard-home .employee-dashboard .profile-card { grid-template-columns: 64px minmax(0, 1fr); gap: 12px 16px; padding: 18px; }
+.employee-dashboard-home .employee-dashboard .profile-photo-wrap { width: 64px; }
+.employee-dashboard-home .employee-dashboard .profile-main h3 { margin-top: 6px; font-size: 1.05rem; }
+.employee-dashboard-home .employee-dashboard .profile-facts { grid-column: 1 / -1; gap: 0 20px; margin-top: 0; }
+.employee-dashboard-home .employee-dashboard .profile-facts div { padding: 9px 0; min-width: 0; }
+.employee-dashboard-home .employee-dashboard .profile-facts dt { font-size: .72rem; }
+.employee-dashboard-home .employee-dashboard .profile-facts dd { font-size: .82rem; line-height: 1.4; overflow-wrap: anywhere; }
+
+.employee-dashboard-home .employee-dashboard .quick-actions { gap: 10px; }
+.employee-dashboard-home .quick-actions-heading { padding: 0 0 2px; }
+.employee-dashboard-home .quick-actions-heading h3 { font-size: 1.05rem; }
+.employee-dashboard-home .quick-actions-heading p { margin-top: 2px; font-size: .78rem; }
+.employee-dashboard-home .employee-dashboard .quick-action { min-height: 0; padding: 12px 14px; gap: 10px; border-radius: 12px; }
+.employee-dashboard-home .employee-dashboard .quick-action-copy strong { font-size: .85rem; }
+.employee-dashboard-home .employee-dashboard .quick-action-copy small { margin-top: 2px; font-size: .74rem; line-height: 1.4; }
+
+.employee-dashboard-home .employee-dashboard .dashboard-community-grid { gap: var(--ed-gap); margin-bottom: var(--ed-gap); }
+.employee-dashboard-home .employee-dashboard .dashboard-widget { padding: 16px 18px; border-radius: 14px; scroll-margin-top: 16px; }
+.employee-dashboard-home .employee-dashboard .widget-heading { margin-bottom: 12px; }
+.employee-dashboard-home .employee-dashboard .widget-heading h3 { font-size: 1rem; }
+.employee-dashboard-home .employee-dashboard .widget-kicker { font-size: .64rem; }
+.employee-dashboard-home .employee-dashboard .widget-empty { min-height: 80px; padding: 14px; }
+.employee-dashboard-home .employee-dashboard .celebration-item,
+.employee-dashboard-home .employee-dashboard .announcement-item { padding: 10px 12px; }
+.employee-dashboard-home .employee-dashboard .celebration-copy strong { font-size: .88rem; }
+.employee-dashboard-home .employee-dashboard .announcement-item p { font-size: .78rem; line-height: 1.45; }
+.employee-dashboard-home .employee-dashboard .upcoming-events-widget,
+.employee-dashboard-home .employee-dashboard .birthday-wishes-widget,
+.employee-dashboard-home .employee-dashboard .employee-festival-showcase { margin-bottom: var(--ed-gap); }
+.employee-dashboard-home .employee-dashboard .employee-charge-notice { margin-bottom: var(--ed-gap); }
+
+@media (min-width: 1101px) {
+    .employee-dashboard-home .employee-dashboard .profile-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+}
+
+@media (max-width: 1100px) {
+    .employee-dashboard-home .employee-dashboard { padding: 14px; }
+}
+
+@media (max-width: 767px) {
+    .employee-dashboard-home .employee-dashboard { --ed-gap: 12px; padding: 10px; }
+    .employee-dashboard-home .employee-dashboard .dashboard-intro { padding: 16px; gap: 14px; }
+    .employee-dashboard-home .dashboard-profile-progress { padding: 12px; }
+    .employee-dashboard-home .employee-dashboard .completion-meter { width: 64px; min-width: 64px; }
+    .employee-dashboard-home .dashboard-overview { gap: 8px; }
+    .employee-dashboard-home .dashboard-overview-card { padding: 10px 14px; }
+    .employee-dashboard-home .employee-dashboard .profile-card { padding: 14px; }
+    .employee-dashboard-home .employee-dashboard .quick-action { padding: 10px 12px; }
+    .employee-dashboard-home .employee-dashboard .dashboard-widget { padding: 14px; }
+}
