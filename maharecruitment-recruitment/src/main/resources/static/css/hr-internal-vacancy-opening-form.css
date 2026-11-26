@@ -378,3 +378,44 @@
         transition: none;
     }
 }
+
+/* ---- Compact layout, type scale and document icons ---- */
+.internal-vacancy-form-shell { max-width: 1600px; padding: 0.25rem 0; }
+.internal-vacancy-form-card { border-radius: 12px; }
+.internal-vacancy-form-card .internal-vacancy-form-header { padding: 0.8rem 1.1rem; }
+.internal-vacancy-form-header h2 { font-size: 1.15rem; font-weight: 700; }
+.internal-vacancy-form-header p { margin-top: 0.1rem; font-size: 0.8rem; }
+.internal-vacancy-status { padding: 0.28rem 0.65rem; font-size: 0.68rem; }
+.internal-vacancy-form-card .internal-vacancy-form-body { padding: 0.9rem 1.1rem 1.1rem; }
+#internalVacancyOpeningForm { gap: 0.8rem; }
+.vacancy-form-section { padding: 0.9rem 1.1rem 1rem; border-radius: 10px; }
+.vacancy-section-heading { align-items: center; gap: 0.6rem; margin-bottom: 0.8rem; padding-bottom: 0.6rem; }
+.vacancy-section-icon { flex-basis: 32px; width: 32px; height: 32px; border-radius: 8px; font-size: 0.85rem; }
+.vacancy-section-heading h3 { font-size: 0.95rem; }
+.vacancy-section-heading p { margin-top: 0; font-size: 0.78rem; }
+.internal-vacancy-form-card .form-label { margin-bottom: 0.25rem; font-size: 0.8rem; }
+.internal-vacancy-form-card .form-control,
+.internal-vacancy-form-card .form-select,
+.internal-vacancy-form-card .dropdown-toggle { min-height: 36px; padding-top: 0.3rem; padding-bottom: 0.3rem; font-size: 0.85rem; border-radius: 8px; }
+.internal-vacancy-form-card textarea.form-control { min-height: 0; }
+.internal-vacancy-form-card .form-check-label { font-size: 0.85rem; }
+.internal-vacancy-form-card .form-text { margin-top: 0.2rem; font-size: 0.72rem; }
+.internal-vacancy-form-card .row.g-3 { --bs-gutter-y: 0.7rem; }
+.vacancy-form-actions { padding: 0.6rem 0.8rem; }
+.vacancy-form-actions .btn { min-height: 34px; font-size: 0.82rem; }
+
+.vacancy-doc-current { display: flex; align-items: center; gap: 0.6rem; min-width: 0; margin-top: 0.5rem; padding: 0.4rem 0.55rem; border: 1px solid #dce5ef; border-radius: 10px; background: #f8fbff; }
+.vacancy-doc-icon { position: relative; display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border-radius: 9px; font-size: 1.15rem; text-decoration: none; transition: transform 120ms ease, box-shadow 120ms ease; }
+.vacancy-doc-icon.pdf { color: #c62828; background: #fdecea; }
+.vacancy-doc-icon.word { color: #1d4ed8; background: #e8f0fe; }
+.vacancy-doc-icon:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(25, 55, 88, 0.18); }
+.vacancy-doc-eye { position: absolute; right: -5px; bottom: -5px; display: grid; width: 17px; height: 17px; place-items: center; border: 2px solid #fff; border-radius: 50%; color: #fff; background: #1767c0; font-size: 0.5rem; }
+.vacancy-doc-meta { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.vacancy-doc-meta small { color: #728196; font-size: 0.7rem; }
+.vacancy-doc-meta > span { overflow: hidden; color: #1b3555; font-size: 0.8rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 767.98px) {
+    .internal-vacancy-form-card .internal-vacancy-form-header { flex-wrap: wrap; padding: 0.7rem 0.85rem; }
+    .internal-vacancy-form-card .internal-vacancy-form-body { padding: 0.7rem; }
+    .vacancy-form-section { padding: 0.75rem; }
+}

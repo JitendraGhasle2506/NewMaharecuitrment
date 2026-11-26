@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Internal Vacancy Opening</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/hr-internal-vacancy-opening-form.css(v='20261008-2')}">
+    <link rel="stylesheet" th:href="@{/css/hr-internal-vacancy-opening-form.css(v='20261126-1')}">
 </head>
 
 <body class="department-shell" th:attr="data-context-path=${contextPath}">
@@ -139,7 +139,7 @@
                                 <div class="invalid-feedback d-block" th:errors="*{replacementEmployeeIds}"></div>
                             </div>
 
-                            <div class="col-md-12" id="eOfficeApprovalContainer">
+                            <div class="col-lg-6" id="eOfficeApprovalContainer">
                                 <label class="form-label" for="eOfficeApprovalDocument">
                                     E-office Approval Document <span class="text-danger">*</span>
                                 </label>
@@ -147,31 +147,43 @@
                                     accept="application/pdf,.pdf" aria-describedby="eOfficeApprovalHelp eOfficeApprovalError"
                                     th:classappend="${#fields.hasErrors('eOfficeApprovalDocument') ? ' is-invalid' : ''}">
                                 <div class="form-text" id="eOfficeApprovalHelp">Upload one PDF approval document (maximum 2 MB).</div>
-                                <div class="mt-2"
+                                <div class="vacancy-doc-current"
                                     th:if="${openingForm.internalVacancyOpeningId != null and !#strings.isEmpty(openingForm.existingEOfficeApprovalFileName)}">
-                                    <span class="text-muted small">Current document:</span>
-                                    <a class="btn btn-outline-secondary btn-sm ms-1" target="_blank" rel="noopener"
+                                    <a class="vacancy-doc-icon pdf" target="_blank" rel="noopener" title="View approval document"
                                         th:href="@{/hr/internal-vacancies/{id}/e-office-approval(id=${openingForm.internalVacancyOpeningId})}"
-                                        th:text="${openingForm.existingEOfficeApprovalFileName}">View approval</a>
+                                        aria-label="View approval document">
+                                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                                        <span class="vacancy-doc-eye"><i class="fas fa-eye" aria-hidden="true"></i></span>
+                                    </a>
+                                    <span class="vacancy-doc-meta">
+                                        <small>Current document</small>
+                                        <span th:text="${openingForm.existingEOfficeApprovalFileName}" th:title="${openingForm.existingEOfficeApprovalFileName}">approval.pdf</span>
+                                    </span>
                                 </div>
                                 <div id="eOfficeApprovalError" class="invalid-feedback d-block" th:errors="*{eOfficeApprovalDocument}"></div>
                                 <div id="eOfficeApprovalClientError" class="invalid-feedback d-none"></div>
                             </div>
 
-                            <div class="col-md-12" id="jobDescriptionContainer">
+                            <div class="col-lg-6" id="jobDescriptionContainer">
                                 <label class="form-label" for="jobDescriptionDocument">
                                     Job Description Document <span class="text-muted small">(optional)</span>
                                 </label>
                                 <input type="file" class="form-control" th:field="*{jobDescriptionDocument}"
                                     accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" th:classappend="${#fields.hasErrors('jobDescriptionDocument') ? ' is-invalid' : ''}">
                                 <div class="form-text">PDF (maximum 2 MB) or Word .doc / .docx (maximum 5 MB). Visible to HR and agencies.</div>
-                                <div class="mt-2"
+                                <div class="vacancy-doc-current"
                                     th:if="${openingForm.internalVacancyOpeningId != null and !#strings.isEmpty(openingForm.existingJobDescriptionFileName)}">
-                                    <span class="text-muted small">Current document:</span>
-                                    <a class="btn btn-outline-secondary btn-sm ms-1" target="_blank" rel="noopener"
+                                    <a class="vacancy-doc-icon" target="_blank" rel="noopener" title="View job description"
+                                        th:classappend="${#strings.endsWith(#strings.toLowerCase(openingForm.existingJobDescriptionFileName), '.pdf')} ? ' pdf' : ' word'"
                                         th:href="@{/hr/internal-vacancies/{id}/job-description(id=${openingForm.internalVacancyOpeningId})}"
-                                        th:text="${openingForm.existingJobDescriptionFileName}">View job description</a>
-                                    <span class="text-muted small ms-1">Uploading a new file replaces it.</span>
+                                        aria-label="View job description">
+                                        <i class="fas" th:classappend="${#strings.endsWith(#strings.toLowerCase(openingForm.existingJobDescriptionFileName), '.pdf')} ? 'fa-file-pdf' : 'fa-file-word'" aria-hidden="true"></i>
+                                        <span class="vacancy-doc-eye"><i class="fas fa-eye" aria-hidden="true"></i></span>
+                                    </a>
+                                    <span class="vacancy-doc-meta">
+                                        <small>Current document &middot; a new upload replaces it</small>
+                                        <span th:text="${openingForm.existingJobDescriptionFileName}" th:title="${openingForm.existingJobDescriptionFileName}">jd.pdf</span>
+                                    </span>
                                 </div>
                                 <div class="text-danger small" th:errors="*{jobDescriptionDocument}"></div>
                             </div>
