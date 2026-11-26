@@ -11,7 +11,7 @@
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Global Agency Rank Mapping', ~{::section})}">
         <section class="hr-request-container hr-request-summary-page hr-global-rank-page">
-            <div class="page-hero mb-4">
+            <div class="page-hero mb-3">
                 <div class="page-hero-copy">
                     <p class="page-hero-kicker mb-1">HR Operations</p>
                     <h2 class="fw-bold text-dark mb-1">Global Agency Rank Mapping</h2>
@@ -26,12 +26,12 @@
                 </a>
             </div>
 
-            <div class="alert alert-success shadow-sm border-0 mb-4" th:if="${successMessage}" th:text="${successMessage}"></div>
-            <div class="alert alert-danger shadow-sm border-0 mb-4" th:if="${errorMessage}" th:text="${errorMessage}"></div>
-            <div id="mappingNotice" class="alert alert-warning shadow-sm border-0 mb-4 d-none" role="alert"></div>
+            <div class="alert alert-success shadow-sm border-0 mb-3 py-2" th:if="${successMessage}" th:text="${successMessage}"></div>
+            <div class="alert alert-danger shadow-sm border-0 mb-3 py-2" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+            <div id="mappingNotice" class="alert alert-warning shadow-sm border-0 mb-3 py-2 d-none" role="alert"></div>
 
-            <div class="row g-4 mb-4">
-                <div class="col-md-6 col-xl-3">
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-xl-3">
                     <div class="summary-card">
                         <div class="summary-icon bg-soft-primary">
                             <i class="fa-solid fa-layer-group"></i>
@@ -41,7 +41,7 @@
                         <div class="summary-label">Total Categories</div>
                     </div>
                 </div>
-                <div class="col-md-6 col-xl-3">
+                <div class="col-6 col-xl-3">
                     <div class="summary-card">
                         <div class="summary-icon bg-soft-success">
                             <i class="fa-solid fa-circle-check"></i>
@@ -50,7 +50,7 @@
                         <div class="summary-label">Assigned L1 Categories</div>
                     </div>
                 </div>
-                <div class="col-md-6 col-xl-3">
+                <div class="col-6 col-xl-3">
                     <div class="summary-card">
                         <div class="summary-icon bg-soft-info">
                             <i class="fa-solid fa-building-shield"></i>
@@ -60,7 +60,7 @@
                         <div class="summary-label">Available Agencies</div>
                     </div>
                 </div>
-                <div class="col-md-6 col-xl-3">
+                <div class="col-6 col-xl-3">
                     <div class="summary-card">
                         <div class="summary-icon bg-soft-warning">
                             <i class="fa-solid fa-shield-halved"></i>
@@ -71,8 +71,8 @@
                 </div>
             </div>
 
-            <div class="row g-4 mb-4">
-                <div class="col-lg-5">
+            <div class="row g-3 mb-3">
+                <div class="col-xl-5">
                     <div class="toolbar-card global-rank-panel h-100">
                         <div class="global-rank-panel-head">
                             <div>
@@ -117,7 +117,7 @@
                     </div>
                 </div>
 
-                <div class="col-lg-7">
+                <div class="col-xl-7">
                     <div class="toolbar-card global-rank-panel h-100">
                         <div class="global-rank-panel-head">
                             <div>
@@ -191,9 +191,9 @@
                             <table class="table-premium global-rank-table" id="rankMappingTable">
                                 <thead>
                                     <tr>
-                                        <th style="width: 8%;">#</th>
-                                        <th style="width: 42%;">Designation Category</th>
-                                        <th style="width: 50%;">L1 Rank Agency</th>
+                                        <th style="width: 56px;">#</th>
+                                        <th style="width: 45%;">Designation Category</th>
+                                        <th>L1 Rank Agency</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -205,11 +205,8 @@
                                             <div class="global-rank-category">
                                                 <div class="global-rank-category-title">
                                                     <span class="global-rank-category-dot"></span>
-                                                    <span class="fw-bold text-dark"
+                                                    <span class="fw-semibold text-dark"
                                                           th:text="${row.categoryName}">Technical</span>
-                                                </div>
-                                                <div class="global-rank-category-subtitle">
-                                                    Default specialization bucket used in the global rank release flow.
                                                 </div>
                                                 <div class="global-rank-state text-muted small">No L1 agency assigned</div>
                                                 <input type="hidden"
@@ -229,9 +226,6 @@
                                                             th:selected="${row.agencyId != null and opt.agencyId == row.agencyId}">
                                                     </option>
                                                 </select>
-                                                <div class="global-rank-select-help">
-                                                    Select the agency that should be treated as Rank 1 for this category.
-                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -254,7 +248,7 @@
                                 Protected categories with an existing mapping stay locked.
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-lg px-4 global-rank-save-btn">
+                        <button type="submit" class="btn btn-primary px-4 global-rank-save-btn">
                             <i class="fa-solid fa-floppy-disk me-2"></i>Save Global Mapping
                         </button>
                     </div>
@@ -604,6 +598,65 @@
                 padding-left: 1rem;
                 padding-right: 1rem;
             }
+        }
+        /* ---- Compact layout and type scale ---- */
+        .hr-global-rank-page { font-size: 0.875rem; }
+        .hr-global-rank-page .page-hero { padding: 0.9rem 1.1rem; gap: 0.75rem; }
+        .hr-global-rank-page .page-hero h2 { font-size: 1.25rem; }
+        .hr-global-rank-page .page-hero p { font-size: 0.82rem; }
+        .hr-global-rank-page .page-hero-kicker { font-size: 0.68rem; }
+
+        .hr-global-rank-page .summary-card { display: flex; align-items: center; gap: 0.75rem; min-height: 0; padding: 0.7rem 0.9rem; border-radius: 12px; }
+        .hr-global-rank-page .summary-card .summary-icon { width: 36px; height: 36px; flex: 0 0 36px; margin: 0; border-radius: 10px; font-size: 0.95rem; }
+        .hr-global-rank-page .summary-card .summary-value { margin: 0; font-size: 1.35rem; line-height: 1; }
+        .hr-global-rank-page .summary-card .summary-label { margin: 0; font-size: 0.74rem; line-height: 1.25; }
+
+        .hr-global-rank-page .global-rank-panel { padding: 0.9rem 1rem; border-radius: 12px; }
+        .hr-global-rank-page .global-rank-panel-head { margin-bottom: 0.7rem; }
+        .hr-global-rank-page .global-rank-panel-kicker { font-size: 0.68rem; }
+        .hr-global-rank-page .global-rank-panel-title { font-size: 1rem; }
+        .hr-global-rank-page .global-rank-panel-copy { font-size: 0.8rem; }
+        .hr-global-rank-page .global-rank-rule-list { gap: 0.5rem; }
+        .hr-global-rank-page .global-rank-rule-item { gap: 0.6rem; padding: 0.55rem 0.7rem; border-radius: 10px; }
+        .hr-global-rank-page .global-rank-rule-icon { width: 32px; height: 32px; border-radius: 9px; font-size: 0.8rem; }
+        .hr-global-rank-page .global-rank-rule-item strong { font-size: 0.84rem; margin-bottom: 0; }
+        .hr-global-rank-page .global-rank-rule-item p { font-size: 0.78rem; line-height: 1.35; }
+        .hr-global-rank-page .global-rank-tag-strip { gap: 0.4rem; margin-top: 0.7rem; }
+        .hr-global-rank-page .global-rank-tag { padding: 0.25rem 0.65rem; font-size: 0.74rem; }
+        .hr-global-rank-page .global-rank-toolbar { margin-bottom: 0.7rem; gap: 0.5rem; }
+        .hr-global-rank-page .global-rank-metrics { gap: 0.6rem; }
+        .hr-global-rank-page .global-rank-metric { padding: 0.55rem 0.75rem; border-radius: 10px; }
+        .hr-global-rank-page .global-rank-metric-label { margin-bottom: 0.1rem; font-size: 0.68rem; }
+        .hr-global-rank-page .global-rank-metric strong { font-size: 1.05rem; }
+
+        .hr-global-rank-page .global-rank-table-card { border-radius: 12px; }
+        .hr-global-rank-page .global-rank-table-header { padding: 0.8rem 1rem; }
+        .hr-global-rank-page .global-rank-meta-pill { padding: 0.35rem 0.7rem; font-size: 0.76rem; }
+        .hr-global-rank-page .global-rank-table-wrap { padding: 0 1rem 0.8rem; }
+        .hr-global-rank-page .global-rank-table-wrap .table-responsive { max-height: 58vh; }
+        .hr-global-rank-page .global-rank-table thead th { padding: 0.55rem 0.75rem; font-size: 0.72rem; }
+        .hr-global-rank-page .global-rank-table tbody td { padding: 0.5rem 0.75rem; vertical-align: middle; }
+        .hr-global-rank-page .global-rank-index { font-size: 0.85rem; }
+        .hr-global-rank-page .global-rank-category { gap: 0.1rem; }
+        .hr-global-rank-page .global-rank-category-dot { width: 8px; height: 8px; box-shadow: 0 0 0 2px rgba(31, 79, 120, 0.15); }
+        .hr-global-rank-page .global-rank-state { font-size: 0.74rem !important; }
+        .hr-global-rank-page .global-rank-policy-badge { padding: 0.12rem 0.5rem; font-size: 0.68rem; }
+        .hr-global-rank-page .global-rank-select { min-height: 36px; padding-top: 0.25rem; padding-bottom: 0.25rem; font-size: 0.85rem; border-radius: 8px; }
+        .hr-global-rank-page .global-rank-actionbar { margin: 0 1rem 1rem; padding: 0.7rem 0.9rem; border-radius: 12px; }
+        .hr-global-rank-page .global-rank-actiontitle { font-size: 0.9rem; }
+        .hr-global-rank-page .global-rank-actiontext { font-size: 0.78rem; }
+        .hr-global-rank-page .global-rank-save-btn { min-width: 190px; min-height: 36px; font-size: 0.85rem; }
+
+        @media (max-width: 991.98px) {
+            .hr-global-rank-page .global-rank-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 575.98px) {
+            .hr-global-rank-page .global-rank-metrics { grid-template-columns: 1fr; }
+            .hr-global-rank-page .summary-card { padding: 0.55rem 0.7rem; gap: 0.5rem; }
+            .hr-global-rank-page .global-rank-table-wrap { padding: 0 0.6rem 0.6rem; }
+            .hr-global-rank-page .global-rank-actionbar { margin: 0 0.6rem 0.8rem; }
+            .hr-global-rank-page .global-rank-save-btn { width: 100%; }
         }
     </style>
 

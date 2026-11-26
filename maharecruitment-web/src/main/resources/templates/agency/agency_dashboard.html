@@ -5,129 +5,135 @@
     <meta charset="UTF-8">
     <title>Agency Dashboard | recruitment.gov.in</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/agency-dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/agency-dashboard.css(v='20261126-1')}">
     <link rel="stylesheet" th:href="@{/assets/vendor/fontawesome/6.4.0/css/all.min.css}">
 </head>
 
 <body class="role-shell">
 
     <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Agency Dashboard', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header">
-                    <h2>Agency Control Center</h2>
+        <section class="ad-page">
+
+            <div class="ad-hero">
+                <div class="ad-hero-copy">
+                    <span class="ad-kicker"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Agency Control Center</span>
+                    <h1>Welcome, <span th:text="${agencyName}">Agency User</span></h1>
+                    <p>Your recruitment performance and candidate submissions at a glance.</p>
                 </div>
-                <div class="card-body">
-                    <!-- Hero Section -->
-                    <section class="hero-strip">
-                        <div>
-                            <h1>Welcome, <span th:text="${agencyName}">Agency User</span></h1>
-                            <p>Operational overview for recruitment performance and candidate submissions.</p>
-                        </div>
-                        <div class="dummy-tag" th:text="${status}">Active</div>
-                    </section>
+                <div class="ad-hero-side">
+                    <span class="ad-status" th:if="${!#strings.isEmpty(status)}">
+                        <i class="fa-solid fa-circle" aria-hidden="true"></i>
+                        <span th:text="${status}">Active</span>
+                    </span>
+                    <a class="ad-hero-btn" th:href="@{/agency/recruitment-notifications}">
+                        View notifications <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
 
-                    <!-- KPI Cards Grid -->
-                    <section class="kpi-grid">
-                        <article class="kpi-card">
-                            <p>Open Notifications</p>
-                            <h3 th:text="${totalOpenings}">0</h3>
-                        </article>
-                        <article class="kpi-card">
-                            <p>Candidates Submitted</p>
-                            <h3 th:text="${candidatesSubmitted}">0</h3>
-                        </article>
-                        <article class="kpi-card">
-                            <p>Interviews Scheduled</p>
-                            <h3 th:text="${interviewsScheduled}">0</h3>
-                        </article>
-                        <article class="kpi-card">
-                            <p>Successfully Onboarded</p>
-                            <h3 th:text="${onboardedEmployees}">0</h3>
-                        </article>
-                    </section>
+            <div class="ad-kpis">
+                <a class="ad-kpi" th:href="@{/agency/recruitment-notifications}">
+                    <span class="ad-kpi-icon tone-blue"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></span>
+                    <span class="ad-kpi-body">
+                        <small>Open Notifications</small>
+                        <strong th:text="${totalOpenings}">0</strong>
+                    </span>
+                </a>
+                <a class="ad-kpi" th:href="@{/agency/shortlisted-candidates}">
+                    <span class="ad-kpi-icon tone-violet"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
+                    <span class="ad-kpi-body">
+                        <small>Candidates Submitted</small>
+                        <strong th:text="${candidatesSubmitted}">0</strong>
+                    </span>
+                </a>
+                <a class="ad-kpi" th:href="@{/agency/shortlisted-candidates}">
+                    <span class="ad-kpi-icon tone-amber"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i></span>
+                    <span class="ad-kpi-body">
+                        <small>Interviews Scheduled</small>
+                        <strong th:text="${interviewsScheduled}">0</strong>
+                    </span>
+                </a>
+                <a class="ad-kpi" th:href="@{/agency/onboarding}">
+                    <span class="ad-kpi-icon tone-green"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
+                    <span class="ad-kpi-body">
+                        <small>Successfully Onboarded</small>
+                        <strong th:text="${onboardedEmployees}">0</strong>
+                    </span>
+                </a>
+            </div>
 
-                    <!-- Content Grid -->
-                    <div class="row g-4 mt-1">
-                        <!-- Recent Activities (Left side - mirrored from HR project snapshot but adapted) -->
-                        <div class="col-lg-8">
-                            <section class="panel">
-                                <h4><i class="fas fa-history me-2"></i> Recent Recruitment Activities</h4>
-                                <div class="table-responsive mt-3">
-                                    <table class="table table-hover align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>Request ID</th>
-                                                <th>Project Name</th>
-                                                <th>Status</th>
-                                                <th class="text-end">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:each="notification : ${recentNotifications}">
-                                                <td><span class="fw-bold" th:text="${notification.title}">REQ-001</span></td>
-                                                <td th:text="${notification.context}">Project Alpha</td>
-                                                <td>
-                                                    <span class="badge" 
-                                                          th:classappend="${notification.status == 'RELEASED'} ? ' text-bg-warning' : ' text-bg-info'"
-                                                          th:text="${notification.status}">Pending</span>
-                                                </td>
-                                                <td class="text-end">
-                                                    <a href="#" class="btn btn-sm btn-outline-primary rounded-pill px-3">View</a>
-                                                </td>
-                                            </tr>
-                                            <tr th:if="${#lists.isEmpty(recentNotifications)}">
-                                                <td colspan="4" class="text-center py-4 text-muted">No recent notifications found.</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </section>
-                        </div>
+            <div class="ad-grid">
+                <div class="ad-panel">
+                    <div class="ad-panel-head">
+                        <h2><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recent Recruitment Activities</h2>
+                        <a th:href="@{/agency/recruitment-notifications}">View all</a>
+                    </div>
+                    <div class="ad-table-wrap">
+                        <table class="ad-table">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Project Name</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="notification : ${recentNotifications}">
+                                    <td data-label="Request ID"><span class="ad-req" th:text="${notification.title}">REQ-001</span></td>
+                                    <td data-label="Project" th:text="${notification.context}">Project Alpha</td>
+                                    <td data-label="Status">
+                                        <span class="ad-badge"
+                                              th:classappend="${notification.status == 'RELEASED'} ? ' is-warn' : ' is-info'"
+                                              th:text="${notification.status}">Pending</span>
+                                    </td>
+                                    <td data-label="Action" class="text-end">
+                                        <a th:href="@{/agency/recruitment-notifications}" class="ad-view-btn">View</a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(recentNotifications)}" class="ad-empty-row">
+                                    <td colspan="4">
+                                        <div class="ad-empty">
+                                            <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                                            <strong>No recent notifications</strong>
+                                            <span>New recruitment notifications will appear here.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                        <!-- Quick Actions (Right side) -->
-                        <div class="col-lg-4">
-                            <section class="panel">
-                                <h4><i class="fas fa-rocket me-2"></i> Quick Actions</h4>
-                                <div class="quick-action-list mt-3">
-                                    <a th:href="@{/agency/recruitment-notifications}" class="quick-action-item">
-                                        <i class="fas fa-bullhorn text-primary"></i>
-                                        <span>View Announcements</span>
-                                    </a>
-                                    <a th:href="@{/agency/shortlisted-candidates}" class="quick-action-item">
-                                        <i class="fas fa-user-clock text-primary"></i>
-                                        <span>Shortlisted Candidates</span>
-                                    </a>
-                                    <a th:href="@{/agency/selected-candidates}" class="quick-action-item">
-                                        <i class="fas fa-user-check text-primary"></i>
-                                        <span>Selected Candidates</span>
-                                    </a>
-                                    <a th:href="@{/agency/internal-assessments}" class="quick-action-item">
-                                        <i class="fas fa-file-invoice text-primary"></i>
-                                        <span>Internal Assessments</span>
-                                    </a>
-                                    <a th:href="@{/agency/onboarding}" class="quick-action-item">
-                                        <i class="fas fa-tasks text-primary"></i>
-                                        <span>Track Onboarding</span>
-                                    </a>
-                                    <a th:href="@{/agency/profile}" class="quick-action-item">
-                                        <i class="fas fa-id-card text-primary"></i>
-                                        <span>Manage Profile</span>
-                                    </a>
-                                </div>
-
-                                <div class="mt-4 p-3 rounded-3" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
-                                    <p class="small text-muted mb-2 font-weight-bold" style="letter-spacing: 0.05em;">PERFORMANCE TREND</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="h4 mb-0 fw-bold">+12.5%</span>
-                                        <span class="text-success small"><i class="fas fa-caret-up"></i> month-over-month</span>
-                                    </div>
-                                    <div class="progress mt-2" style="height: 6px; background: #e2e8f0;">
-                                        <div class="progress-bar" role="progressbar" style="width: 75%; background-color: var(--agency-brand);" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
+                <div class="ad-panel">
+                    <div class="ad-panel-head">
+                        <h2><i class="fa-solid fa-bolt" aria-hidden="true"></i> Quick Actions</h2>
+                    </div>
+                    <div class="ad-actions">
+                        <a th:href="@{/agency/recruitment-notifications}" class="ad-action">
+                            <span class="ad-action-icon tone-blue"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></span>
+                            <span>Notifications</span>
+                        </a>
+                        <a th:href="@{/agency/shortlisted-candidates}" class="ad-action">
+                            <span class="ad-action-icon tone-amber"><i class="fa-solid fa-user-clock" aria-hidden="true"></i></span>
+                            <span>Shortlisted Candidates</span>
+                        </a>
+                        <a th:href="@{/agency/selected-candidates}" class="ad-action">
+                            <span class="ad-action-icon tone-green"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
+                            <span>Selected Candidates</span>
+                        </a>
+                        <a th:href="@{/agency/internal-assessments}" class="ad-action">
+                            <span class="ad-action-icon tone-violet"><i class="fa-solid fa-file-invoice" aria-hidden="true"></i></span>
+                            <span>Internal Assessments</span>
+                        </a>
+                        <a th:href="@{/agency/onboarding}" class="ad-action">
+                            <span class="ad-action-icon tone-teal"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span>
+                            <span>Track Onboarding</span>
+                        </a>
+                        <a th:href="@{/agency/profile}" class="ad-action">
+                            <span class="ad-action-icon tone-slate"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span>
+                            <span>Manage Profile</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -137,4 +143,3 @@
 </body>
 
 </html>
-
