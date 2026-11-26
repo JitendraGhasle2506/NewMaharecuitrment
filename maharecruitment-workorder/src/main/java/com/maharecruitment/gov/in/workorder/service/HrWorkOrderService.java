@@ -23,6 +23,15 @@ public interface HrWorkOrderService {
 
     WorkOrderDetailView generateWorkOrder(WorkOrderForm form, String actorEmail);
 
+    /**
+     * Previews one work order per valid group. A single employee type yields one preview; the "ALL" type
+     * is split by employee type, department and request.
+     */
+    List<WorkOrderDetailView> previewWorkOrders(WorkOrderForm form);
+
+    /** Generates one work order per valid group in a single transaction (all or nothing). */
+    List<WorkOrderDetailView> generateWorkOrders(WorkOrderForm form, String actorEmail);
+
     WorkOrderDetailView getWorkOrderDetail(Long workOrderId);
 
     List<EmployeeWorkOrderSummaryView> getEmployeeWorkOrders(Long employeeId);

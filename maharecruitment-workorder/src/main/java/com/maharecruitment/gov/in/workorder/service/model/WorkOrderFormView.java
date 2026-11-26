@@ -26,6 +26,8 @@ public class WorkOrderFormView {
     private WorkOrderSummaryView parentWorkOrder;
     private List<WorkOrderAgencyOptionView> agencyOptions;
     private List<EmployeeWorkOrderOptionView> employeeOptions;
+    /** Why the employee list is empty after an agency was selected; null when employees were found. */
+    private String emptyReason;
 
     public boolean extensionMode() {
         return extensionMode;
@@ -61,5 +63,9 @@ public class WorkOrderFormView {
 
     public List<EmployeeWorkOrderOptionView> employeeOptions() {
         return employeeOptions;
+    }
+
+    public String emptyReason() {
+        return emptyReason;
     }
 }

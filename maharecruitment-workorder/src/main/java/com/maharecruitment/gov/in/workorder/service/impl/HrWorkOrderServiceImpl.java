@@ -77,6 +77,7 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
     private static final String ACTIVE_STATUS = "ACTIVE";
     private static final String RECRUITMENT_TYPE_EXTERNAL = "EXTERNAL";
     private static final String RECRUITMENT_TYPE_INTERNAL = "INTERNAL";
+    private static final String RECRUITMENT_TYPE_ALL = "ALL";
     private static final Long INTERNAL_UNMAPPED_DEPARTMENT_ID = 0L;
     private static final String INTERNAL_UNMAPPED_DEPARTMENT_NAME = "Internal Resources";
 
@@ -158,7 +159,49 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
                 .form(form)
                 .agencyOptions(resolveAgencyOptions())
                 .employeeOptions(toEmployeeOptions(eligibleEmployees))
+                .emptyReason(eligibleEmployees.isEmpty() && selectedAgencyId != null
+                        ? describeEmptyCandidateList(selectedRecruitmentType, selectedAgencyId)
+                        : null)
                 .build();
+    }
+
+    /** Explains an empty candidate list so HR can see what to fix instead of an unexplained blank table. */
+    private String describeEmptyCandidateList(String recruitmentType, Long agencyId) {
+        String type = normalizeRecruitmentFilter(recruitmentType);
+        List<EmployeeEntity> candidates = queryCandidates(type, agencyId);
+        String typeLabel = RECRUITMENT_TYPE_ALL.equals(type) ? "internal or external"
+                : RECRUITMENT_TYPE_INTERNAL.equals(type) ? "internal" : "external";
+        if (candidates == null || candidates.isEmpty()) {
+            return "No active " + typeLabel + " employees are mapped to the selected agency. "
+                    + "Try the other employee type or a different agency.";
+        }
+        long noRequest = 0;
+        long noDepartment = 0;
+        long noAgency = 0;
+        long otherInvalid = 0;
+        for (EmployeeEntity employee : candidates) {
+            try {
+                ensureEligibleForWorkOrder(employee);
+            } catch (WorkOrderValidationException ex) {
+                String message = defaultText(ex.getMessage(), "");
+                if (message.contains("request mapping")) {
+                    noRequest++;
+                } else if (message.contains("department mapping")) {
+                    noDepartment++;
+                } else if (message.contains("agency mapping")) {
+                    noAgency++;
+                } else {
+                    otherInvalid++;
+                }
+            }
+        }
+        long missingMapping = noRequest + noDepartment + noAgency + otherInvalid;
+        long alreadyOrdered = candidates.size() - missingMapping
+                - filterEmployeesWithoutGeneratedWorkOrder(candidates).size();
+        return candidates.size() + " active " + typeLabel + " employee(s) found for this agency, but none can be added: "
+                + noRequest + " missing request ID, " + noDepartment + " missing department, "
+                + (noAgency + otherInvalid) + " missing agency or other mapping, "
+                + Math.max(alreadyOrdered, 0) + " already have a work order.";
     }
 
     @Override
@@ -248,6 +291,61 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
                 .versionHistory(List.of())
                 .auditTrail(List.of())
                 .build();
+    }
+
+    @Override
+    public List<WorkOrderDetailView> previewWorkOrders(WorkOrderForm form) {
+        return splitIntoGroupForms(form).stream().map(this::previewWorkOrder).toList();
+    }
+
+    @Override
+    @Transactional
+    public List<WorkOrderDetailView> generateWorkOrders(WorkOrderForm form, String actorEmail) {
+        return splitIntoGroupForms(form).stream()
+                .map(groupForm -> generateWorkOrder(groupForm, actorEmail))
+                .toList();
+    }
+
+    /**
+     * A work order covers one employee type, department and request. For the "ALL" choice the selected
+     * employees are split into those groups, one form (and therefore one work order) per group.
+     */
+    private List<WorkOrderForm> splitIntoGroupForms(WorkOrderForm form) {
+        if (form == null || form.getWorkOrderType() == WorkOrderType.EXTENSION
+                || !RECRUITMENT_TYPE_ALL.equalsIgnoreCase(defaultText(form.getRecruitmentType(), ""))) {
+            return List.of(form);
+        }
+        List<EmployeeEntity> employees = loadEmployees(form.getEmployeeIds());
+        employees.forEach(this::ensureEligibleForWorkOrder);
+
+        Map<String, List<EmployeeEntity>> groups = new java.util.LinkedHashMap<>();
+        for (EmployeeEntity employee : employees) {
+            EmployeeCohort cohort = resolveCohort(employee);
+            String key = resolveRecruitmentType(employee) + "|" + cohort.departmentRegistrationId() + "|"
+                    + defaultText(cohort.requestId(), "-").toLowerCase(Locale.ROOT);
+            groups.computeIfAbsent(key, ignored -> new ArrayList<>()).add(employee);
+        }
+        return groups.values().stream()
+                .map(group -> copyForm(form, resolveRecruitmentType(group.get(0)),
+                        group.stream().map(EmployeeEntity::getEmployeeId).toList()))
+                .toList();
+    }
+
+    private WorkOrderForm copyForm(WorkOrderForm source, String recruitmentType, List<Long> employeeIds) {
+        WorkOrderForm copy = new WorkOrderForm();
+        copy.setParentWorkOrderId(source.getParentWorkOrderId());
+        copy.setAgencyId(source.getAgencyId());
+        copy.setRecruitmentType(recruitmentType);
+        copy.setWorkOrderType(source.getWorkOrderType());
+        copy.setWorkOrderDate(source.getWorkOrderDate());
+        copy.setEffectiveFrom(source.getEffectiveFrom());
+        copy.setEffectiveTo(source.getEffectiveTo());
+        copy.setReferenceNumber(source.getReferenceNumber());
+        copy.setSubjectLine(source.getSubjectLine());
+        copy.setPurposeSummary(source.getPurposeSummary());
+        copy.setExtensionReason(source.getExtensionReason());
+        copy.setEmployeeIds(new ArrayList<>(employeeIds));
+        return copy;
     }
 
     @Override
@@ -582,7 +680,9 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
             throw new WorkOrderValidationException("Employee " + defaultText(employee.getEmployeeCode(), "-")
                     + " is missing department mapping.");
         }
-        if (!StringUtils.hasText(employee.getRequestId())) {
+        // Internal employees are onboarded without a department request, so a request id is only
+        // mandatory for external (agency/department-request) employees.
+        if (!isInternalEmployee(employee) && !StringUtils.hasText(employee.getRequestId())) {
             throw new WorkOrderValidationException("Employee " + defaultText(employee.getEmployeeCode(), "-")
                     + " is missing request mapping.");
         }
@@ -713,7 +813,7 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
         if (selectedEmployee != null) {
             return resolveRecruitmentType(selectedEmployee);
         }
-        return normalizeRecruitmentType(requestedRecruitmentType);
+        return normalizeRecruitmentFilter(requestedRecruitmentType);
     }
 
     private String resolveWorkOrderRecruitmentType(WorkOrderEntity workOrder) {
@@ -721,16 +821,26 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
     }
 
     private List<EmployeeEntity> loadEligibleEmployees(String recruitmentType, Long selectedAgencyId) {
-        String normalizedRecruitmentType = normalizeRecruitmentType(recruitmentType);
         if (selectedAgencyId == null) {
             return List.of();
         }
 
-        return filterEmployeesWithoutGeneratedWorkOrder(
+        return filterEmployeesWithoutGeneratedWorkOrder(queryCandidates(recruitmentType, selectedAgencyId));
+    }
+
+    /** INTERNAL / EXTERNAL query that type; ALL combines both. */
+    private List<EmployeeEntity> queryCandidates(String recruitmentTypeFilter, Long agencyId) {
+        String filter = normalizeRecruitmentFilter(recruitmentTypeFilter);
+        if (!RECRUITMENT_TYPE_ALL.equals(filter)) {
+            return employeeRepository.findWorkOrderCandidatesByAgencyRecruitmentTypeAndStatus(
+                    agencyId, filter, ACTIVE_STATUS);
+        }
+        List<EmployeeEntity> combined = new ArrayList<>(
                 employeeRepository.findWorkOrderCandidatesByAgencyRecruitmentTypeAndStatus(
-                        selectedAgencyId,
-                        normalizedRecruitmentType,
-                        ACTIVE_STATUS));
+                        agencyId, RECRUITMENT_TYPE_INTERNAL, ACTIVE_STATUS));
+        combined.addAll(employeeRepository.findWorkOrderCandidatesByAgencyRecruitmentTypeAndStatus(
+                agencyId, RECRUITMENT_TYPE_EXTERNAL, ACTIVE_STATUS));
+        return combined;
     }
 
     private List<EmployeeEntity> filterEmployeesWithoutGeneratedWorkOrder(List<EmployeeEntity> employees) {
@@ -789,7 +899,7 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
                         .employeeId(employee.getEmployeeId())
                         .employeeCode(employee.getEmployeeCode())
                         .employeeName(employee.getFullName())
-                        .requestId(employee.getRequestId())
+                        .requestId(defaultText(employee.getRequestId(), "-"))
                         .projectName(resolveProjectName(employee))
                         .agencyName(resolveEmployeeAgencyName(employee))
                         .departmentName(employee.getDepartmentRegistration() != null
@@ -798,6 +908,7 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
                         .designationName(resolveDesignationName(employee))
                         .levelCode(employee.getLevelCode())
                         .status(employee.getStatus())
+                        .recruitmentType(resolveRecruitmentType(employee))
                         .joiningDate(employee.getJoiningDate())
                         .build())
                 .toList();
@@ -1034,6 +1145,14 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
     private boolean hasSupportedRecruitmentType(String recruitmentType) {
         return RECRUITMENT_TYPE_INTERNAL.equalsIgnoreCase(defaultText(recruitmentType, ""))
                 || RECRUITMENT_TYPE_EXTERNAL.equalsIgnoreCase(defaultText(recruitmentType, ""));
+    }
+
+    /** Employee-type filter on the form: INTERNAL, EXTERNAL or ALL (anything else falls back to EXTERNAL). */
+    private String normalizeRecruitmentFilter(String recruitmentType) {
+        if (RECRUITMENT_TYPE_ALL.equalsIgnoreCase(defaultText(recruitmentType, ""))) {
+            return RECRUITMENT_TYPE_ALL;
+        }
+        return normalizeRecruitmentType(recruitmentType);
     }
 
     private String normalizeRecruitmentType(String recruitmentType) {

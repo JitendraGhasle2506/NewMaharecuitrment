@@ -25,5 +25,6 @@ public class EmployeeWorkOrderOptionView {
     private String designationName;
     private String levelCode;
     private String status;
+    private String recruitmentType;
     private LocalDate joiningDate;
 }

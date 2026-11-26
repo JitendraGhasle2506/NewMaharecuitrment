@@ -2,6 +2,9 @@ package com.maharecruitment.gov.in.workorder.controller;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
@@ -9,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -88,9 +92,24 @@ public class HrWorkOrderController {
     public String loadCreateWorkOrderEmployees(
             @RequestParam(name = "agencyId", required = false) Long agencyId,
             @RequestParam(name = "recruitmentType", required = false) String recruitmentType,
+            @RequestParam(name = "workOrderDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workOrderDate,
+            @RequestParam(name = "effectiveFrom", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate effectiveFrom,
+            @RequestParam(name = "effectiveTo", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate effectiveTo,
+            @RequestParam(name = "purposeSummary", required = false) String purposeSummary,
             Model model) {
         WorkOrderFormView formView = hrWorkOrderService.prepareCreateForm(null, agencyId, recruitmentType);
-        populateFormModel(model, formView, formView.form());
+        // Keep what HR already typed: loading employees must not wipe the dates or instructions.
+        WorkOrderForm form = formView.form();
+        form.setWorkOrderDate(workOrderDate);
+        form.setEffectiveFrom(effectiveFrom);
+        form.setEffectiveTo(effectiveTo);
+        if (StringUtils.hasText(purposeSummary)) {
+            form.setPurposeSummary(purposeSummary);
+        }
+        populateFormModel(model, formView, form);
         return "hr/work-order-form";
     }
 
@@ -116,13 +135,22 @@ public class HrWorkOrderController {
         }
 
         try {
-            WorkOrderDetailView detailView = hrWorkOrderService.generateWorkOrder(
+            List<WorkOrderDetailView> generated = hrWorkOrderService.generateWorkOrders(
                     workOrderForm,
                     principal == null ? null : principal.getName());
+            if (generated.size() == 1) {
+                WorkOrderDetailView detailView = generated.get(0);
+                redirectAttributes.addFlashAttribute(
+                        "successMessage",
+                        "Work order " + detailView.workOrderNumber() + " generated successfully.");
+                return "redirect:/hr/work-orders/" + detailView.workOrderId();
+            }
             redirectAttributes.addFlashAttribute(
                     "successMessage",
-                    "Work order " + detailView.workOrderNumber() + " generated successfully.");
-            return "redirect:/hr/work-orders/" + detailView.workOrderId();
+                    generated.size() + " work orders generated: " + generated.stream()
+                            .map(WorkOrderDetailView::workOrderNumber)
+                            .collect(Collectors.joining(", ")) + ".");
+            return "redirect:/hr/work-orders";
         } catch (WorkOrderValidationException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             populateFormForValidationFailure(model, workOrderForm);
@@ -141,7 +169,9 @@ public class HrWorkOrderController {
         }
 
         try {
-            model.addAttribute("workOrderPreview", hrWorkOrderService.previewWorkOrder(workOrderForm));
+            List<WorkOrderDetailView> previews = hrWorkOrderService.previewWorkOrders(workOrderForm);
+            model.addAttribute("workOrderPreviews", previews);
+            model.addAttribute("workOrderPreview", previews.get(0));
             model.addAttribute("workOrderForm", workOrderForm);
             return "hr/work-order-preview";
         } catch (WorkOrderValidationException ex) {
@@ -199,6 +229,8 @@ public class HrWorkOrderController {
 
     private void populateFormModel(Model model, WorkOrderFormView formView, WorkOrderForm workOrderForm) {
         model.addAttribute("pageTitle", formView.pageTitle());
+        // "pageTitle" is also a parameter of the shared header fragment, so the form uses its own name.
+        model.addAttribute("workOrderPageTitle", formView.pageTitle());
         model.addAttribute("pageSubtitle", formView.pageSubtitle());
         model.addAttribute("extensionMode", formView.extensionMode());
         model.addAttribute("parentWorkOrder", formView.parentWorkOrder());
@@ -206,6 +238,7 @@ public class HrWorkOrderController {
         model.addAttribute("selectedRecruitmentType", formView.selectedRecruitmentType());
         model.addAttribute("agencyOptions", formView.agencyOptions());
         model.addAttribute("employeeOptions", formView.employeeOptions());
+        model.addAttribute("emptyReason", formView.emptyReason());
         model.addAttribute("workOrderForm", workOrderForm);
     }
 

@@ -5,160 +5,270 @@
     <meta charset="UTF-8">
     <title>Work Order Form</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        /* ===== Work order form: compact type scale, aligned grid, responsive ===== */
+        .wo-page { max-width: 1400px; margin: 0 auto; font-size: 13.5px; line-height: 1.45; }
+        .wo-page * { box-sizing: border-box; }
+
+        /* header band */
+        .wo-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 14px; padding: 14px 20px; border-radius: 14px; color: #fff; background: linear-gradient(120deg, #163a5a, #1f4f78 60%, #2f7aa8); box-shadow: 0 10px 22px rgba(22, 58, 90, .18); }
+        .wo-hero h2 { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; }
+        .wo-hero p { margin: 3px 0 0; color: #d6e6f4; font-size: 12.5px; }
+        .wo-page .wo-hero .btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
+
+        /* panels */
+        .wo-panel { margin-bottom: 14px; padding: 16px 20px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 4px 14px rgba(18, 39, 67, .05); }
+        .wo-page .wo-panel-title { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid #eef2f7; color: #1b2b3b; font-size: 15px; font-weight: 700; line-height: 1.3; }
+        .wo-panel-title i { color: #1f4f78; font-size: 13px; }
+        .wo-hint { margin: 10px 0 0; color: #5f7287; font-size: 12.5px; }
+
+        /* form grid: three tidy rows, controls share one height so everything lines up */
+        .wo-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px 16px; align-items: end; }
+        .wo-field { grid-column: span 4; min-width: 0; }
+        .wo-field.span-3 { grid-column: span 3; }
+        .wo-field.span-6 { grid-column: span 6; }
+        .wo-field.span-12 { grid-column: 1 / -1; }
+        .wo-page .wo-field label { display: block; margin: 0 0 5px; color: #4a6482; font-size: 11px; font-weight: 700; letter-spacing: .05em; line-height: 1.2; text-transform: uppercase; white-space: nowrap; }
+        .wo-page .wo-field .form-control,
+        .wo-page .wo-field .form-select { width: 100%; height: 38px; padding: 6px 12px; border: 1px solid #c7d4e2; border-radius: 8px; color: #1b2b3b; font-size: 13.5px; line-height: 1.4; }
+        .wo-page .wo-field textarea.form-control { height: auto; min-height: 64px; resize: vertical; }
+        .wo-page .wo-field .form-control:focus,
+        .wo-page .wo-field .form-select:focus { border-color: #1f4f78; outline: 0; box-shadow: 0 0 0 3px rgba(31, 79, 120, .15); }
+        .wo-page .wo-field .text-danger { margin-top: 4px; font-size: 12px; }
+        .wo-load .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 38px; padding: 0 18px; border-radius: 8px; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+
+        /* employee list header */
+        .wo-actions-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 8px; }
+        .wo-actions-row .wo-panel-title { margin: 0; padding: 0; border: 0; }
+        .wo-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .wo-page .wo-search { width: 260px; max-width: 100%; height: 34px; padding: 4px 12px; border-radius: 8px; font-size: 13px; }
+        .wo-count { padding: 5px 12px; border-radius: 999px; color: #1f4f78; background: #e8f0fe; font-size: 12px; font-weight: 700; white-space: nowrap; }
+
+        .wo-empty { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #fde1a8; border-radius: 10px; color: #7a4d06; background: #fff8e6; font-size: 13px; }
+        .wo-empty i { margin-top: 2px; }
+
+        /* table */
+        .wo-table-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .wo-table { width: 100%; margin: 0; border-collapse: collapse; font-size: 13.5px; }
+        .wo-table thead th { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; color: #4a6482; background: #f6f9fc; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+        .wo-table tbody td { padding: 9px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; }
+        .wo-table tbody tr:last-child td { border-bottom: 0; }
+        .wo-table tbody tr:hover { background: #fafcff; }
+        .wo-table tbody tr.is-selected { background: #eef6ff; }
+        .wo-name { color: #1b2b3b; font-weight: 600; }
+        .wo-sub { color: #5f7287; font-size: 12px; }
+        .wo-check { width: 17px; height: 17px; margin: 0; cursor: pointer; vertical-align: middle; }
+        .wo-type { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+        .wo-type.is-internal { color: #315c83; background: #e8f0fe; }
+        .wo-type.is-external { color: #5b3f9a; background: #f1eafe; }
+
+        /* footer buttons */
+        .wo-footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+        .wo-page .wo-footer .btn { display: inline-flex; align-items: center; justify-content: center; min-width: 150px; height: 38px; padding: 0 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600; }
+
+
+        /* ---- alignment + polish (site-wide .btn / .form-control rules are overridden on purpose) ---- */
+        .wo-grid { align-items: stretch; }
+        .wo-field { display: flex; flex-direction: column; }
+        .wo-field > label { flex: 0 0 auto; }
+        .wo-load .btn { flex: 1 1 auto; height: auto !important; min-height: 40px; }
+        .wo-page .wo-field .form-control,
+        .wo-page .wo-field .form-select { height: 40px !important; min-height: 40px !important; border-radius: 8px !important; }
+        .wo-page .wo-field textarea.form-control { height: auto !important; min-height: 68px !important; }
+        .wo-page .btn { border-radius: 999px !important; box-shadow: none; }
+        .wo-page .wo-load .btn { border-radius: 8px !important; }
+        .wo-page .wo-search { border-radius: 8px !important; }
+        .wo-page .wo-hero .btn { height: 34px !important; padding: 0 16px; background: #fff; color: #163a5a; }
+        .wo-page .wo-hero .btn:hover { background: #eaf2fa; }
+        .wo-page .wo-footer .btn { height: 40px !important; }
+        .wo-step { display: inline-grid; flex: 0 0 24px; width: 24px; height: 24px; place-items: center; border-radius: 50%; color: #fff; background: #1f4f78; font-size: 12px; font-weight: 700; }
+        .wo-panel { transition: box-shadow 160ms ease; }
+        .wo-panel:focus-within { box-shadow: 0 6px 18px rgba(31, 79, 120, .12); }
+
+        /* laptops / tablets */
+        @media (max-width: 1199.98px) {
+            .wo-field, .wo-field.span-3 { grid-column: span 6; }
+            .wo-field.span-6 { grid-column: 1 / -1; }
+        }
+
+        /* phones */
+        @media (max-width: 767.98px) {
+            .wo-hero { padding: 12px 14px; }
+            .wo-panel { padding: 12px; }
+            .wo-grid { gap: 12px; }
+            .wo-field, .wo-field.span-3, .wo-field.span-6 { grid-column: 1 / -1; }
+            .wo-tools, .wo-page .wo-search { width: 100%; }
+            .wo-page .wo-footer .btn { flex: 1 1 100%; }
+
+            .wo-table, .wo-table tbody, .wo-table tr, .wo-table td { display: block; width: 100%; }
+            .wo-table thead { display: none; }
+            .wo-table tbody tr.wo-row { margin-bottom: 10px; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 10px; }
+            .wo-table tbody tr.wo-row td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid #eef2f7; text-align: right; }
+            .wo-table tbody tr.wo-row td::before { content: attr(data-label); color: #5f7287; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-align: left; text-transform: uppercase; }
+            .wo-table tbody tr.wo-row td.wo-cell-select { background: #f6f9fc; }
+            .wo-table tbody tr.wo-row td.wo-cell-select::before { content: "Select employee"; }
+            .wo-table tbody tr.wo-row td.wo-cell-name > div { text-align: right; }
+            .wo-table tbody tr.wo-empty-row td { display: block; text-align: center; }
+            .wo-table tbody tr.wo-empty-row td::before { content: none; }
+        }
+    </style>
 </head>
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Work Orders', ~{::section})}">
         <section>
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="wo-page">
+                <header class="wo-hero">
                     <div>
-                        <h2 class="mb-1" th:text="${pageTitle}">Generate Work Order</h2>
-                        <p class="text-muted mb-0" th:text="${pageSubtitle}">Create a new work order.</p>
+                        <h2 th:text="${workOrderPageTitle}">Generate Work Order</h2>
+                        <p th:text="${pageSubtitle}">Create a new work order.</p>
                     </div>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/work-orders}">Back to Work Orders</a>
+                    <a class="btn btn-light btn-sm" th:href="@{/hr/work-orders}">
+                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Work Orders</a>
+                </header>
+
+                <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+                <div class="alert alert-info" th:if="${extensionMode and parentWorkOrder != null}">
+                    Extending <strong th:text="${parentWorkOrder.workOrderNumber}">WO/2026-27/00001</strong>
+                    for request <strong th:text="${parentWorkOrder.requestId}">REQ-001</strong>.
                 </div>
-                <div class="card-body">
-                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-                    <div class="alert alert-info" th:if="${extensionMode and parentWorkOrder != null}">
-                        Extending <strong th:text="${parentWorkOrder.workOrderNumber}">WO/2026-27/00001</strong>
-                        for request <strong th:text="${parentWorkOrder.requestId}">REQ-001</strong>.
-                    </div>
+                <!-- One form: loading employees keeps the dates, and preview submits everything together -->
+                <form id="workOrderForm" method="post" th:action="@{/hr/work-orders/preview}" th:object="${workOrderForm}">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" th:field="*{parentWorkOrderId}">
+                    <input type="hidden" th:field="*{workOrderType}">
+                    <th:block th:if="${extensionMode}">
+                        <input type="hidden" th:field="*{agencyId}">
+                        <input type="hidden" th:field="*{recruitmentType}">
+                    </th:block>
 
-                    <div class="border rounded p-3 mb-4" th:if="${!extensionMode}">
-                        <form class="row g-3 align-items-end" method="post" th:action="@{/hr/work-orders/new}">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <div class="col-md-4 col-lg-3">
-                                <label class="form-label" for="recruitmentTypeFilter">Employee Type</label>
-                                <select class="form-select" id="recruitmentTypeFilter" name="recruitmentType"
-                                    onchange="this.form.submit()">
+                    <section class="wo-panel" aria-labelledby="woDetailsTitle">
+                        <h3 class="wo-panel-title" id="woDetailsTitle">
+                            <span class="wo-step" aria-hidden="true">1</span> Work Order Details</h3>
+                        <div class="wo-grid">
+                            <div class="wo-field span-3" th:if="${!extensionMode}">
+                                <label for="recruitmentTypeFilter">Employee Type</label>
+                                <select class="form-select" id="recruitmentTypeFilter" name="recruitmentType">
                                     <option value="EXTERNAL"
-                                        th:selected="${selectedRecruitmentType == null or selectedRecruitmentType == 'EXTERNAL'}">
-                                        External / Agency
-                                    </option>
-                                    <option value="INTERNAL"
-                                        th:selected="${selectedRecruitmentType == 'INTERNAL'}">
-                                        Internal
-                                    </option>
+                                        th:selected="${selectedRecruitmentType == null or selectedRecruitmentType == 'EXTERNAL'}">External / Agency</option>
+                                    <option value="INTERNAL" th:selected="${selectedRecruitmentType == 'INTERNAL'}">Internal</option>
+                                    <option value="ALL" th:selected="${selectedRecruitmentType == 'ALL'}">All (Internal + External)</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 col-lg-5">
-                                <label class="form-label" for="agencyFilter">Select Agency</label>
-                                <select class="form-select" id="agencyFilter" name="agencyId"
-                                    onchange="this.form.submit()">
-                                    <option value="">-- Select agency to load employees --</option>
+                            <div class="wo-field span-6" th:if="${!extensionMode}">
+                                <label for="agencyFilter">Agency</label>
+                                <select class="form-select" id="agencyFilter" name="agencyId">
+                                    <option value="">-- Select agency --</option>
                                     <option th:each="agency : ${agencyOptions}"
                                         th:value="${agency.agencyId}"
                                         th:selected="${selectedAgencyId != null and selectedAgencyId == agency.agencyId}"
                                         th:text="${agency.agencyName}">Agency Name</option>
                                 </select>
                             </div>
-                            <div class="col-md-auto">
-                                <button type="submit" class="btn btn-outline-primary px-4">Load Employees</button>
+                            <div class="wo-field wo-load span-3" th:if="${!extensionMode}">
+                                <label aria-hidden="true">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary" formnovalidate
+                                    th:formaction="@{/hr/work-orders/new}">
+                                    <i class="fa-solid fa-rotate" aria-hidden="true"></i> Load Employees</button>
                             </div>
-                        </form>
-                        <p class="text-muted small mb-0 mt-2" th:if="${selectedAgencyId == null}">
-                            Select an agency and employee type to view employees eligible for new work-order generation.
-                        </p>
-                        <p class="text-muted small mb-0 mt-2" th:if="${selectedAgencyId != null and selectedRecruitmentType == 'INTERNAL'}">
-                            Showing active internal employees from the selected agency for whom no work order has been generated.
-                        </p>
-                        <p class="text-muted small mb-0 mt-2" th:if="${selectedAgencyId != null and selectedRecruitmentType != 'INTERNAL'}">
-                            Showing active external employees from the selected agency for whom no work order has been generated.
-                        </p>
-                    </div>
-
-                    <form method="post" th:action="@{/hr/work-orders/preview}" th:object="${workOrderForm}">
-                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <input type="hidden" th:field="*{parentWorkOrderId}">
-                        <input type="hidden" th:field="*{agencyId}">
-                        <input type="hidden" th:field="*{recruitmentType}">
-                        <input type="hidden" th:field="*{workOrderType}">
-
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Work-Order Date</label>
+                            <div class="wo-field">
+                                <label for="workOrderDate">Work Order Date</label>
                                 <input type="date" class="form-control" id="workOrderDate" name="workOrderDate"
-                                    th:value="${workOrderForm.workOrderDate != null ? #temporals.format(workOrderForm.workOrderDate, 'yyyy-MM-dd') : ''}"
-                                    required>
+                                    th:value="${workOrderForm.workOrderDate != null ? #temporals.format(workOrderForm.workOrderDate, 'yyyy-MM-dd') : ''}" required>
                                 <div class="text-danger small" th:if="${#fields.hasErrors('workOrderDate')}" th:errors="*{workOrderDate}"></div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Effective From</label>
+                            <div class="wo-field">
+                                <label for="effectiveFrom">Effective From</label>
                                 <input type="date" class="form-control" id="effectiveFrom" name="effectiveFrom"
-                                    th:value="${workOrderForm.effectiveFrom != null ? #temporals.format(workOrderForm.effectiveFrom, 'yyyy-MM-dd') : ''}"
-                                    required>
+                                    th:value="${workOrderForm.effectiveFrom != null ? #temporals.format(workOrderForm.effectiveFrom, 'yyyy-MM-dd') : ''}" required>
                                 <div class="text-danger small" th:if="${#fields.hasErrors('effectiveFrom')}" th:errors="*{effectiveFrom}"></div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Effective To</label>
+                            <div class="wo-field">
+                                <label for="effectiveTo">Effective To</label>
                                 <input type="date" class="form-control" id="effectiveTo" name="effectiveTo"
-                                    th:value="${workOrderForm.effectiveTo != null ? #temporals.format(workOrderForm.effectiveTo, 'yyyy-MM-dd') : ''}"
-                                    required>
+                                    th:value="${workOrderForm.effectiveTo != null ? #temporals.format(workOrderForm.effectiveTo, 'yyyy-MM-dd') : ''}" required>
                                 <div class="text-danger small" th:if="${#fields.hasErrors('effectiveTo')}" th:errors="*{effectiveTo}"></div>
                             </div>
 
-                            <div class="col-12">
-                                <label class="form-label">Additional Instructions</label>
-                                <textarea class="form-control" rows="3" th:field="*{purposeSummary}"></textarea>
+                            <div class="wo-field span-12">
+                                <label for="purposeSummary">Additional Instructions</label>
+                                <textarea class="form-control" id="purposeSummary" rows="2" th:field="*{purposeSummary}"></textarea>
                             </div>
-
-                            <div class="col-12" th:if="${extensionMode}">
-                                <label class="form-label">Extension Reason</label>
-                                <textarea class="form-control" rows="3" th:field="*{extensionReason}"></textarea>
-                            </div>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                            <div>
-                                <h5 class="mb-1">Employee Mapping</h5>
-                                <p class="text-muted mb-0 small" th:if="${extensionMode}">Select employees from the same request, agency, and department cohort.</p>
-                                <p class="text-muted mb-0 small" th:if="${!extensionMode and selectedRecruitmentType == 'INTERNAL'}">Only active internal employees from the selected agency with no generated work order are shown.</p>
-                                <p class="text-muted mb-0 small" th:if="${!extensionMode and selectedRecruitmentType != 'INTERNAL'}">Only active external employees from the selected agency with no generated work order are shown.</p>
+                            <div class="wo-field span-12" th:if="${extensionMode}">
+                                <label for="extensionReason">Extension Reason</label>
+                                <textarea class="form-control" id="extensionReason" rows="2" th:field="*{extensionReason}"></textarea>
                             </div>
                         </div>
+                        <p class="wo-hint" th:if="${!extensionMode and selectedAgencyId == null}">
+                            Pick the employee type and agency, then click <strong>Load Employees</strong>. The dates you entered are kept.
+                        </p>
+                    </section>
 
-                        <div class="table-responsive border rounded">
-                            <table class="table table-sm align-middle mb-0">
-                                <thead class="table-light">
+                    <section class="wo-panel" aria-labelledby="woEmployeesTitle">
+                        <div class="wo-actions-row">
+                            <h3 class="wo-panel-title mb-0 border-0 pb-0" id="woEmployeesTitle">
+                                <span class="wo-step" aria-hidden="true">2</span> Employee Mapping</h3>
+                            <div class="wo-tools" th:if="${!#lists.isEmpty(employeeOptions)}">
+                                <input type="search" id="woSearch" class="form-control form-control-sm wo-search"
+                                    placeholder="Search employee, designation" aria-label="Search employees" autocomplete="off">
+                                <span class="wo-count"><span id="woSelectedCount">0</span> of
+                                    <span th:text="${#lists.size(employeeOptions)}">0</span> selected</span>
+                            </div>
+                        </div>
+                        <p class="wo-hint mt-0 mb-2" th:if="${extensionMode}">Select employees from the same request, agency, and department cohort.</p>
+                        <p class="wo-hint mt-0 mb-2" th:if="${!extensionMode and selectedAgencyId != null}"
+                            th:text="${selectedRecruitmentType == 'ALL' ? 'Active internal and external employees from the selected agency with no generated work order. One work order is generated for each employee type, department and request.' : (selectedRecruitmentType == 'INTERNAL' ? 'Active internal employees from the selected agency with no generated work order.' : 'Active external employees from the selected agency with no generated work order.')}">
+                            Active employees with no generated work order.
+                        </p>
+
+                        <div class="wo-empty" th:if="${!#lists.isEmpty(employeeOptions) ? false : (!extensionMode and selectedAgencyId != null)}" role="status">
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            <span th:text="${emptyReason != null ? emptyReason : 'No eligible employees are available for this selection.'}">No eligible employees.</span>
+                        </div>
+
+                        <div class="wo-table-wrap" th:if="${!#lists.isEmpty(employeeOptions) or extensionMode or selectedAgencyId == null}">
+                            <table class="wo-table">
+                                <caption class="visually-hidden">Employees available for this work order</caption>
+                                <thead>
                                     <tr>
-                                        <th style="width: 56px;">Select</th>
-                                        <th>Employee</th>
-                                        <th>Code</th>
-                                        <th>Request</th>
-                                        <th>Project</th>
-                                        <th>Agency</th>
-                                        <th>Department</th>
-                                        <th>Designation</th>
-                                        <th>Joining</th>
+                                        <th scope="col" style="width: 52px;">
+                                            <input type="checkbox" class="wo-check" id="woSelectAll" aria-label="Select all employees"
+                                                th:disabled="${#lists.isEmpty(employeeOptions)}">
+                                        </th>
+                                        <th scope="col">Employee</th>
+                                        <th scope="col">Type</th>
+                                        <th scope="col">Agency</th>
+                                        <th scope="col">Designation</th>
+                                        <th scope="col">Joining</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:each="employee : ${employeeOptions}">
-                                        <td class="text-center">
-                                            <input class="form-check-input" type="checkbox"
-                                                th:field="*{employeeIds}"
-                                                th:value="${employee.employeeId}">
+                                    <tr class="wo-row" th:each="employee : ${employeeOptions}">
+                                        <td class="wo-cell-select">
+                                            <input class="wo-check wo-employee-check" type="checkbox"
+                                                th:field="*{employeeIds}" th:value="${employee.employeeId}">
                                         </td>
-                                        <td>
-                                            <div class="fw-semibold" th:text="${employee.employeeName}">Employee Name</div>
-                                            <div class="small text-muted" th:text="${employee.levelCode != null ? employee.levelCode : '-'}">L1</div>
+                                        <td class="wo-cell-name" data-label="Employee">
+                                            <div>
+                                                <div class="wo-name" th:text="${employee.employeeName}">Employee Name</div>
+                                                <div class="wo-sub" th:text="${employee.levelCode != null ? employee.levelCode : '-'}">L1</div>
+                                            </div>
                                         </td>
-                                        <td th:text="${employee.employeeCode}">EMP0001</td>
-                                        <td th:text="${employee.requestId}">REQ-001</td>
-                                        <td th:text="${employee.projectName}">Project</td>
-                                        <td th:text="${employee.agencyName}">Agency</td>
-                                        <td th:text="${employee.departmentName}">Department</td>
-                                        <td th:text="${employee.designationName}">Designation</td>
-                                        <td th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate, 'dd-MMM-yyyy') : '-'}">01-Apr-2026</td>
+                                        <td data-label="Type">
+                                            <span class="wo-type"
+                                                th:classappend="${employee.recruitmentType == 'INTERNAL'} ? ' is-internal' : ' is-external'"
+                                                th:text="${employee.recruitmentType == 'INTERNAL'} ? 'Internal' : 'External'">External</span>
+                                        </td>
+                                        <td data-label="Agency" th:text="${employee.agencyName}">Agency</td>
+                                        <td data-label="Designation" th:text="${employee.designationName}">Designation</td>
+                                        <td data-label="Joining" th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate, 'dd-MMM-yyyy') : '-'}">01-Apr-2026</td>
                                     </tr>
-                                    <tr th:if="${#lists.isEmpty(employeeOptions)}">
-                                        <td colspan="9" class="text-center py-4 text-muted">
-                                            <span th:text="${!extensionMode and selectedAgencyId == null ? 'Select an agency to load eligible employees.' : 'No eligible employees are available for this selection.'}">
-                                                No eligible employees are available for this selection.
+                                    <tr class="wo-empty-row" th:if="${#lists.isEmpty(employeeOptions)}">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <span th:text="${!extensionMode and selectedAgencyId == null ? 'Select an agency and click Load Employees to see eligible employees.' : 'No eligible employees are available for this selection.'}">
+                                                Select an agency to load eligible employees.
                                             </span>
                                         </td>
                                     </tr>
@@ -167,7 +277,7 @@
                         </div>
                         <div class="text-danger small mt-2" th:if="${#fields.hasErrors('employeeIds')}" th:errors="*{employeeIds}"></div>
 
-                        <div class="d-flex justify-content-end gap-2 mt-4">
+                        <div class="wo-footer">
                             <a class="btn btn-outline-secondary" th:href="@{/hr/work-orders}">Cancel</a>
                             <button type="submit" class="btn btn-primary"
                                 th:disabled="${#lists.isEmpty(employeeOptions)}"
@@ -175,9 +285,61 @@
                                 Preview Work Order
                             </button>
                         </div>
-                    </form>
-                </div>
+                    </section>
+                </form>
             </div>
+
+            <script>
+                (function () {
+                    var form = document.getElementById('workOrderForm');
+                    if (!form) { return; }
+                    var boxes = Array.prototype.slice.call(form.querySelectorAll('.wo-employee-check'));
+                    var selectAll = document.getElementById('woSelectAll');
+                    var counter = document.getElementById('woSelectedCount');
+                    var search = document.getElementById('woSearch');
+                    var from = document.getElementById('effectiveFrom');
+                    var to = document.getElementById('effectiveTo');
+
+                    function visible(box) { return box.closest('tr').style.display !== 'none'; }
+
+                    function refresh() {
+                        var checked = boxes.filter(function (b) { return b.checked; }).length;
+                        if (counter) { counter.textContent = checked; }
+                        boxes.forEach(function (b) { b.closest('tr').classList.toggle('is-selected', b.checked); });
+                        if (selectAll) {
+                            var shown = boxes.filter(visible);
+                            selectAll.checked = shown.length > 0 && shown.every(function (b) { return b.checked; });
+                        }
+                    }
+
+                    boxes.forEach(function (b) { b.addEventListener('change', refresh); });
+
+                    if (selectAll) {
+                        selectAll.addEventListener('change', function () {
+                            boxes.filter(visible).forEach(function (b) { b.checked = selectAll.checked; });
+                            refresh();
+                        });
+                    }
+
+                    if (search) {
+                        search.addEventListener('input', function () {
+                            var term = search.value.trim().toLowerCase();
+                            boxes.forEach(function (b) {
+                                var row = b.closest('tr');
+                                row.style.display = !term || row.textContent.toLowerCase().indexOf(term) !== -1 ? '' : 'none';
+                            });
+                            refresh();
+                        });
+                    }
+
+                    function syncDates() {
+                        if (from && to && from.value) { to.min = from.value; }
+                    }
+                    if (from) { from.addEventListener('change', syncDates); }
+                    syncDates();
+                    refresh();
+                })();
+            </script>
         </section>
     </th:block>
 </body>
