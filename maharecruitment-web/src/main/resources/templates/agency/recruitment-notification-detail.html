@@ -331,6 +331,120 @@
                 justify-content: stretch;
             }
         }
+
+        /* ======== Refinements: full-width layout, card-style candidate entry, document icon ======== */
+        .an-detail { max-width: 1600px; margin: 0 auto; }
+        .an-detail .card-body { gap: 12px; padding-top: 10px; }
+
+        .an-detail-header { padding: 14px 18px; border-radius: 12px; box-shadow: 0 8px 18px rgba(22, 56, 104, .16); }
+        .an-detail-header h2 { font-size: 1.1rem; letter-spacing: .01em; }
+        .an-detail-header small { display: block; margin-top: 2px; font-size: .82rem; }
+        .an-detail-header .btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+
+        .an-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .an-summary-item { padding: 10px 14px; border-radius: 10px; }
+        .an-summary-item dd { font-size: .9rem; }
+
+        .an-section { padding: 14px 16px; border-radius: 12px; box-shadow: 0 4px 14px rgba(25, 55, 88, .04); }
+        .an-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #eef2f7; font-size: .95rem; }
+        .an-section-title i { color: #2c5f9f; font-size: .85rem; }
+
+        /* job description document icon */
+        .an-doc-link { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; color: #1f3554; font-size: .82rem; font-weight: 600; text-decoration: none; }
+        .an-doc-link:hover { color: #163868; }
+        .an-doc-icon { position: relative; display: grid; flex: 0 0 32px; width: 32px; height: 32px; place-items: center; border-radius: 8px; font-size: 1rem; transition: transform 120ms ease, box-shadow 120ms ease; }
+        .an-doc-icon.pdf { color: #c62828; background: #fdecea; }
+        .an-doc-icon.word { color: #1d4ed8; background: #e8f0fe; }
+        .an-doc-link:hover .an-doc-icon { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(25, 55, 88, .18); }
+        .an-doc-eye { position: absolute; right: -5px; bottom: -5px; display: grid; width: 15px; height: 15px; place-items: center; border: 2px solid #fff; border-radius: 50%; color: #fff; background: #1767c0; font-size: .45rem; }
+        .an-doc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .an-select-row { max-width: 640px; }
+
+        /* Candidate entry: every candidate is a card with a responsive field grid (no sideways scrolling) */
+        #candidateInputTable { min-width: 0; }
+        #candidateInputTable,
+        #candidateInputTable tbody,
+        #candidateInputTable tr,
+        #candidateInputTable td { display: block; width: 100%; }
+        #candidateInputTable thead { display: none; }
+
+        #candidateInputTable tbody tr {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px 12px;
+            margin-bottom: 10px;
+            padding: 12px 14px;
+            border: 1px solid var(--an-border);
+            border-radius: 10px;
+            background: #fbfdff;
+        }
+
+        #candidateInputTable tbody td { min-width: 0; padding: 0 !important; border: 0 !important; text-align: left !important; }
+
+        #candidateInputTable tbody td::before {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--an-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+        }
+
+        #candidateInputTable .form-control,
+        #candidateInputTable .form-select { min-width: 0; width: 100%; }
+
+        #candidateInputTable td:nth-child(1)::before  { content: "Candidate #"; display: inline; margin: 0 6px 0 0; }
+        #candidateInputTable td:nth-child(2)::before  { content: "Candidate Name"; }
+        #candidateInputTable td:nth-child(3)::before  { content: "Email"; }
+        #candidateInputTable td:nth-child(4)::before  { content: "Mobile"; }
+        #candidateInputTable td:nth-child(5)::before  { content: "Qualification"; }
+        #candidateInputTable td:nth-child(6)::before  { content: "Total Exp"; }
+        #candidateInputTable td:nth-child(7)::before  { content: "Relevant Exp"; }
+        #candidateInputTable td:nth-child(8)::before  { content: "Current CTC (\20B9)"; }
+        #candidateInputTable td:nth-child(9)::before  { content: "Resigned?"; }
+        #candidateInputTable td:nth-child(10)::before { content: "Last Working Day"; }
+        #candidateInputTable td:nth-child(11)::before { content: "Joining Time"; }
+        #candidateInputTable td:nth-child(12)::before { content: "Tentative Joining Date"; }
+        #candidateInputTable td:nth-child(13)::before { content: "Resume (PDF)"; }
+        #candidateInputTable td:nth-child(14)::before { content: none; display: none; }
+
+        #candidateInputTable td:nth-child(1) { grid-column: 1 / -1; display: flex; align-items: center; color: #163868; font-weight: 700; }
+        #candidateInputTable td:nth-child(2) { grid-column: span 2; }
+        #candidateInputTable td:nth-child(3) { grid-column: span 2; }
+        #candidateInputTable td:nth-child(4) { grid-column: span 1; }
+        #candidateInputTable td:nth-child(5) { grid-column: span 1; }
+        #candidateInputTable td:nth-child(12) { grid-column: span 2; }
+        #candidateInputTable td:nth-child(13) { grid-column: span 3; }
+        #candidateInputTable td:nth-child(14) { grid-column: span 1; align-self: end; }
+        #candidateInputTable td:nth-child(14) .btn { width: 100%; }
+
+        @media (max-width: 1199.98px) {
+            #candidateInputTable tbody tr { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            #candidateInputTable td:nth-child(12) { grid-column: span 2; }
+            #candidateInputTable td:nth-child(13) { grid-column: span 2; }
+            #candidateInputTable td:nth-child(14) { grid-column: 1 / -1; justify-self: end; width: auto; }
+            #candidateInputTable td:nth-child(14) .btn { width: auto; }
+        }
+
+        @media (max-width: 767.98px) {
+            .an-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            #candidateInputTable tbody tr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            #candidateInputTable td:nth-child(2),
+            #candidateInputTable td:nth-child(3),
+            #candidateInputTable td:nth-child(12),
+            #candidateInputTable td:nth-child(13) { grid-column: 1 / -1; }
+            #candidateInputTable td:nth-child(14) { justify-self: stretch; }
+            #candidateInputTable td:nth-child(14) .btn { width: 100%; }
+        }
+
+        @media (max-width: 575.98px) {
+            .an-summary { grid-template-columns: 1fr; }
+            #candidateInputTable tbody tr { grid-template-columns: 1fr; }
+            #candidateInputTable td { grid-column: 1 / -1 !important; }
+            .an-section { padding: 10px; }
+        }
     </style>
 </head>
 
@@ -346,21 +460,13 @@
                         </small>
                     </div>
                     <a class="btn btn-outline-light btn-sm" th:href="@{/agency/recruitment-notifications}">
-                        <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to List
+                        <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to list
                     </a>
                 </div>
 
                 <div class="card-body">
                     <!-- Summary -->
                     <dl class="an-summary">
-                        <div class="an-summary-item">
-                            <dt>Request ID</dt>
-                            <dd th:text="${detail.requestId}">REQ-0000</dd>
-                        </div>
-                        <div class="an-summary-item">
-                            <dt>Project Name</dt>
-                            <dd th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</dd>
-                        </div>
                         <div class="an-summary-item">
                             <dt>Notified At</dt>
                             <dd th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MM-yyyy HH:mm') : '-'}">-</dd>
@@ -380,19 +486,29 @@
                                 </span>
                             </dd>
                         </div>
+                        <div class="an-summary-item">
+                            <dt>Candidates Submitted</dt>
+                            <dd th:text="${#lists.size(submittedCandidates)}">0</dd>
+                        </div>
                         <div class="an-summary-item" th:if="${!#strings.isEmpty(detail.jobDescriptionFileName)}">
                             <dt>Job Description</dt>
                             <dd>
-                                <a class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener"
-                                    th:href="@{/agency/recruitment-notifications/{id}/job-description(id=${detail.recruitmentNotificationId})}"
-                                    th:text="${detail.jobDescriptionFileName}">View job description</a>
+                                <a class="an-doc-link" target="_blank" rel="noopener" title="View job description"
+                                    th:href="@{/agency/recruitment-notifications/{id}/job-description(id=${detail.recruitmentNotificationId})}">
+                                    <span class="an-doc-icon"
+                                        th:classappend="${#strings.endsWith(#strings.toLowerCase(detail.jobDescriptionFileName), '.pdf')} ? ' pdf' : ' word'">
+                                        <i class="fas" th:classappend="${#strings.endsWith(#strings.toLowerCase(detail.jobDescriptionFileName), '.pdf')} ? 'fa-file-pdf' : 'fa-file-word'" aria-hidden="true"></i>
+                                        <span class="an-doc-eye"><i class="fas fa-eye" aria-hidden="true"></i></span>
+                                    </span>
+                                    <span class="an-doc-name" th:text="${detail.jobDescriptionFileName}">jd.pdf</span>
+                                </a>
                             </dd>
                         </div>
                     </dl>
 
                     <!-- Designation Vacancies -->
                     <div class="an-section">
-                    <h5 class="an-section-title">Designation Vacancies</h5>
+                    <h5 class="an-section-title"><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Designation Vacancies</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm align-middle an-stack" id="vacancyTable">
                             <thead class="table-light">
@@ -430,7 +546,7 @@
 
                     <!-- Candidate Submission -->
                     <div class="an-section">
-                    <h5 class="an-section-title">Submit Candidate Details</h5>
+                    <h5 class="an-section-title"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Submit Candidate Details</h5>
                     <form autocomplete="off" method="post"
                         th:action="@{/agency/recruitment-notifications/{id}/candidates(id=${detail.recruitmentNotificationId})}"
                         enctype="multipart/form-data" id="candidateBatchForm" th:object="${candidateForm}" novalidate>
@@ -605,7 +721,7 @@
 
                     <!-- Submitted Candidate List -->
                     <div class="an-section">
-                    <h5 class="an-section-title">Submitted Candidates</h5>
+                    <h5 class="an-section-title"><i class="fa-solid fa-users" aria-hidden="true"></i> Submitted Candidates</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm align-middle an-stack" id="submittedTable">
                             <thead class="table-light">

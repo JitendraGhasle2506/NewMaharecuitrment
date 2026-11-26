@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261009-10')}">
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css(v='20261126-1')}">
 </head>
 
 <body class="hr-shell">
@@ -17,6 +17,23 @@
                     <h2>HR Command Center</h2>
                 </div> -->
                 <div class="card-body hrd-page">
+
+                    <header class="hrd-hero">
+                        <div class="hrd-hero-copy">
+                            <span class="hrd-hero-kicker"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> HR Command Center</span>
+                            <h1>HR Dashboard</h1>
+                            <p>Workforce, attendance and calendar overview for the organization.</p>
+                        </div>
+                        <div class="hrd-hero-actions">
+                            <span class="hrd-hero-date">
+                                <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                <span th:text="${#temporals.format(#temporals.createToday(), 'EEEE, dd MMMM yyyy')}">Thursday, 26 November 2026</span>
+                            </span>
+                            <a class="hrd-hero-btn" th:href="@{/hr/attendance-today}">
+                                Today's attendance <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </header>
 
                     <!-- Primary summary cards -->
                     <section class="hrd-kpi-grid" aria-label="Key workforce figures">
@@ -48,7 +65,8 @@
                                 <span class="hrd-kpi-note">Across the organization</span>
                             </div>
                         </article>
-                         <article class="hrd-kpi hrd-kpi-warning">
+                         <article class="hrd-kpi hrd-kpi-success">
+                            <span class="hrd-kpi-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
                             <div class="hrd-kpi-body">
                                 <p class="hrd-kpi-label">
                                     Present Today

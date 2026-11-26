@@ -2689,3 +2689,102 @@ button.hrd-chip:focus-visible,
     }
 }
 
+/* ---- HR dashboard: hero, compact rhythm and refined type scale ---- */
+.hr-shell .add-emp-card > .card-body.hrd-page {
+    display: grid;
+    gap: 14px;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 16px 20px 24px;
+    font-size: .875rem;
+}
+
+.hrd-page > section,
+.hrd-page > header { margin: 0; }
+.hrd-page > .hrd-employee-breakdown { margin-top: 0; }
+.hrd-page > .hrd-employee-breakdown[hidden] { display: none; }
+
+.hrd-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 24px;
+    overflow: hidden;
+    border-radius: 16px;
+    color: #fff;
+    background: linear-gradient(120deg, #163a5a, #1f4f78 60%, #2f7aa8);
+    box-shadow: 0 12px 26px rgba(22, 58, 90, .2);
+}
+
+.hrd-hero::after {
+    content: "";
+    position: absolute;
+    top: -90px;
+    right: -60px;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, .16), transparent 68%);
+    pointer-events: none;
+}
+
+.hrd-hero-copy, .hrd-hero-actions { position: relative; z-index: 1; }
+.hrd-hero-copy { min-width: 0; }
+.hrd-hero-kicker { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 6px; color: #bcd8ef; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.hrd-hero h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.65rem); font-weight: 700; line-height: 1.25; }
+.hrd-hero p { margin: 4px 0 0; color: #d6e6f4; font-size: .86rem; }
+.hrd-hero-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex: 0 0 auto; }
+.hrd-hero-date { display: inline-flex; align-items: center; gap: 8px; color: #d6e6f4; font-size: .8rem; font-weight: 600; }
+.hrd-hero-btn { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border-radius: 999px; color: #163a5a; background: #fff; font-size: .8rem; font-weight: 700; text-decoration: none; transition: transform 140ms ease, box-shadow 140ms ease; }
+.hrd-hero-btn:hover { color: #163a5a; transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0, 0, 0, .18); }
+
+/* KPI cards */
+.hrd-kpi-grid { gap: 14px; }
+.hrd-kpi { align-items: center; gap: .8rem; padding: .85rem 1rem; border-radius: 14px; }
+.hrd-kpi:hover { border-color: #a9c3e0; }
+.hrd-kpi-icon { width: 42px; height: 42px; border-radius: 11px; font-size: 1.05rem; }
+.hrd-kpi-label { font-size: .72rem; }
+.hrd-kpi-value { margin-top: .2rem; font-size: clamp(1.5rem, 2vw, 1.9rem); }
+.hrd-kpi-value small { font-size: .9rem; }
+.hrd-kpi-note { margin-top: .2rem; font-size: .76rem; font-weight: 600; }
+.hrd-meter { height: 6px; margin-top: .5rem; }
+.hrd-kpi-success { --hrd-accent: var(--hr-success, #2d8a57); --hrd-accent-soft: #e6f6ec; }
+
+/* Secondary chips */
+.hrd-secondary { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.hrd-chip { min-height: 42px; padding: .4rem .8rem; border-radius: 10px; font-size: .78rem; }
+.hrd-chip > strong { font-size: 1rem; }
+.hrd-chip-link:hover, .hrd-chip-button:hover { border-color: #a9c3e0; background: #fafcff; }
+.hrd-chip-button { cursor: pointer; }
+
+/* Employee breakdown */
+.hrd-employee-breakdown { padding: .85rem 1rem; border-radius: 14px; }
+
+/* Calendar */
+.hrd-calendar { padding: .9rem 1rem 1rem; border-radius: 14px; }
+.hrd-calendar-heading h3 { font-size: 1.05rem; }
+.hrd-calendar-heading p { font-size: .8rem; }
+.hrd-calendar-panel { padding: .8rem; }
+.hrd-holiday-card { padding: .5rem .65rem; }
+.hrd-holiday-date { width: 42px; min-height: 44px; }
+
+@media (min-width: 1200px) {
+    .hrd-calendar-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
+}
+
+@media (max-width: 1199.98px) {
+    .hrd-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767.98px) {
+    .hr-shell .add-emp-card > .card-body.hrd-page { gap: 12px; padding: 10px; }
+    .hrd-hero { flex-direction: column; align-items: flex-start; padding: 16px; }
+    .hrd-hero-actions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .hrd-kpi-grid { gap: 10px; }
+}
+
+@media (max-width: 479.98px) {
+    .hrd-kpi-grid { grid-template-columns: 1fr; }
+}
