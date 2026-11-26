@@ -326,6 +326,146 @@
             }
         }
 
+        /* ===== Employee billing preview: refined editing screen (screen only; print layout untouched) ===== */
+        @media screen {
+            .employee-billing-preview .preview-page { max-width: 1280px; margin: 0 auto; padding: 16px; }
+
+            form.billing-banner {
+                display: grid;
+                gap: 8px;
+                margin-bottom: 14px;
+                padding: 14px 18px;
+                border: 1px solid #cfe0f1;
+                border-radius: 12px;
+                color: #1f3554;
+                background: #f3f8fd;
+                box-shadow: 0 4px 14px rgba(25, 55, 88, .06);
+            }
+
+            .billing-banner-head { display: flex; align-items: center; gap: 12px; }
+            .billing-banner-icon { display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border-radius: 50%; color: #fff; background: #1f4f78; font-size: .95rem; }
+            .billing-banner-title { margin: 0; font-size: 1rem; font-weight: 700; }
+            .billing-banner-text { margin: 2px 0 0; color: #4a6482; font-size: .85rem; line-height: 1.4; }
+            .billing-banner-errors { margin: 0; padding: 8px 12px 8px 30px; border-radius: 8px; color: #b42318; background: #fef3f2; font-size: .85rem; }
+            .billing-banner-link { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #b9cfe6; border-radius: 999px; color: #1f4f78; background: #fff; font-size: .8rem; font-weight: 600; text-decoration: none; }
+            .billing-banner-link:hover { color: #fff; background: #1f4f78; border-color: #1f4f78; }
+
+            .preview-banner[role="status"] { border-color: #86d3a3; color: #166534; background: #f0fdf4; }
+            .preview-banner[role="alert"] { border-color: #f5b5ae; color: #b42318; background: #fef3f2; }
+
+            .employee-billing-preview .preview-sheet { box-shadow: 0 8px 24px rgba(15, 23, 42, .06); }
+            .employee-billing-preview .form-control { padding: 7px 10px; border: 1px solid #c7d4e2; border-radius: 8px; }
+            .employee-billing-preview .form-control:focus { border-color: #1f4f78; outline: 0; box-shadow: 0 0 0 3px rgba(31, 79, 120, .15); }
+
+            .employee-billing-preview .preview-actions {
+                position: sticky;
+                bottom: 0;
+                z-index: 5;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 10px;
+                margin-top: 14px;
+                padding: 10px 14px;
+                border: 1px solid #d9e2ec;
+                border-radius: 12px 12px 0 0;
+                background: rgba(255, 255, 255, .97);
+                box-shadow: 0 -6px 16px rgba(15, 23, 42, .06);
+            }
+
+            .employee-billing-preview .preview-actions .btn { min-width: 160px; padding: 9px 20px; border-radius: 999px; font-weight: 600; }
+        }
+
+        @media screen and (max-width: 991.98px) {
+            .employee-billing-preview .preview-page { padding: 10px; }
+        }
+
+        /* Phones: stack the document into labelled rows instead of a 700px sideways scroll */
+        @media screen and (max-width: 767.98px) {
+            .employee-billing-preview .preview-sheet { overflow-x: visible; padding: 10px; }
+            .employee-billing-preview .preview-sheet > table { min-width: 0; }
+
+            .employee-billing-preview .invoice-brand-table,
+            .employee-billing-preview .invoice-brand-table tbody,
+            .employee-billing-preview .invoice-brand-table tr,
+            .employee-billing-preview .invoice-brand-table td,
+            .employee-billing-preview .invoice-meta-table,
+            .employee-billing-preview .invoice-meta-table > tbody,
+            .employee-billing-preview .invoice-meta-table > tbody > tr,
+            .employee-billing-preview .invoice-meta-table > tbody > tr > td,
+            .employee-billing-preview .invoice-detail-grid,
+            .employee-billing-preview .invoice-detail-grid tbody,
+            .employee-billing-preview .invoice-detail-grid tr,
+            .employee-billing-preview .invoice-detail-grid td,
+            .employee-billing-preview .invoice-account-table,
+            .employee-billing-preview .invoice-account-table tbody,
+            .employee-billing-preview .invoice-account-table tr,
+            .employee-billing-preview .invoice-account-table th,
+            .employee-billing-preview .invoice-account-table td,
+            .employee-billing-preview .invoice-terms-table,
+            .employee-billing-preview .invoice-terms-table tbody,
+            .employee-billing-preview .invoice-terms-table tr,
+            .employee-billing-preview .invoice-terms-table th,
+            .employee-billing-preview .invoice-terms-table td,
+            .employee-billing-preview .invoice-signature-table,
+            .employee-billing-preview .invoice-signature-table tbody,
+            .employee-billing-preview .invoice-signature-table tr,
+            .employee-billing-preview .invoice-signature-table td { display: block; width: 100% !important; }
+
+            .employee-billing-preview .invoice-brand-table td { padding: 8px 6px; text-align: center; }
+            .employee-billing-preview .invoice-detail-grid td { padding: 3px 4px; }
+            .employee-billing-preview .invoice-detail-grid td:first-child { padding-top: 8px; color: #4a6482; font-size: .8rem; }
+            .employee-billing-preview .invoice-signature-table td { height: auto !important; min-height: 64px; }
+            .employee-billing-preview .qr-wrapper { min-height: 0; }
+
+            /* line items become cards */
+            .employee-billing-preview .invoice-items-table,
+            .employee-billing-preview .invoice-items-table tbody { display: block; width: 100%; }
+            .employee-billing-preview .invoice-items-table colgroup,
+            .employee-billing-preview .invoice-items-table thead { display: none; }
+
+            .employee-billing-preview .invoice-item-row {
+                display: block;
+                margin-bottom: 10px;
+                overflow: hidden;
+                border: 1px solid #d9e2ec;
+                border-radius: 10px;
+            }
+
+            .employee-billing-preview .invoice-item-row td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                width: 100%;
+                padding: 7px 12px;
+                border: 0 !important;
+                border-bottom: 1px solid #eef2f7 !important;
+                text-align: right !important;
+            }
+
+            .employee-billing-preview .invoice-item-row td:last-child { border-bottom: 0 !important; background: #f8fafc; font-weight: 700; }
+            .employee-billing-preview .invoice-item-row td::before { content: attr(data-label); color: #4a6482; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-align: left; text-transform: uppercase; }
+            .employee-billing-preview .invoice-item-row td[colspan] { display: block; text-align: center !important; }
+            .employee-billing-preview .invoice-item-row td[colspan]::before { content: none; }
+
+            .employee-billing-preview .invoice-summary-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 6px;
+                border: 1px solid #d9e2ec;
+                border-radius: 8px;
+            }
+
+            .employee-billing-preview .invoice-summary-row td { display: block; width: auto; padding: 8px 12px; border: 0 !important; }
+            .employee-billing-preview .invoice-summary-row td:first-child { flex: 1; text-align: left !important; }
+            .employee-billing-preview .invoice-summary-row.is-total { background: #eef4fb; }
+
+            .employee-billing-preview .preview-actions { justify-content: stretch; border-radius: 0; }
+            .employee-billing-preview .preview-actions .btn { flex: 1 1 100%; min-width: 0; }
+        }
+
         @media print {
             body.print-invoice-only * {
                 visibility: hidden !important;
@@ -410,15 +550,21 @@
         <div th:if="${errorMessage}" class="preview-banner no-print" role="alert" th:text="${errorMessage}"></div>
         <form th:if="${#bools.isTrue(employeeBillingPreview)}" id="billingDetailsForm"
               th:action="@{/invoice/tax-invoices/generate/invoice}" th:object="${billingDetails}" method="post"
-              class="preview-banner no-print">
+              class="preview-banner billing-banner no-print">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input type="hidden" name="loadToken" th:value="${loadToken}">
-            <strong>Preview Tax Invoice</strong>
-            <p>Enter billing details below, then generate the printable invoice. Leave GST blank for an unregistered client.</p>
-            <ul th:if="${#fields.hasErrors('*')}" role="alert">
+            <div class="billing-banner-head">
+                <span class="billing-banner-icon" aria-hidden="true"><i class="fa-solid fa-file-invoice"></i></span>
+                <div>
+                    <strong class="billing-banner-title">Preview Tax Invoice</strong>
+                    <p class="billing-banner-text">Enter billing details below, then generate the printable invoice. Leave GST blank for an unregistered client.</p>
+                </div>
+            </div>
+            <ul class="billing-banner-errors" th:if="${#fields.hasErrors('*')}" role="alert">
                 <li th:each="error : ${#fields.errors('*')}" th:text="${error}"></li>
             </ul>
-            <a th:href="@{/invoice/tax-invoices/generate}">Change selection / Load again</a>
+            <a class="billing-banner-link" th:href="@{/invoice/tax-invoices/generate}">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Change selection / Load again</a>
         </form>
         <div id="print-content" class="preview-sheet">
             <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}"
@@ -539,38 +685,38 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:if="${#lists.isEmpty(invoice.lineItems)}">
+                    <tr class="invoice-item-row" th:if="${#lists.isEmpty(invoice.lineItems)}">
                         <td colspan="7" class="text-center">No resource details available.</td>
                     </tr>
-                    <tr th:each="item, stat : ${invoice.lineItems}">
-                        <td class="text-center" th:text="${stat.count}">1</td>
-                        <td class="text-start" th:text="${item.description}">Business Analyst</td>
-                        <td class="text-center" th:text="${item.requiredPeriodDisplay}">01-12-2025 to 31-12-2025</td>
-                        <td class="text-center" th:text="${item.sacHsn}">998313</td>
-                        <td class="text-center" th:text="${item.quantity}">2</td>
-                        <td class="text-right">&#8377; <span th:text="${item.ratePerMonthDisplay}">1,65,705.00</span>
+                    <tr class="invoice-item-row" th:each="item, stat : ${invoice.lineItems}">
+                        <td class="text-center" data-label="Sr No." th:text="${stat.count}">1</td>
+                        <td class="text-start" data-label="Description" th:text="${item.description}">Business Analyst</td>
+                        <td class="text-center" data-label="Required Period" th:text="${item.requiredPeriodDisplay}">01-12-2025 to 31-12-2025</td>
+                        <td class="text-center" data-label="SAC/HSN" th:text="${item.sacHsn}">998313</td>
+                        <td class="text-center" data-label="Qty" th:text="${item.quantity}">2</td>
+                        <td class="text-right" data-label="Rate/Month">&#8377; <span th:text="${item.ratePerMonthDisplay}">1,65,705.00</span>
                         </td>
-                        <td class="text-right">&#8377; <span th:text="${item.totalAmountDisplay}">3,31,410.00</span>
+                        <td class="text-right" data-label="Total Amount">&#8377; <span th:text="${item.totalAmountDisplay}">3,31,410.00</span>
                         </td>
                     </tr>
-                    <tr>
+                    <tr class="invoice-summary-row">
                         <td colspan="6" class="text-right summary-label">1) BASIC Amount</td>
                         <td class="text-right">&#8377; <span th:text="${invoice.baseAmountDisplay}">12,28,775.00</span>
                         </td>
                     </tr>
-                    <tr>
+                    <tr class="invoice-summary-row">
                         <td colspan="6" class="text-right summary-label"
                             th:text="${'2) SGST @ ' + invoice.sgstRateDisplay + '%'}">2) SGST @ 9%</td>
                         <td class="text-right">&#8377; <span th:text="${invoice.sgstAmountDisplay}">1,10,589.00</span>
                         </td>
                     </tr>
-                    <tr>
+                    <tr class="invoice-summary-row">
                         <td colspan="6" class="text-right summary-label"
                             th:text="${'3) CGST @ ' + invoice.cgstRateDisplay + '%'}">3) CGST @ 9%</td>
                         <td class="text-right">&#8377; <span th:text="${invoice.cgstAmountDisplay}">1,10,589.00</span>
                         </td>
                     </tr>
-                    <tr>
+                    <tr class="invoice-summary-row is-total">
                         <td colspan="6" class="text-right summary-label">Total</td>
                         <td class="text-right summary-label">&#8377; <span
                                 th:text="${invoice.totalAmountDisplay}">14,49,954.00</span></td>
@@ -653,7 +799,7 @@
         </div>
 
         <div th:if="${!#bools.isTrue(embeddedPreviewMode) and (!#bools.isTrue(employeeInvoiceDocument) or #bools.isTrue(employeeBillingPreview))}" class="preview-actions no-print">
-            <a th:if="${#bools.isTrue(employeeInvoiceDocument)}" class="btn"
+            <a th:if="${#bools.isTrue(employeeInvoiceDocument)}" class="btn btn-outline-secondary"
                th:href="@{/invoice/tax-invoices/generate/invoices}">View Generated Invoices</a>
             <button th:if="${#bools.isTrue(employeeBillingPreview)}" type="submit" form="billingDetailsForm" class="btn btn-primary">Generate Tax Invoice</button>
             <button th:unless="${#bools.isTrue(employeeBillingPreview)}" id="printBtn" class="btn" onclick="printContent('print-content')">Print</button>
