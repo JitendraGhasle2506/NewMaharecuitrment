@@ -229,9 +229,11 @@
                 return;
             }
 
-            if (new URL(href, window.location.origin).pathname === window.location.pathname
-                && new URL(href, window.location.origin).search === window.location.search
-                && !new URL(href, window.location.origin).hash) {
+            // Same-page links (including hash-only anchors) don't reload the page,
+            // so showing the loader would leave it stuck on screen.
+            const target = new URL(href, window.location.origin);
+            if (target.pathname === window.location.pathname
+                && target.search === window.location.search) {
                 return;
             }
 
